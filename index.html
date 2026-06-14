@@ -8,7 +8,7 @@
 <script>
 const CSV = {
   catalog:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=0&single=true&output=csv",
-  settings: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=1924140876&single=true&output=csv",
+  settings: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=1470648308&single=true&output=csv",
 };
 </script>
 
@@ -38,7 +38,7 @@ button{font-family:inherit;cursor:pointer}
 .hero{position:relative;padding:4rem 1.5rem 3rem;overflow:hidden;text-align:center;background:#0a0a0a}
 .hero::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:repeating-linear-gradient(90deg,#fff 0,#fff 18px,#000 18px,#000 36px)}
 .hero-lines{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.hero-lines span{position:absolute;height:1px;background:linear-gradient(90deg,transparent,rgba(var(--red-rgb),.35),transparent);animation:sl 3s linear infinite;opacity:0}
+.hero-lines span{position:absolute;height:1px;background:linear-gradient(90deg,transparent,rgba(225,6,0,.35),transparent);animation:sl 3s linear infinite;opacity:0}
 .hero-lines span:nth-child(1){top:28%;width:60%;left:-60%;animation-delay:0s}
 .hero-lines span:nth-child(2){top:48%;width:80%;left:-80%;animation-delay:.8s}
 .hero-lines span:nth-child(3){top:68%;width:50%;left:-50%;animation-delay:1.6s}
@@ -73,9 +73,29 @@ button{font-family:inherit;cursor:pointer}
 /* ── Card ── */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s}
 .card:hover{border-color:#333;transform:translateY(-2px)}
-.card-img{width:100%;aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:42px;position:relative;overflow:hidden}
-.card-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
-.avail-pill{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px}
+
+/* FIX: строгое соотношение сторон + object-fit для нормализации фото */
+.card-img{
+  width:100%;
+  aspect-ratio:1/1;
+  background:var(--surface2);
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:42px;
+}
+.card-img img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+}
+
+.avail-pill{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px;z-index:2}
 .card-body{padding:10px 12px}
 .card-team{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
 .card-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:4px}
@@ -101,9 +121,82 @@ button{font-family:inherit;cursor:pointer}
 .close-btn:hover{color:#fff}
 .panel-body{padding:1.25rem}
 
-/* ── Product modal ── */
-.pm-visual{width:100%;aspect-ratio:1;max-height:200px;background:var(--surface2);border-radius:var(--rsm);display:flex;align-items:center;justify-content:center;font-size:60px;margin-bottom:1rem;overflow:hidden}
-.pm-visual img{width:100%;height:100%;object-fit:cover}
+/* ── Product modal — CAROUSEL ── */
+.pm-carousel{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  max-height:220px;
+  background:var(--surface2);
+  border-radius:var(--rsm);
+  margin-bottom:1rem;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:60px;
+  user-select:none;
+}
+.pm-carousel-track{
+  display:flex;
+  width:100%;
+  height:100%;
+  transition:transform .3s ease;
+}
+.pm-carousel-slide{
+  flex:0 0 100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:60px;
+}
+.pm-carousel-slide img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+}
+.carousel-arrow{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:5;
+  background:rgba(0,0,0,.55);
+  border:none;
+  color:#fff;
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  font-size:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:background .15s;
+  line-height:1;
+}
+.carousel-arrow:hover{background:rgba(0,0,0,.85)}
+.carousel-arrow.prev{left:8px}
+.carousel-arrow.next{right:8px}
+.carousel-dots{
+  position:absolute;
+  bottom:7px;
+  left:50%;
+  transform:translateX(-50%);
+  display:flex;
+  gap:5px;
+  z-index:5;
+}
+.carousel-dot{
+  width:6px;height:6px;
+  border-radius:50%;
+  background:rgba(255,255,255,.35);
+  cursor:pointer;
+  transition:background .15s;
+}
+.carousel-dot.active{background:#fff}
+
 .pm-team{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px}
 .pm-name{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.3}
 .pm-attrs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
@@ -198,7 +291,7 @@ button{font-family:inherit;cursor:pointer}
   <div class="toolbar">
     <div class="filters" id="filters"></div>
     <div class="toolbar-right">
-      <button class="cur-btn" id="cur-toggle" onclick="toggleCurrency()">₽ RUB</button>
+      <button class="cur-btn" id="cur-toggle" onclick="toggleCurrency()">₸ KZT</button>
       <button class="cart-btn" onclick="openCart()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
         <span id="lbl-cart">Корзина</span>
@@ -224,7 +317,13 @@ button{font-family:inherit;cursor:pointer}
       <button class="close-btn" onclick="closeId('pm-ov')">✕</button>
     </div>
     <div class="panel-body">
-      <div class="pm-visual" id="pm-visual"></div>
+      <!-- CAROUSEL -->
+      <div class="pm-carousel" id="pm-carousel">
+        <div class="pm-carousel-track" id="pm-carousel-track"></div>
+        <button class="carousel-arrow prev" id="carousel-prev" onclick="carouselMove(-1)" style="display:none">‹</button>
+        <button class="carousel-arrow next" id="carousel-next" onclick="carouselMove(1)" style="display:none">›</button>
+        <div class="carousel-dots" id="carousel-dots"></div>
+      </div>
       <div class="pm-team" id="pm-team"></div>
       <div class="pm-name" id="pm-name"></div>
       <div class="pm-attrs" id="pm-attrs"></div>
@@ -285,17 +384,13 @@ const DEFAULTS = {
   msg_added:        "Добавлено в корзину ✓",
   wa_msg_header:    "Привет! Хочу сделать заказ:",
   wa_msg_footer:    "",
-  // валюты: основная и вторая (переключатель). symbol — что показывать
-  currency_primary_symbol:   "₽",
-  currency_primary_code:     "RUB",
-  currency_secondary_symbol: "₸",
-  currency_secondary_code:   "KZT",
+  // FIX 1: тенге теперь основная валюта, рубли — вторая
+  currency_primary_symbol:   "₸",
+  currency_primary_code:     "KZT",
+  currency_secondary_symbol: "₽",
+  currency_secondary_code:   "RUB",
 };
 
-// Цвета бейджа статуса по умолчанию для известных значений колонки "Наличие"
-// Ключ — статус в нижнем регистре. Можно переопределить через лист "Настройки"
-// ключами вида status_color_<статус с подчёркиваниями вместо пробелов>
-// например: status_color_на_заказ = #555555
 const STATUS_COLORS = {
   "в наличии": "var(--red)",
   "на заказ":  "#555",
@@ -307,7 +402,7 @@ let S = {...DEFAULTS};
 let products = [];
 let cart = [];
 let activeCat = "";
-let currency = "primary"; // "primary" | "secondary"
+let currency = "primary"; // тенге по умолчанию
 
 /* ════ CSV PARSER ════ */
 function parseCSV(text) {
@@ -322,9 +417,23 @@ function parseCSV(text) {
     return cells;
   });
   if (rows.length < 2) return [];
-  const headers = rows[0].map(h => h.toLowerCase().trim()
-    .replace(/ё/g,'е').replace(/\s+/g,'_')
-    .replace(/[^a-zа-я0-9_]/gi,''));
+
+  // FIX 2: расширенная нормализация заголовков — сохраняем символы ₸ и ₽
+  // а также буквы Т/Р/р для распознавания валютной колонки
+  const headers = rows[0].map(h => {
+    return h.toLowerCase().trim()
+      .replace(/ё/g,'е')
+      // нормализуем символы валют ДО удаления спецсимволов
+      .replace(/₸/g,'_tenge')
+      .replace(/₽/g,'_ruble')
+      .replace(/тенге/g,'_tenge')
+      .replace(/руб[а-я]*/g,'_ruble')
+      .replace(/kzt/gi,'_tenge')
+      .replace(/rub/gi,'_ruble')
+      .replace(/\s+/g,'_')
+      .replace(/[^a-zа-я0-9_]/gi,'');
+  });
+
   return rows.slice(1).filter(r => r.some(c => c)).map((r, i) => {
     const o = { _row: i + 2 };
     headers.forEach((h, j) => o[h] = (r[j] || "").trim());
@@ -348,12 +457,12 @@ async function loadSettings() {
 
 /* ════ LOAD CATALOG ════ */
 const DEMO = [
-  {название:"Футболка Red Bull Racing",команда:"Red Bull",категория:"Футболки",размеры:"XS,S,M,L,XL","цена,_₽":"2900","цена,_т":"15500",наличие:"в наличии",фото:"",эмодзи:"🔵",год:"2024",цвет:"Синий",количество:"30",номер:"1"},
-  {название:"Худи Ferrari Scuderia",команда:"Ferrari",категория:"Худи",размеры:"S,M,L,XL,XXL","цена,_₽":"4500","цена,_т":"24000",наличие:"в наличии",фото:"",эмодзи:"🔴",год:"2024",цвет:"Красный",количество:"20",номер:"16"},
-  {название:"Бейсболка Mercedes AMG",команда:"Mercedes",категория:"Головные уборы",размеры:"One Size","цена,_₽":"1800","цена,_т":"9600",наличие:"в наличии",фото:"",эмодзи:"⬛",год:"2023",цвет:"Чёрный",количество:"45",номер:"44"},
-  {название:"Куртка McLaren Papaya",команда:"McLaren",категория:"Куртки",размеры:"M,L,XL","цена,_₽":"7200","цена,_т":"38500",наличие:"в наличии",фото:"",эмодзи:"🟠",год:"2024",цвет:"Оранжевый",количество:"15",номер:"4"},
-  {название:"Поло Alpine F1 Team",команда:"Alpine",категория:"Поло",размеры:"S,M,L","цена,_₽":"3100","цена,_т":"16500",наличие:"на заказ",фото:"",эмодзи:"🔵",год:"2023",цвет:"Синий",количество:"0",номер:"10"},
-  {название:"Толстовка Aston Martin",команда:"Aston Martin",категория:"Худи",размеры:"M,L,XL,XXL","цена,_₽":"4900","цена,_т":"26000",наличие:"в наличии",фото:"",эмодзи:"🟢",год:"2024",цвет:"Зелёный",количество:"25",номер:"14"},
+  {название:"Футболка Red Bull Racing",команда:"Red Bull",категория:"Футболки",размеры:"XS,S,M,L,XL","цена_tenge":"15500","цена_ruble":"2900",наличие:"в наличии",фото:"",эмодзи:"🔵",год:"2024",цвет:"Синий",количество:"30",номер:"1"},
+  {название:"Худи Ferrari Scuderia",команда:"Ferrari",категория:"Худи",размеры:"S,M,L,XL,XXL","цена_tenge":"24000","цена_ruble":"4500",наличие:"в наличии",фото:"",эмодзи:"🔴",год:"2024",цвет:"Красный",количество:"20",номер:"16"},
+  {название:"Бейсболка Mercedes AMG",команда:"Mercedes",категория:"Головные уборы",размеры:"One Size","цена_tenge":"9600","цена_ruble":"1800",наличие:"в наличии",фото:"",эмодзи:"⬛",год:"2023",цвет:"Чёрный",количество:"45",номер:"44"},
+  {название:"Куртка McLaren Papaya",команда:"McLaren",категория:"Куртки",размеры:"M,L,XL","цена_tenge":"38500","цена_ruble":"7200",наличие:"в наличии",фото:"",эмодзи:"🟠",год:"2024",цвет:"Оранжевый",количество:"15",номер:"4"},
+  {название:"Поло Alpine F1 Team",команда:"Alpine",категория:"Поло",размеры:"S,M,L","цена_tenge":"16500","цена_ruble":"3100",наличие:"на заказ",фото:"",эмодзи:"🔵",год:"2023",цвет:"Синий",количество:"0",номер:"10"},
+  {название:"Толстовка Aston Martin",команда:"Aston Martin",категория:"Худи",размеры:"M,L,XL,XXL","цена_tenge":"26000","цена_ruble":"4900",наличие:"в наличии",фото:"",эмодзи:"🟢",год:"2024",цвет:"Зелёный",количество:"25",номер:"14"},
 ];
 
 async function loadCatalog() {
@@ -367,7 +476,6 @@ async function loadCatalog() {
   }
 }
 
-// Универсальный поиск значения по нескольким возможным ключам в нормализованных заголовках
 function pick(r, ...keys) {
   for (const k of keys) {
     if (r[k] !== undefined && r[k] !== "") return r[k];
@@ -375,61 +483,58 @@ function pick(r, ...keys) {
   return "";
 }
 
-// Поиск значения цены по regex на нормализованные заголовки.
-// "Цена, Т" -> цена_т, "Цена, ₸" -> цена_ (или цена_т если решётка осталась)
-// "Цена, ₽" -> цена_ или цена, "Цена, Р" -> цена_р
-// matchTenge=true ищет колонку со маркером тенге (т/тг/kzt), иначе — рублёвую/общую "цена" колонку
-function pickPrice(r, currencyHint) {
-  const keys = Object.keys(r);
-  // 1) явные совпадения по коду/символу валюты в названии колонки
-  const tengePatterns  = [/^цена.*(_т_?|тенге|kzt)$/i, /^price.*kzt$/i];
-  const rublePatterns  = [/^цена.*(_р_?|руб|rub)$/i, /^price.*rub$/i];
-
-  const patterns = currencyHint === "kzt" ? tengePatterns : rublePatterns;
-  for (const re of patterns) {
-    for (const k of keys) {
-      if (re.test(k) && r[k] !== "") return r[k];
-    }
-  }
-
-  // 2) запасной вариант: единственная колонка "цена*" без явного маркера —
-  //    если ищем рубли и тенге-колонка не она, берём первую "цена*"
-  const priceCols = keys.filter(k => /^цена/i.test(k) || /^price/i.test(k));
-  if (currencyHint === "kzt") {
-    // среди priceCols ищем ту, что НЕ похожа на рублёвую
-    const candidate = priceCols.find(k => !rublePatterns.some(re => re.test(k)));
-    if (candidate && r[candidate] !== "") return r[candidate];
-  } else {
-    const candidate = priceCols.find(k => !tengePatterns.some(re => re.test(k)));
-    if (candidate && r[candidate] !== "") return r[candidate];
-  }
-
-  return "";
-}
-
 function toNum(v) {
   return parseInt(String(v).replace(/[^\d]/g,"")) || 0;
 }
 
+// FIX 2: нормализованные заголовки теперь содержат _tenge / _ruble
+// поэтому поиск надёжно находит нужные колонки независимо от символа в таблице
+function findPriceCol(r, hint) {
+  const keys = Object.keys(r);
+  // Прямой поиск по нормализованному маркеру
+  const primary_marker   = hint === 'tenge' ? '_tenge' : '_ruble';
+  const secondary_marker = hint === 'tenge' ? '_ruble' : '_tenge';
+  // Ищем колонку с нужным маркером
+  for (const k of keys) {
+    if (k.includes('цена') && k.includes(primary_marker) && r[k] !== "") return r[k];
+  }
+  // Ищем колонку price с маркером
+  for (const k of keys) {
+    if (k.includes('price') && k.includes(primary_marker) && r[k] !== "") return r[k];
+  }
+  // Запасной: первая цена-колонка без маркера другой валюты
+  for (const k of keys) {
+    if ((k.includes('цена') || k.includes('price')) && !k.includes(secondary_marker) && r[k] !== "") return r[k];
+  }
+  return "";
+}
+
 function normRows(rows) {
-  return rows.map((r, i) => ({
-    id:         i + 1,
-    name:       pick(r,'название','name'),
-    team:       pick(r,'команда','team'),
-    cat:        pick(r,'категория','cat') || "Прочее",
-    sizes:      pick(r,'размеры','sizes').replace(/\s/g,""),
-    // "Цена, ₽" -> цена_р (символ ₽ обычно убирается regex'ом, остаётся "цена_")
-    price_primary:   toNum(pick(r,'цена_р','цена_₽','цена','price','price_rub','price_primary')),
-    // "Цена, Т" -> цена_т
-    price_secondary: toNum(pick(r,'цена_т','цена_₸','price_kzt','price_secondary')),
-    avail:      pick(r,'наличие','avail','в_наличии') || "да",
-    photo:      pick(r,'фото','photo'),
-    emoji:      pick(r,'эмодзи','emoji') || "🏁",
-    year:       pick(r,'год','year'),
-    color:      pick(r,'цвет','color'),
-    stock_qty:  pick(r,'количество','quantity'),
-    number:     pick(r,'номер','number'),
-  }));
+  return rows.map((r, i) => {
+    // FIX 3: поле фото может содержать несколько ссылок через запятую — массив
+    const photoRaw = pick(r,'фото','photo');
+    const photos = photoRaw
+      ? photoRaw.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)
+      : [];
+
+    return {
+      id:              i + 1,
+      name:            pick(r,'название','name'),
+      team:            pick(r,'команда','team'),
+      cat:             pick(r,'категория','cat') || "Прочее",
+      sizes:           pick(r,'размеры','sizes').replace(/\s/g,""),
+      price_primary:   toNum(findPriceCol(r, 'tenge')),  // тенге = primary
+      price_secondary: toNum(findPriceCol(r, 'ruble')),  // рубли = secondary
+      avail:           pick(r,'наличие','avail','в_наличии') || "да",
+      photos,                                             // массив фото
+      photo:           photos[0] || "",                  // первое фото (обратная совместимость)
+      emoji:           pick(r,'эмодзи','emoji') || "🏁",
+      year:            pick(r,'год','year'),
+      color:           pick(r,'цвет','color'),
+      stock_qty:       pick(r,'количество','quantity'),
+      number:          pick(r,'номер','number'),
+    };
+  });
 }
 
 /* ════ APPLY SETTINGS TO DOM ════ */
@@ -438,17 +543,23 @@ function applySettings() {
   document.documentElement.style.setProperty('--red', ac);
   document.documentElement.style.setProperty('--red-dark', shadeHex(ac, -30));
 
-  document.title                                  = S.site_title       || "F1 Merch";
+  document.title                                      = S.site_title       || "F1 Merch";
   document.getElementById("hero-title").textContent  = S.hero_title;
   document.getElementById("hero-subtitle").textContent = S.hero_subtitle;
   document.getElementById("footer-text").textContent = S.footer_text;
-  document.getElementById("hero-wa").href         = "https://wa.me/" + S.whatsapp;
-  document.getElementById("hero-ig").href         = "https://instagram.com/" + S.instagram;
-  document.getElementById("lbl-cart").textContent  = S.btn_cart;
+  document.getElementById("hero-wa").href            = "https://wa.me/" + S.whatsapp;
+  document.getElementById("hero-ig").href            = "https://instagram.com/" + S.instagram;
+  document.getElementById("lbl-cart").textContent    = S.btn_cart;
   document.getElementById("lbl-cart-title").textContent = S.btn_cart;
-  document.getElementById("lbl-pick").textContent  = S.label_pick;
-  document.getElementById("lbl-size-h").textContent = S.label_size;
-  document.getElementById("lbl-qty-h").textContent  = S.label_qty;
+  document.getElementById("lbl-pick").textContent    = S.label_pick;
+  document.getElementById("lbl-size-h").textContent  = S.label_size;
+  document.getElementById("lbl-qty-h").textContent   = S.label_qty;
+
+  // Если в настройках переопределили валюты — подхватить
+  if (S.currency_primary_symbol)   DEFAULTS.currency_primary_symbol   = S.currency_primary_symbol;
+  if (S.currency_primary_code)     DEFAULTS.currency_primary_code     = S.currency_primary_code;
+  if (S.currency_secondary_symbol) DEFAULTS.currency_secondary_symbol = S.currency_secondary_symbol;
+  if (S.currency_secondary_code)   DEFAULTS.currency_secondary_code   = S.currency_secondary_code;
 
   updateCurBtn();
 }
@@ -503,11 +614,7 @@ function renderFilters() {
 
 function setF(c) { activeCat = c; renderFilters(); renderGrid(); }
 
-// Статусы, при которых товар вообще нельзя добавить в корзину
-// (любой другой статус, включая "На заказ", считается покупаемым)
-const STATUS_BLOCKED = ["нет", "нет в наличии", "no", "0", "false", "out of stock", "недоступно"];
-
-// Статусы, которые нужно помечать как предзаказ в сообщении WhatsApp
+const STATUS_BLOCKED  = ["нет", "нет в наличии", "no", "0", "false", "out of stock", "недоступно"];
 const STATUS_PREORDER = ["на заказ", "под заказ", "preorder", "to order"];
 
 function isAvail(p) {
@@ -520,8 +627,6 @@ function isPreorder(p) {
   return STATUS_PREORDER.includes(a);
 }
 
-// Цвет бейджа статуса: ищет в настройках status_color_<статус>,
-// затем в STATUS_COLORS по нижнему регистру, иначе дефолт
 function statusColor(status) {
   const norm = (status || "").trim().toLowerCase();
   const settingKey = "status_color_" + norm.replace(/\s+/g, "_");
@@ -530,7 +635,6 @@ function statusColor(status) {
   return STATUS_COLOR_DEFAULT;
 }
 
-// Цвет текста бейджа: по умолчанию белый, но для светлых фонов можно затемнить
 function statusTextColor(status) {
   const norm = (status || "").trim().toLowerCase();
   const settingKey = "status_text_color_" + norm.replace(/\s+/g, "_");
@@ -539,14 +643,16 @@ function statusTextColor(status) {
 }
 
 function driveThumb(url, size) {
+  if (!url) return "";
   const m = url.match(/\/d\/([^/]+)/);
   if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w${size}`;
   return url;
 }
 
-function imgOrEmoji(p, size) {
-  if (p.photo) {
-    const src = driveThumb(p.photo, size);
+// FIX 3: в плитке — первое фото с object-fit:cover (нормализация уже в CSS)
+function cardImgHTML(p) {
+  if (p.photos && p.photos.length > 0) {
+    const src = driveThumb(p.photos[0], 400);
     return `<img src="${src}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'">`;
   }
   return p.emoji || "🏁";
@@ -570,7 +676,7 @@ function renderGrid() {
     return `
     <div class="card" onclick="openProduct(${p.id})">
       <div class="card-img">
-        ${imgOrEmoji(p, 400)}
+        ${cardImgHTML(p)}
         <span class="avail-pill" style="background:${statusColor(p.avail)};color:${statusTextColor(p.avail)}">${p.avail}</span>
       </div>
       <div class="card-body">
@@ -592,6 +698,79 @@ function renderGrid() {
   }).join("");
 }
 
+/* ════ CAROUSEL ════ */
+let carouselIndex = 0;
+let carouselSlides = [];
+
+function buildCarousel(photos, emoji) {
+  const track  = document.getElementById("pm-carousel-track");
+  const prev   = document.getElementById("carousel-prev");
+  const next   = document.getElementById("carousel-next");
+  const dots   = document.getElementById("carousel-dots");
+  carouselIndex = 0;
+
+  if (!photos || photos.length === 0) {
+    // только эмодзи
+    carouselSlides = [];
+    track.innerHTML = `<div class="pm-carousel-slide">${emoji || "🏁"}</div>`;
+    prev.style.display = "none";
+    next.style.display = "none";
+    dots.innerHTML = "";
+    return;
+  }
+
+  carouselSlides = photos;
+  track.innerHTML = photos.map(url => {
+    const src = driveThumb(url, 600);
+    return `<div class="pm-carousel-slide"><img src="${src}" alt="" onerror="this.parentNode.innerHTML='${emoji || "🏁"}'"></div>`;
+  }).join("");
+
+  const showArrows = photos.length > 1;
+  prev.style.display = showArrows ? "flex" : "none";
+  next.style.display = showArrows ? "flex" : "none";
+
+  dots.innerHTML = photos.length > 1
+    ? photos.map((_, i) => `<div class="carousel-dot${i===0?' active':''}" onclick="carouselGo(${i})"></div>`).join("")
+    : "";
+
+  carouselSetPos(0, false);
+}
+
+function carouselSetPos(idx, animate) {
+  const track = document.getElementById("pm-carousel-track");
+  if (!animate) track.style.transition = "none";
+  track.style.transform = `translateX(-${idx * 100}%)`;
+  if (!animate) requestAnimationFrame(() => { track.style.transition = "transform .3s ease"; });
+
+  document.querySelectorAll(".carousel-dot").forEach((d, i) =>
+    d.classList.toggle("active", i === idx)
+  );
+}
+
+function carouselMove(dir) {
+  const n = carouselSlides.length;
+  if (n < 2) return;
+  carouselIndex = (carouselIndex + dir + n) % n;
+  carouselSetPos(carouselIndex, true);
+}
+
+function carouselGo(idx) {
+  carouselIndex = idx;
+  carouselSetPos(idx, true);
+}
+
+// Свайп на мобильных
+let touchStartX = null;
+document.getElementById("pm-carousel").addEventListener("touchstart", e => {
+  touchStartX = e.touches[0].clientX;
+}, {passive:true});
+document.getElementById("pm-carousel").addEventListener("touchend", e => {
+  if (touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 40) carouselMove(dx < 0 ? 1 : -1);
+  touchStartX = null;
+}, {passive:true});
+
 /* ════ PRODUCT MODAL ════ */
 let curP = null, curSize = null, curQty = 1;
 
@@ -602,16 +781,13 @@ function openProduct(id) {
   const szArr = p.sizes.split(",").map(s => s.trim()).filter(Boolean);
   curSize = szArr.length === 1 ? szArr[0] : null;
 
-  const vis = document.getElementById("pm-visual");
-  if (p.photo) {
-    const src = driveThumb(p.photo, 400);
-    vis.innerHTML = `<img src="${src}" alt="${p.name}" onerror="this.innerHTML='${p.emoji}'">`;
-  } else { vis.innerHTML = p.emoji || "🏁"; }
+  // FIX 3: строим карусель из массива фото
+  buildCarousel(p.photos, p.emoji);
 
-  document.getElementById("pm-team").textContent = p.team;
-  document.getElementById("pm-name").textContent = p.name;
+  document.getElementById("pm-team").textContent  = p.team;
+  document.getElementById("pm-name").textContent  = p.name;
   document.getElementById("pm-price").textContent = fmt(priceOf(p));
-  document.getElementById("pm-qty").textContent = "1";
+  document.getElementById("pm-qty").textContent   = "1";
 
   const attrs = [
     p.year   ? `<span class="pm-attr"><b>${S.label_year}:</b> ${p.year}</span>` : "",
