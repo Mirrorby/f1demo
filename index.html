@@ -1,8 +1,9 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏁</text></svg>">
 <title>F1 Merch</title>
 
 <script>
@@ -74,13 +75,20 @@ button{font-family:inherit;cursor:pointer}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s}
 .card:hover{border-color:#333;transform:translateY(-2px)}
 
-/* FIX: строгое соотношение сторон + object-fit для нормализации фото */
+/* Нормализация фото в плитке: padding-top 100% = идеальный квадрат в любом браузере */
 .card-img{
   width:100%;
-  aspect-ratio:1/1;
+  padding-top:100%;          /* создаёт высоту = ширине */
   background:var(--surface2);
   position:relative;
   overflow:hidden;
+  /* эмодзи-фолбек */
+  font-size:0;               /* скрываем текстовый контент, пока нет фото */
+}
+/* эмодзи показываем через псевдоэлемент поверх padding-блока */
+.card-img-inner{
+  position:absolute;
+  inset:0;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -92,7 +100,7 @@ button{font-family:inherit;cursor:pointer}
   width:100%;
   height:100%;
   object-fit:cover;
-  object-position:center;
+  object-position:center top; /* акцент на верхнюю часть (лица/логотипы) */
 }
 
 .avail-pill{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px;z-index:2}
@@ -113,7 +121,15 @@ button{font-family:inherit;cursor:pointer}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:flex-end;justify-content:center;padding:0}
 .overlay.open{display:flex}
 @media(min-width:560px){.overlay{align-items:center;padding:1rem}}
-.panel{background:var(--surface);border:1px solid var(--border);width:100%;max-width:440px;border-radius:var(--radius) var(--radius) 0 0;max-height:92vh;overflow-y:auto;position:relative}
+.panel{background:var(--surface);border:1px solid var(--border);width:100%;max-width:440px;border-radius:var(--radius) var(--radius) 0 0;max-height:92vh;overflow-y:auto;position:relative;
+  /* Кастомный скроллбар — Chromium */
+  scrollbar-width:thin;
+  scrollbar-color:#333 transparent;
+}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:transparent}
+.panel::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+.panel::-webkit-scrollbar-thumb:hover{background:#444}
 @media(min-width:560px){.panel{border-radius:var(--radius)}}
 .panel-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
 .panel-title{font-size:14px;font-weight:700;color:var(--text)}
@@ -155,7 +171,7 @@ button{font-family:inherit;cursor:pointer}
   width:100%;
   height:100%;
   object-fit:cover;
-  object-position:center;
+  object-position:center top;
 }
 .carousel-arrow{
   position:absolute;
@@ -361,7 +377,7 @@ button{font-family:inherit;cursor:pointer}
 const DEFAULTS = {
   hero_title:       "Официальный F1 мерч",
   hero_subtitle:    "Коллекция одежды и аксессуаров команд Формулы 1. Быстрая доставка.",
-  site_title:       "Pit Stop Merch",
+  site_title:       "🏁 Pit Stop Merch",
   footer_text:      "© Pit Stop Merch — заказ через WhatsApp и Instagram",
   whatsapp:         "79001234567",
   instagram:        "pitstop_merch",
@@ -649,13 +665,13 @@ function driveThumb(url, size) {
   return url;
 }
 
-// FIX 3: в плитке — первое фото с object-fit:cover (нормализация уже в CSS)
+// FIX: плитка — padding-top квадрат + inner-обёртка для эмодзи/фото
 function cardImgHTML(p) {
   if (p.photos && p.photos.length > 0) {
     const src = driveThumb(p.photos[0], 400);
-    return `<img src="${src}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'">`;
+    return `<img src="${src}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'"><div class="card-img-inner"></div>`;
   }
-  return p.emoji || "🏁";
+  return `<div class="card-img-inner">${p.emoji || "🏁"}</div>`;
 }
 
 function renderGrid() {
