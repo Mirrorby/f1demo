@@ -76,8 +76,6 @@ button{font-family:inherit;cursor:pointer}
 .card-img{width:100%;aspect-ratio:1;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:42px;position:relative;overflow:hidden}
 .card-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .avail-pill{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px}
-.pill-yes{background:var(--red);color:#fff}
-.pill-no{background:rgba(255,255,255,.08);color:var(--dim)}
 .card-body{padding:10px 12px}
 .card-team{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
 .card-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:4px}
@@ -133,6 +131,7 @@ button{font-family:inherit;cursor:pointer}
 .ci-img{width:40px;height:40px;border-radius:5px;object-fit:cover;flex-shrink:0}
 .ci-info{flex:1;min-width:0}
 .ci-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-preorder{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--surface3);border-radius:3px;padding:1px 5px;vertical-align:middle;white-space:nowrap}
 .ci-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .ci-qrow{display:flex;align-items:center;gap:7px;margin-top:6px}
 .ci-qbtn{width:24px;height:24px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
@@ -279,8 +278,6 @@ const DEFAULTS = {
   label_year:       "Год",
   label_color:      "Цвет",
   label_number:     "Номер",
-  label_stock:      "В наличии",
-  label_no_stock:   "Нет",
   label_total:      "Итого",
   label_pick:       "Выбрать параметры",
   filter_all:       "Все",
@@ -294,6 +291,17 @@ const DEFAULTS = {
   currency_secondary_symbol: "₸",
   currency_secondary_code:   "KZT",
 };
+
+// Цвета бейджа статуса по умолчанию для известных значений колонки "Наличие"
+// Ключ — статус в нижнем регистре. Можно переопределить через лист "Настройки"
+// ключами вида status_color_<статус с подчёркиваниями вместо пробелов>
+// например: status_color_на_заказ = #555555
+const STATUS_COLORS = {
+  "в наличии": "var(--red)",
+  "на заказ":  "#555",
+  "нет":       "rgba(255,255,255,.08)",
+};
+const STATUS_COLOR_DEFAULT = "rgba(255,255,255,.08)";
 
 let S = {...DEFAULTS};
 let products = [];
@@ -364,6 +372,38 @@ function pick(r, ...keys) {
   for (const k of keys) {
     if (r[k] !== undefined && r[k] !== "") return r[k];
   }
+  return "";
+}
+
+// Поиск значения цены по regex на нормализованные заголовки.
+// "Цена, Т" -> цена_т, "Цена, ₸" -> цена_ (или цена_т если решётка осталась)
+// "Цена, ₽" -> цена_ или цена, "Цена, Р" -> цена_р
+// matchTenge=true ищет колонку со маркером тенге (т/тг/kzt), иначе — рублёвую/общую "цена" колонку
+function pickPrice(r, currencyHint) {
+  const keys = Object.keys(r);
+  // 1) явные совпадения по коду/символу валюты в названии колонки
+  const tengePatterns  = [/^цена.*(_т_?|тенге|kzt)$/i, /^price.*kzt$/i];
+  const rublePatterns  = [/^цена.*(_р_?|руб|rub)$/i, /^price.*rub$/i];
+
+  const patterns = currencyHint === "kzt" ? tengePatterns : rublePatterns;
+  for (const re of patterns) {
+    for (const k of keys) {
+      if (re.test(k) && r[k] !== "") return r[k];
+    }
+  }
+
+  // 2) запасной вариант: единственная колонка "цена*" без явного маркера —
+  //    если ищем рубли и тенге-колонка не она, берём первую "цена*"
+  const priceCols = keys.filter(k => /^цена/i.test(k) || /^price/i.test(k));
+  if (currencyHint === "kzt") {
+    // среди priceCols ищем ту, что НЕ похожа на рублёвую
+    const candidate = priceCols.find(k => !rublePatterns.some(re => re.test(k)));
+    if (candidate && r[candidate] !== "") return r[candidate];
+  } else {
+    const candidate = priceCols.find(k => !tengePatterns.some(re => re.test(k)));
+    if (candidate && r[candidate] !== "") return r[candidate];
+  }
+
   return "";
 }
 
@@ -463,9 +503,39 @@ function renderFilters() {
 
 function setF(c) { activeCat = c; renderFilters(); renderGrid(); }
 
+// Статусы, при которых товар вообще нельзя добавить в корзину
+// (любой другой статус, включая "На заказ", считается покупаемым)
+const STATUS_BLOCKED = ["нет", "нет в наличии", "no", "0", "false", "out of stock", "недоступно"];
+
+// Статусы, которые нужно помечать как предзаказ в сообщении WhatsApp
+const STATUS_PREORDER = ["на заказ", "под заказ", "preorder", "to order"];
+
 function isAvail(p) {
-  const a = (p.avail || "").toLowerCase();
-  return ["да","yes","1","true","in stock","в наличии","есть","available"].includes(a);
+  const a = (p.avail || "").trim().toLowerCase();
+  return !STATUS_BLOCKED.includes(a);
+}
+
+function isPreorder(p) {
+  const a = (p.avail || "").trim().toLowerCase();
+  return STATUS_PREORDER.includes(a);
+}
+
+// Цвет бейджа статуса: ищет в настройках status_color_<статус>,
+// затем в STATUS_COLORS по нижнему регистру, иначе дефолт
+function statusColor(status) {
+  const norm = (status || "").trim().toLowerCase();
+  const settingKey = "status_color_" + norm.replace(/\s+/g, "_");
+  if (S[settingKey]) return S[settingKey];
+  if (STATUS_COLORS[norm]) return STATUS_COLORS[norm];
+  return STATUS_COLOR_DEFAULT;
+}
+
+// Цвет текста бейджа: по умолчанию белый, но для светлых фонов можно затемнить
+function statusTextColor(status) {
+  const norm = (status || "").trim().toLowerCase();
+  const settingKey = "status_text_color_" + norm.replace(/\s+/g, "_");
+  if (S[settingKey]) return S[settingKey];
+  return "#fff";
 }
 
 function driveThumb(url, size) {
@@ -501,7 +571,7 @@ function renderGrid() {
     <div class="card" onclick="openProduct(${p.id})">
       <div class="card-img">
         ${imgOrEmoji(p, 400)}
-        <span class="avail-pill ${ok ? "pill-yes" : "pill-no"}">${ok ? S.label_stock : S.label_no_stock}</span>
+        <span class="avail-pill" style="background:${statusColor(p.avail)};color:${statusTextColor(p.avail)}">${p.avail}</span>
       </div>
       <div class="card-body">
         <div class="card-team">${p.team}</div>
@@ -584,7 +654,8 @@ function addToCart() {
     key, id: curP.id, name: curP.name, team: curP.team, emoji: curP.emoji, photo: curP.photo,
     size: curSize, qty: curQty,
     price_primary: curP.price_primary, price_secondary: curP.price_secondary,
-    year: curP.year, color: curP.color, number: curP.number
+    year: curP.year, color: curP.color, number: curP.number,
+    avail: curP.avail, preorder: isPreorder(curP)
   }); }
   updCount();
   closeId("pm-ov");
@@ -618,11 +689,14 @@ function renderCart() {
       it.color  ? `${S.label_color}: ${it.color}` : "",
       it.number ? `#${it.number}` : "",
     ].filter(Boolean).join(" · ");
+    const preorderBadge = it.preorder
+      ? `<span class="ci-preorder">${it.avail}</span>`
+      : "";
     return `
     <div class="ci">
       ${thumb}
       <div class="ci-info">
-        <div class="ci-name">${it.name}</div>
+        <div class="ci-name">${it.name}${preorderBadge}</div>
         <div class="ci-sub">${sub}</div>
         <div class="ci-qrow">
           <button class="ci-qbtn" onclick="ciQ(${i},-1)">−</button>
@@ -661,10 +735,14 @@ function buildWA() {
       it.color  ? `${S.label_color}: ${it.color}` : "",
       it.number ? `#${it.number}` : "",
     ].filter(Boolean).join(", ");
-    msg += `• ${it.name} (${attrs})\n  ${it.qty} шт. — ${fmt(itemPrice(it) * it.qty)}\n`;
+    const preorderTag = it.preorder ? ` [${S.wa_preorder_tag || "ПОД ЗАКАЗ"}]` : "";
+    msg += `• ${it.name}${preorderTag} (${attrs})\n  ${it.qty} шт. — ${fmt(itemPrice(it) * it.qty)}\n`;
   });
   const total = cart.reduce((s, x) => s + itemPrice(x) * x.qty, 0);
   msg += `\n${S.label_total}: ${fmt(total)}`;
+  if (cart.some(it => it.preorder)) {
+    msg += `\n\n${S.wa_preorder_note || "Позиции «ПОД ЗАКАЗ» требуют времени на доставку, уточним сроки отдельно."}`;
+  }
   if (S.wa_msg_footer) msg += "\n" + S.wa_msg_footer;
   return `https://wa.me/${S.whatsapp}?text=${encodeURIComponent(msg)}`;
 }
