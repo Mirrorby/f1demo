@@ -232,6 +232,62 @@ button{font-family:inherit;cursor:pointer}
 .pm-add:hover{background:var(--red-dark)}
 .pm-add:disabled{background:var(--surface3);color:var(--dim)}
 
+/* ── Lightbox ── */
+.lb{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.95);
+  flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.lb.open{display:flex}
+.lb-img-wrap{
+  position:relative;
+  max-width:90vw;max-height:82vh;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  cursor:zoom-in;
+}
+.lb-img-wrap.zoomed{cursor:zoom-out;overflow:visible}
+.lb img{
+  max-width:90vw;max-height:82vh;
+  object-fit:contain;
+  border-radius:4px;
+  transition:transform .25s ease;
+  transform-origin:center center;
+  user-select:none;pointer-events:none;
+  display:block;
+}
+.lb-img-wrap.zoomed img{transform:scale(2.2)}
+.lb-close{
+  position:fixed;top:16px;right:20px;
+  background:rgba(255,255,255,.1);border:none;color:#fff;
+  width:38px;height:38px;border-radius:50%;font-size:20px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s;z-index:10;
+}
+.lb-close:hover{background:rgba(255,255,255,.2)}
+.lb-arrow{
+  position:fixed;top:50%;transform:translateY(-50%);
+  background:rgba(255,255,255,.1);border:none;color:#fff;
+  width:44px;height:44px;border-radius:50%;font-size:24px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:background .15s;z-index:10;
+}
+.lb-arrow:hover{background:rgba(255,255,255,.2)}
+.lb-arrow.prev{left:16px}.lb-arrow.next{right:16px}
+.lb-counter{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  color:rgba(255,255,255,.5);font-size:12px;font-weight:600;
+  letter-spacing:1px;
+}
+.lb-hint{
+  position:fixed;bottom:40px;left:50%;transform:translateX(-50%);
+  color:rgba(255,255,255,.28);font-size:11px;white-space:nowrap;
+}
+
+/* курсор-лупа на карусели — намёк что можно кликнуть */
+#pm-carousel{cursor:zoom-in}
+
 /* ── Cart ── */
 .cart-empty{text-align:center;padding:2.5rem 1rem;color:var(--muted);font-size:14px}
 .cart-empty svg{width:36px;height:36px;margin:0 auto 10px;opacity:.3}
@@ -366,6 +422,18 @@ button{font-family:inherit;cursor:pointer}
     </div>
     <div class="panel-body" id="cart-body"></div>
   </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lb" id="lb" onclick="lbBgClick(event)">
+  <button class="lb-close" onclick="lbClose()">✕</button>
+  <button class="lb-arrow prev" id="lb-prev" onclick="lbMove(-1)">‹</button>
+  <div class="lb-img-wrap" id="lb-wrap" onclick="lbToggleZoom()">
+    <img id="lb-img" src="" alt="">
+  </div>
+  <button class="lb-arrow next" id="lb-next" onclick="lbMove(1)">›</button>
+  <div class="lb-counter" id="lb-counter"></div>
+  <div class="lb-hint" id="lb-hint">Нажмите для увеличения · ESC — закрыть</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -787,6 +855,11 @@ document.getElementById("pm-carousel").addEventListener("touchend", e => {
   touchStartX = null;
 }, {passive:true});
 
+// Клик по карусели — открыть лайтбокс (только если есть фото)
+document.getElementById("pm-carousel").addEventListener("click", () => {
+  if (carouselSlides.length > 0) lbOpen(carouselSlides, carouselIndex);
+});
+
 /* ════ PRODUCT MODAL ════ */
 let curP = null, curSize = null, curQty = 1;
 
@@ -950,6 +1023,76 @@ function showToast(msg) {
   t.textContent = msg; t.classList.add("show");
   setTimeout(() => t.classList.remove("show"), 2200);
 }
+
+/* ════ LIGHTBOX ════ */
+let lbPhotos = [], lbIdx = 0;
+
+function lbOpen(photos, startIdx) {
+  lbPhotos = photos;
+  lbIdx = startIdx || 0;
+  lbRender();
+  document.getElementById("lb").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function lbClose() {
+  document.getElementById("lb").classList.remove("open");
+  document.getElementById("lb-wrap").classList.remove("zoomed");
+  document.body.style.overflow = "";
+}
+
+function lbRender() {
+  const img     = document.getElementById("lb-img");
+  const counter = document.getElementById("lb-counter");
+  const prev    = document.getElementById("lb-prev");
+  const next    = document.getElementById("lb-next");
+  const hint    = document.getElementById("lb-hint");
+  const wrap    = document.getElementById("lb-wrap");
+
+  wrap.classList.remove("zoomed");
+
+  const url = driveThumb(lbPhotos[lbIdx], 1200);
+  img.src = url;
+
+  const multi = lbPhotos.length > 1;
+  counter.textContent = multi ? `${lbIdx + 1} / ${lbPhotos.length}` : "";
+  prev.style.display = multi ? "flex" : "none";
+  next.style.display = multi ? "flex" : "none";
+  hint.textContent = "Нажмите для увеличения · ESC — закрыть";
+}
+
+function lbMove(dir) {
+  lbIdx = (lbIdx + dir + lbPhotos.length) % lbPhotos.length;
+  lbRender();
+}
+
+function lbToggleZoom() {
+  document.getElementById("lb-wrap").classList.toggle("zoomed");
+}
+
+function lbBgClick(e) {
+  if (e.target === document.getElementById("lb")) lbClose();
+}
+
+// Клавиатура
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("lb").classList.contains("open")) return;
+  if (e.key === "Escape")      lbClose();
+  if (e.key === "ArrowRight")  lbMove(1);
+  if (e.key === "ArrowLeft")   lbMove(-1);
+});
+
+// Свайп в лайтбоксе
+let lbTouchX = null;
+document.getElementById("lb").addEventListener("touchstart", e => {
+  lbTouchX = e.touches[0].clientX;
+}, {passive:true});
+document.getElementById("lb").addEventListener("touchend", e => {
+  if (lbTouchX === null) return;
+  const dx = e.changedTouches[0].clientX - lbTouchX;
+  if (Math.abs(dx) > 50) lbMove(dx < 0 ? 1 : -1);
+  lbTouchX = null;
+}, {passive:true});
 
 /* ════ BOOT ════ */
 async function init() {
