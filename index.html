@@ -5,14 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>F1 Merch</title>
 
-<!-- ═══════════════════════════════════════════════════
-     ЕДИНСТВЕННОЕ что нужно менять вручную — две ссылки на CSV
-     Все остальное управляется через лист "Настройки" в таблице
-════════════════════════════════════════════════════ -->
 <script>
 const CSV = {
-  catalog:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=0&single=true&output=csv",   // лист "Каталог"  → Файл → Опубликовать → CSV → ссылка
-  settings: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=1924140876&single=true&output=csv",   // лист "Настройки" → то же самое, но другой лист (gid=...)
+  catalog:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=0&single=true&output=csv",
+  settings: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=1924140876&single=true&output=csv",
 };
 </script>
 
@@ -64,6 +60,9 @@ button{font-family:inherit;cursor:pointer}
 .fbtn{padding:5px 13px;border-radius:20px;border:1px solid var(--border);font-size:12px;font-weight:500;background:transparent;color:var(--muted);transition:all .15s}
 .fbtn:hover{border-color:#444;color:var(--text)}
 .fbtn.active{background:var(--red);color:#fff;border-color:var(--red)}
+.toolbar-right{display:flex;align-items:center;gap:8px}
+.cur-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:700;transition:border-color .15s;white-space:nowrap}
+.cur-btn:hover{border-color:#444}
 .cart-btn{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;transition:border-color .15s;white-space:nowrap}
 .cart-btn:hover{border-color:#444}
 .cart-badge{background:var(--red);color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;min-width:20px;text-align:center}
@@ -199,11 +198,14 @@ button{font-family:inherit;cursor:pointer}
 <div class="container">
   <div class="toolbar">
     <div class="filters" id="filters"></div>
-    <button class="cart-btn" onclick="openCart()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
-      <span id="lbl-cart">Корзина</span>
-      <span class="cart-badge" id="cart-count">0</span>
-    </button>
+    <div class="toolbar-right">
+      <button class="cur-btn" id="cur-toggle" onclick="toggleCurrency()">₽ RUB</button>
+      <button class="cart-btn" onclick="openCart()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
+        <span id="lbl-cart">Корзина</span>
+        <span class="cart-badge" id="cart-count">0</span>
+      </button>
+    </div>
   </div>
   <div class="grid" id="grid">
     <div class="state-msg">Загружаем каталог<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span></div>
@@ -257,11 +259,10 @@ button{font-family:inherit;cursor:pointer}
 <script>
 /* ════════════════════════════════════════
    ДЕФОЛТНЫЕ НАСТРОЙКИ
-   Используются если лист "Настройки" не подключён
 ════════════════════════════════════════ */
 const DEFAULTS = {
   hero_title:       "Официальный F1 мерч",
-  hero_subtitle:    "Коллекция одежды и аксессуаров команд Формулы 1. Быстрая доставка по всей России.",
+  hero_subtitle:    "Коллекция одежды и аксессуаров команд Формулы 1. Быстрая доставка.",
   site_title:       "Pit Stop Merch",
   footer_text:      "© Pit Stop Merch — заказ через WhatsApp и Instagram",
   whatsapp:         "79001234567",
@@ -287,12 +288,18 @@ const DEFAULTS = {
   msg_added:        "Добавлено в корзину ✓",
   wa_msg_header:    "Привет! Хочу сделать заказ:",
   wa_msg_footer:    "",
+  // валюты: основная и вторая (переключатель). symbol — что показывать
+  currency_primary_symbol:   "₽",
+  currency_primary_code:     "RUB",
+  currency_secondary_symbol: "₸",
+  currency_secondary_code:   "KZT",
 };
 
-let S = {...DEFAULTS}; // активные настройки (после загрузки листа)
+let S = {...DEFAULTS};
 let products = [];
 let cart = [];
 let activeCat = "";
+let currency = "primary"; // "primary" | "secondary"
 
 /* ════ CSV PARSER ════ */
 function parseCSV(text) {
@@ -324,7 +331,6 @@ async function loadSettings() {
     const r = await fetch(CSV.settings);
     const rows = parseCSV(await r.text());
     rows.forEach(row => {
-      // ищем столбцы "ключ" и "значение" (или key/value)
       const k = row['ключ'] || row['key'] || row['клю'] || "";
       const v = row['значение'] || row['value'] || row['значени'] || "";
       if (k && v !== undefined) S[k.trim()] = v.trim();
@@ -334,18 +340,12 @@ async function loadSettings() {
 
 /* ════ LOAD CATALOG ════ */
 const DEMO = [
-  {название:"Футболка Red Bull Racing",команда:"Red Bull",категория:"Футболки",размеры:"XS,S,M,L,XL",цена:"2900",наличие:"да",фото:"",эмодзи:"🔵",год:"2024",цвет:"Синий",количество:"30",номер:"1"},
-  {название:"Худи Ferrari Scuderia",команда:"Ferrari",категория:"Худи",размеры:"S,M,L,XL,XXL",цена:"4500",наличие:"да",фото:"",эмодзи:"🔴",год:"2024",цвет:"Красный",количество:"20",номер:"16"},
-  {название:"Бейсболка Mercedes AMG",команда:"Mercedes",категория:"Головные уборы",размеры:"One Size",цена:"1800",наличие:"да",фото:"",эмодзи:"⬛",год:"2023",цвет:"Чёрный",количество:"45",номер:"44"},
-  {название:"Куртка McLaren Papaya",команда:"McLaren",категория:"Куртки",размеры:"M,L,XL",цена:"7200",наличие:"да",фото:"",эмодзи:"🟠",год:"2024",цвет:"Оранжевый",количество:"15",номер:"4"},
-  {название:"Поло Alpine F1 Team",команда:"Alpine",категория:"Поло",размеры:"S,M,L",цена:"3100",наличие:"нет",фото:"",эмодзи:"🔵",год:"2023",цвет:"Синий",количество:"0",номер:"10"},
-  {название:"Толстовка Aston Martin",команда:"Aston Martin",категория:"Худи",размеры:"M,L,XL,XXL",цена:"4900",наличие:"да",фото:"",эмодзи:"🟢",год:"2024",цвет:"Зелёный",количество:"25",номер:"14"},
-  {название:"Кепка Ferrari Puma",команда:"Ferrari",категория:"Головные уборы",размеры:"One Size",цена:"2100",наличие:"да",фото:"",эмодзи:"🔴",год:"2024",цвет:"Красный",количество:"60",номер:"55"},
-  {название:"Футболка McLaren Lando #4",команда:"McLaren",категория:"Футболки",размеры:"XS,S,M,L,XL,XXL",цена:"3200",наличие:"да",фото:"",эмодзи:"🟠",год:"2024",цвет:"Оранжевый",количество:"35",номер:"4"},
-  {название:"Шарф F1 Season",команда:"Общая",категория:"Аксессуары",размеры:"One Size",цена:"1200",наличие:"да",фото:"",эмодзи:"🏁",год:"2024",цвет:"Чёрно-белый",количество:"80",номер:""},
-  {название:"Рюкзак Mercedes Petronas",команда:"Mercedes",категория:"Аксессуары",размеры:"One Size",цена:"3800",наличие:"да",фото:"",эмодзи:"⬛",год:"2023",цвет:"Чёрный",количество:"12",номер:"63"},
-  {название:"Худи Red Bull Max #1",команда:"Red Bull",категория:"Худи",размеры:"S,M,L",цена:"5100",наличие:"да",фото:"",эмодзи:"🔵",год:"2024",цвет:"Тёмно-синий",количество:"18",номер:"1"},
-  {название:"Куртка Ferrari Leclerc #16",команда:"Ferrari",категория:"Куртки",размеры:"S,M,L,XL",цена:"8900",наличие:"да",фото:"",эмодзи:"🔴",год:"2024",цвет:"Красный",количество:"8",номер:"16"},
+  {название:"Футболка Red Bull Racing",команда:"Red Bull",категория:"Футболки",размеры:"XS,S,M,L,XL","цена,_₽":"2900","цена,_т":"15500",наличие:"в наличии",фото:"",эмодзи:"🔵",год:"2024",цвет:"Синий",количество:"30",номер:"1"},
+  {название:"Худи Ferrari Scuderia",команда:"Ferrari",категория:"Худи",размеры:"S,M,L,XL,XXL","цена,_₽":"4500","цена,_т":"24000",наличие:"в наличии",фото:"",эмодзи:"🔴",год:"2024",цвет:"Красный",количество:"20",номер:"16"},
+  {название:"Бейсболка Mercedes AMG",команда:"Mercedes",категория:"Головные уборы",размеры:"One Size","цена,_₽":"1800","цена,_т":"9600",наличие:"в наличии",фото:"",эмодзи:"⬛",год:"2023",цвет:"Чёрный",количество:"45",номер:"44"},
+  {название:"Куртка McLaren Papaya",команда:"McLaren",категория:"Куртки",размеры:"M,L,XL","цена,_₽":"7200","цена,_т":"38500",наличие:"в наличии",фото:"",эмодзи:"🟠",год:"2024",цвет:"Оранжевый",количество:"15",номер:"4"},
+  {название:"Поло Alpine F1 Team",команда:"Alpine",категория:"Поло",размеры:"S,M,L","цена,_₽":"3100","цена,_т":"16500",наличие:"на заказ",фото:"",эмодзи:"🔵",год:"2023",цвет:"Синий",количество:"0",номер:"10"},
+  {название:"Толстовка Aston Martin",команда:"Aston Martin",категория:"Худи",размеры:"M,L,XL,XXL","цена,_₽":"4900","цена,_т":"26000",наличие:"в наличии",фото:"",эмодзи:"🟢",год:"2024",цвет:"Зелёный",количество:"25",номер:"14"},
 ];
 
 async function loadCatalog() {
@@ -359,27 +359,41 @@ async function loadCatalog() {
   }
 }
 
+// Универсальный поиск значения по нескольким возможным ключам в нормализованных заголовках
+function pick(r, ...keys) {
+  for (const k of keys) {
+    if (r[k] !== undefined && r[k] !== "") return r[k];
+  }
+  return "";
+}
+
+function toNum(v) {
+  return parseInt(String(v).replace(/[^\d]/g,"")) || 0;
+}
+
 function normRows(rows) {
   return rows.map((r, i) => ({
     id:         i + 1,
-    name:       r['название']   || r['name']     || "",
-    team:       r['команда']    || r['team']      || "",
-    cat:        r['категория']  || r['cat']       || "Прочее",
-    sizes:      (r['размеры']   || r['sizes']     || "").replace(/\s/g,""),
-    price:      parseInt((r['цена'] || r['price'] || "0").replace(/\D/g,"")) || 0,
-    avail:      (r['наличие']   || r['avail']     || "да").toLowerCase(),
-    photo:      r['фото']       || r['photo']     || "",
-    emoji:      r['эмодзи']     || r['emoji']     || "🏁",
-    year:       r['год']        || r['year']      || "",
-    color:      r['цвет']       || r['color']     || "",
-    stock_qty:  r['количество'] || r['quantity']  || "",
-    number:     r['номер']      || r['number']    || "",
+    name:       pick(r,'название','name'),
+    team:       pick(r,'команда','team'),
+    cat:        pick(r,'категория','cat') || "Прочее",
+    sizes:      pick(r,'размеры','sizes').replace(/\s/g,""),
+    // "Цена, ₽" -> цена_р (символ ₽ обычно убирается regex'ом, остаётся "цена_")
+    price_primary:   toNum(pick(r,'цена_р','цена_₽','цена','price','price_rub','price_primary')),
+    // "Цена, Т" -> цена_т
+    price_secondary: toNum(pick(r,'цена_т','цена_₸','price_kzt','price_secondary')),
+    avail:      pick(r,'наличие','avail','в_наличии') || "да",
+    photo:      pick(r,'фото','photo'),
+    emoji:      pick(r,'эмодзи','emoji') || "🏁",
+    year:       pick(r,'год','year'),
+    color:      pick(r,'цвет','color'),
+    stock_qty:  pick(r,'количество','quantity'),
+    number:     pick(r,'номер','number'),
   }));
 }
 
 /* ════ APPLY SETTINGS TO DOM ════ */
 function applySettings() {
-  // accent color
   const ac = S.accent_color || "#e10600";
   document.documentElement.style.setProperty('--red', ac);
   document.documentElement.style.setProperty('--red-dark', shadeHex(ac, -30));
@@ -395,6 +409,8 @@ function applySettings() {
   document.getElementById("lbl-pick").textContent  = S.label_pick;
   document.getElementById("lbl-size-h").textContent = S.label_size;
   document.getElementById("lbl-qty-h").textContent  = S.label_qty;
+
+  updateCurBtn();
 }
 
 function shadeHex(hex, amt) {
@@ -403,6 +419,34 @@ function shadeHex(hex, amt) {
   const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
   const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
   return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+
+/* ════ CURRENCY ════ */
+function curSymbol() {
+  return currency === "primary" ? S.currency_primary_symbol : S.currency_secondary_symbol;
+}
+function curCode() {
+  return currency === "primary" ? S.currency_primary_code : S.currency_secondary_code;
+}
+function priceOf(p) {
+  return currency === "primary" ? p.price_primary : p.price_secondary;
+}
+function updateCurBtn() {
+  const btn = document.getElementById("cur-toggle");
+  if (btn) btn.textContent = curSymbol() + " " + curCode();
+}
+function toggleCurrency() {
+  currency = currency === "primary" ? "secondary" : "primary";
+  updateCurBtn();
+  renderGrid();
+  if (document.getElementById("cart-ov").classList.contains("open")) renderCart();
+  if (document.getElementById("pm-ov").classList.contains("open") && curP) {
+    document.getElementById("pm-price").textContent = fmt(priceOf(curP));
+  }
+}
+
+function fmt(n) {
+  return Number(n || 0).toLocaleString("ru-RU") + " " + curSymbol();
 }
 
 /* ════ RENDER ════ */
@@ -419,10 +463,9 @@ function renderFilters() {
 
 function setF(c) { activeCat = c; renderFilters(); renderGrid(); }
 
-function fmt(n) { return Number(n).toLocaleString("ru-RU") + " ₽"; }
-
 function isAvail(p) {
-  return ["да","yes","1","true","in stock"].includes(p.avail.toLowerCase());
+  const a = (p.avail || "").toLowerCase();
+  return ["да","yes","1","true","in stock","в наличии","есть","available"].includes(a);
 }
 
 function driveThumb(url, size) {
@@ -467,7 +510,7 @@ function renderGrid() {
         <div class="card-sizes">${p.sizes.split(",").filter(Boolean).join(" · ")}</div>
         <div class="card-foot">
           <div>
-            <div class="price">${fmt(p.price)}</div>
+            <div class="price">${fmt(priceOf(p))}</div>
             ${p.stock_qty ? `<div class="stock-num">${p.stock_qty} шт.</div>` : ""}
           </div>
           <button class="add-btn" ${!ok ? "disabled" : ""} onclick="event.stopPropagation();openProduct(${p.id})">
@@ -497,10 +540,9 @@ function openProduct(id) {
 
   document.getElementById("pm-team").textContent = p.team;
   document.getElementById("pm-name").textContent = p.name;
-  document.getElementById("pm-price").textContent = fmt(p.price);
+  document.getElementById("pm-price").textContent = fmt(priceOf(p));
   document.getElementById("pm-qty").textContent = "1";
 
-  // атрибуты: год, цвет, номер
   const attrs = [
     p.year   ? `<span class="pm-attr"><b>${S.label_year}:</b> ${p.year}</span>` : "",
     p.color  ? `<span class="pm-attr"><b>${S.label_color}:</b> ${p.color}</span>` : "",
@@ -538,7 +580,12 @@ function addToCart() {
   const key = curP.id + "|" + curSize;
   const ex = cart.find(x => x.key === key);
   if (ex) { ex.qty += curQty; }
-  else { cart.push({ key, id: curP.id, name: curP.name, team: curP.team, emoji: curP.emoji, photo: curP.photo, size: curSize, qty: curQty, price: curP.price, year: curP.year, color: curP.color, number: curP.number }); }
+  else { cart.push({
+    key, id: curP.id, name: curP.name, team: curP.team, emoji: curP.emoji, photo: curP.photo,
+    size: curSize, qty: curQty,
+    price_primary: curP.price_primary, price_secondary: curP.price_secondary,
+    year: curP.year, color: curP.color, number: curP.number
+  }); }
   updCount();
   closeId("pm-ov");
   showToast(S.msg_added);
@@ -559,7 +606,8 @@ function renderCart() {
     </div>`;
     return;
   }
-  const total = cart.reduce((s, x) => s + x.price * x.qty, 0);
+  const itemPrice = it => currency === "primary" ? it.price_primary : it.price_secondary;
+  const total = cart.reduce((s, x) => s + itemPrice(x) * x.qty, 0);
 
   const items = cart.map((it, i) => {
     const thumb = it.photo
@@ -584,7 +632,7 @@ function renderCart() {
       </div>
       <div class="ci-right">
         <button class="ci-del" onclick="ciDel(${i})" aria-label="Удалить">✕</button>
-        <div class="ci-price">${fmt(it.price * it.qty)}</div>
+        <div class="ci-price">${fmt(itemPrice(it) * it.qty)}</div>
       </div>
     </div>`;
   }).join("");
@@ -605,6 +653,7 @@ function renderCart() {
 }
 
 function buildWA() {
+  const itemPrice = it => currency === "primary" ? it.price_primary : it.price_secondary;
   let msg = (S.wa_msg_header || "Хочу сделать заказ:") + "\n\n";
   cart.forEach(it => {
     const attrs = [
@@ -612,9 +661,9 @@ function buildWA() {
       it.color  ? `${S.label_color}: ${it.color}` : "",
       it.number ? `#${it.number}` : "",
     ].filter(Boolean).join(", ");
-    msg += `• ${it.name} (${attrs})\n  ${it.qty} шт. — ${fmt(it.price * it.qty)}\n`;
+    msg += `• ${it.name} (${attrs})\n  ${it.qty} шт. — ${fmt(itemPrice(it) * it.qty)}\n`;
   });
-  const total = cart.reduce((s, x) => s + x.price * x.qty, 0);
+  const total = cart.reduce((s, x) => s + itemPrice(x) * x.qty, 0);
   msg += `\n${S.label_total}: ${fmt(total)}`;
   if (S.wa_msg_footer) msg += "\n" + S.wa_msg_footer;
   return `https://wa.me/${S.whatsapp}?text=${encodeURIComponent(msg)}`;
