@@ -184,45 +184,6 @@ button{font-family:inherit;cursor:pointer}
 .oa-clear:not(:disabled):hover{border-color:#444!important;color:#fff!important}
 .delivery-required-hint{font-size:11px;color:var(--dim);text-align:center;margin-top:2px}
 /* Map */
-.map-section{margin-top:10px}
-.map-section-title{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
-.map-frame{width:100%;height:160px;border-radius:var(--rsm);border:1px solid var(--border);overflow:hidden;background:var(--surface3)}
-.map-frame iframe{width:100%;height:100%;border:none}
-.pvz-hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.5}
-.pvz-hint a{color:var(--red)}
-/* Toast */
-.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#fff;color:#111;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
-.toast.show{opacity:1}
-/* States */
-.state-msg{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;grid-column:1/-1}
-.dot{display:inline-block;animation:blink 1.2s infinite}
-.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
-@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-/* Footer */
-.footer{border-top:1px solid var(--border);padding:1.5rem 0;text-align:center;color:var(--dim);font-size:12px}
-.footer-checker{height:4px;background:repeating-linear-gradient(90deg,#fff 0,#fff 12px,#000 12px,#000 24px);margin-bottom:1rem;opacity:.15}
-@media(max-width:400px){.grid{grid-template-columns:repeat(2,1fr);gap:10px}.hero{padding:3rem 1rem 2rem}}
-/* Order confirm */
-.order-confirm{text-align:center;padding:1.5rem 0}
-.order-num{font-size:28px;font-weight:800;color:var(--red);margin-bottom:6px}
-.order-sub{font-size:13px;color:var(--muted);line-height:1.6}
-.order-wa-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;padding:13px;background:#25D366;color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer}
-/* Product description */
-.pm-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1rem;padding:10px 12px;background:var(--surface2);border-radius:var(--rsm);border-left:3px solid var(--border)}
-/* 2GIS map container */
-.dgis-map-wrap{position:relative;width:100%;height:200px;border-radius:var(--rsm);border:1px solid var(--border);overflow:hidden;background:var(--surface3);margin-bottom:5px}
-.dgis-map-wrap #dgis-map-qp,
-.dgis-map-wrap #dgis-map-cdek{width:100%;height:100%}
-.map-search-bar{display:flex;gap:6px;margin-bottom:8px}
-.map-search-input{flex:1;background:var(--surface3);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-size:12px;padding:7px 10px;outline:none;font-family:inherit}
-.map-search-input:focus{border-color:#555}
-.map-search-btn{padding:7px 12px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
-.map-pvz-list{max-height:130px;overflow-y:auto;margin-bottom:8px;scrollbar-width:thin;scrollbar-color:#333 transparent}
-.map-pvz-item{padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;line-height:1.4;transition:background .12s}
-.map-pvz-item:hover{background:var(--surface2)}
-.map-pvz-item strong{display:block;color:var(--text);font-weight:600;margin-bottom:2px}
-.map-pvz-item span{color:var(--muted)}
-.map-pvz-empty{padding:10px;font-size:12px;color:var(--dim);text-align:center}
 </style>
 </head>
 <body>
@@ -816,15 +777,7 @@ function renderCart(){
         <label class="d-label">Адрес отделения QazPost *</label>
         <input class="d-input" id="qp-address" type="text" placeholder="ул. Абая 1, отделение №5" value="${filled&&filled.type==='qazpost'?filled.address:''}">
       </div>
-      <div class="map-section">
-        <div class="map-section-title">🔍 Найти отделение QazPost</div>
-        <div class="map-search-bar">
-          <input class="map-search-input" id="qp-map-search" type="text" placeholder="Введите город или улицу...">
-          <button class="map-search-btn" onclick="pvzSearch('qazpost')">Найти</button>
-        </div>
-        <div class="map-pvz-list" id="qp-pvz-list"><div class="map-pvz-empty">Введите запрос для поиска отделений</div></div>
-        <p class="pvz-hint">Нажмите на результат — адрес подставится в поле выше. Или зайдите на <a href="https://qazpost.kz/ru/otdeleniya" target="_blank">qazpost.kz/ru/otdeleniya</a></p>
-      </div>
+      <p class="pvz-hint">Найти отделения: <a href="https://qazpost.kz/ru/otdeleniya" target="_blank">qazpost.kz/ru/otdeleniya</a></p>
       <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('qazpost')">Подтвердить адрес QazPost</button>
     </div>
 
@@ -841,15 +794,7 @@ function renderCart(){
         <label class="d-label">Адрес ПВЗ CDEK *</label>
         <input class="d-input" id="cdek-address" type="text" placeholder="г. Алматы, ул. Достык 5, ПВЗ CDEK" value="${filled&&filled.type==='cdek'?filled.address:''}">
       </div>
-      <div class="map-section">
-        <div class="map-section-title">🔍 Найти ПВЗ CDEK</div>
-        <div class="map-search-bar">
-          <input class="map-search-input" id="cdek-map-search" type="text" placeholder="Введите город или улицу...">
-          <button class="map-search-btn" onclick="pvzSearch('cdek')">Найти</button>
-        </div>
-        <div class="map-pvz-list" id="cdek-pvz-list"><div class="map-pvz-empty">Введите запрос для поиска ПВЗ</div></div>
-        <p class="pvz-hint">Нажмите на результат — адрес подставится в поле выше. Или зайдите на <a href="https://www.cdek.kz/ru/offices" target="_blank">cdek.kz/ru/offices</a></p>
-      </div>
+      <p class="pvz-hint">Найти ПВЗ: <a href="https://www.cdek.kz/ru/offices" target="_blank">cdek.kz/ru/offices</a></p>
       <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('cdek')">Подтвердить адрес CDEK</button>
     </div>
   </div>`;
@@ -892,13 +837,13 @@ function saveDelivery(type){
       city:(document.getElementById('qp-city')||{}).value?.trim()||"",
       region:(document.getElementById('qp-region')||{}).value?.trim()||"",
       address,
-      pvzLink:pvzLastLink['qazpost']||""};
+      pvzLink:""};
   }else{
     const name=(document.getElementById('cdek-name')||{}).value?.trim()||"";
     const phone=(document.getElementById('cdek-phone')||{}).value?.trim()||"";
     const address=(document.getElementById('cdek-address')||{}).value?.trim()||"";
     if(!name||!phone||!address){showToast("Заполните обязательные поля (*)");return;}
-    data={type,name,phone,address,pvzLink:pvzLastLink['cdek']||""};
+    data={type,name,phone,address,pvzLink:""};
   }
   deliveryData=data;
   showToast("Адрес доставки сохранён ✓");
@@ -979,76 +924,7 @@ async function placeOrder(){
   cart=[];deliveryData=null;updCount();
 }
 
-/* ════ PVZ SEARCH via 2GIS Geocoder ════
-   Используем публичный 2GIS API геокодирования (не требует ключа для базового поиска).
-   Ищем по запросу + фильтруем по названию сервиса (QazPost / CDEK).
-   При клике — подставляем адрес в поле и формируем ссылку 2GIS.
-*/
-let pvzLastLink = { qazpost: "", cdek: "" };
-
-async function pvzSearch(type) {
-  const inputId  = type === 'qazpost' ? 'qp-map-search'  : 'cdek-map-search';
-  const listId   = type === 'qazpost' ? 'qp-pvz-list'    : 'cdek-pvz-list';
-  const query    = (document.getElementById(inputId)||{}).value?.trim() || "";
-  const list     = document.getElementById(listId);
-  if (!list) return;
-  if (!query) { list.innerHTML = '<div class="map-pvz-empty">Введите название города или улицы</div>'; return; }
-
-  const brand    = type === 'qazpost' ? 'QazPost' : 'CDEK';
-  const fullQ    = encodeURIComponent(brand + ' ' + query);
-  const url      = `https://catalog.api.2gis.com/3.0/items?q=${fullQ}&fields=items.point,items.address_name,items.full_name,items.url&page_size=10&key=ruczx2627201072543`;
-
-  list.innerHTML = '<div class="map-pvz-empty">Ищем…</div>';
-  try {
-    const res  = await fetch(url);
-    const data = await res.json();
-    const items = (data.result?.items || []).filter(it =>
-      (it.full_name || it.name || "").toLowerCase().includes(brand.toLowerCase())
-    );
-    if (!items.length) {
-      list.innerHTML = `<div class="map-pvz-empty">Ничего не найдено. Попробуйте другой запрос.</div>`;
-      return;
-    }
-    list.innerHTML = items.map((it, idx) => {
-      const name = it.full_name || it.name || brand;
-      const addr = it.address_name || "";
-      const lat  = it.point?.lat || "";
-      const lon  = it.point?.lon || "";
-      const dgisUrl = lat && lon
-        ? `https://2gis.kz/geo/${lon},${lat}`
-        : `https://2gis.kz/search/${encodeURIComponent(name + ' ' + addr)}`;
-      return `<div class="map-pvz-item" onclick="pvzSelect('${type}',${JSON.stringify(addr)},${JSON.stringify(dgisUrl)})">
-        <strong>${name}</strong>
-        <span>${addr}</span>
-      </div>`;
-    }).join("");
-  } catch(e) {
-    list.innerHTML = `<div class="map-pvz-empty">Ошибка запроса. Проверьте интернет.</div>`;
-    console.warn("pvzSearch error", e);
-  }
-}
-
-function pvzSelect(type, address, dgisUrl) {
-  const addrFieldId = type === 'qazpost' ? 'qp-address' : 'cdek-address';
-  const el = document.getElementById(addrFieldId);
-  if (el) { el.value = address; el.focus(); }
-  pvzLastLink[type] = dgisUrl;
-  // Подсвечиваем что адрес выбран
-  const listId = type === 'qazpost' ? 'qp-pvz-list' : 'cdek-pvz-list';
-  document.querySelectorAll(`#${listId} .map-pvz-item`).forEach(el => el.style.background = '');
-  // Показываем toast
-  showToast(`Адрес выбран ✓`);
-}
-
-// Enter в поле поиска
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    const active = document.activeElement;
-    if (active && active.id === 'qp-map-search')   pvzSearch('qazpost');
-    if (active && active.id === 'cdek-map-search')  pvzSearch('cdek');
-  }
-});
-function closeOv(e,id){if(e.target.id===id)document.getElementById(id).classList.remove("open");}
+/* ════ OVERLAYS ════ */function closeOv(e,id){if(e.target.id===id)document.getElementById(id).classList.remove("open");}
 function closeId(id){document.getElementById(id).classList.remove("open");}
 function showToast(msg){
   const t=document.getElementById("toast");
