@@ -928,7 +928,11 @@ async function placeOrder(){
         city:deliveryData.city||"",
         region:deliveryData.region||"",
         index:deliveryData.index||"",
-        items:cart.map(it=>`${it.name} (${it.sizeNote?"⚠️ размер уточнить":it.size}) ${it.qty} шт.`).join("\n"),
+        items:cart.map(it=>{
+          const price=itemPrice(it);
+          const size=it.sizeNote?"⚠️":it.size;
+          return `${it.name} (${size}) ${it.qty} шт. |${price}`;
+        }).join("\n"),
         total:total,
         currency:curCode(),
         status:"В обработке",
