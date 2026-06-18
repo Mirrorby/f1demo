@@ -954,20 +954,6 @@ async function placeOrder(){
   }
 }
 
-  // WhatsApp сообщение — только номер заказа
-  const waMsg=`${S.wa_msg_header||"Привет!"}\n\n#${orderNum}`;
-  const waUrl=`https://wa.me/${S.whatsapp}?text=${encodeURIComponent(waMsg)}`;
-
-  // Показываем confirm modal
-  document.getElementById("confirm-order-num").textContent="#"+orderNum;
-  document.getElementById("confirm-wa-btn").onclick=()=>{window.open(waUrl,'_blank');};
-  closeId("cart-ov");
-  document.getElementById("confirm-ov").classList.add("open");
-
-  // Очищаем корзину и доставку
-  cart=[];deliveryData=null;updCount();
-}
-
 /* ════ OVERLAYS ════ */function closeOv(e,id){if(e.target.id===id)document.getElementById(id).classList.remove("open");}
 function closeId(id){document.getElementById(id).classList.remove("open");}
 function showToast(msg){
