@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏁</text></svg>">
 <title>F1 Merch</title>
-
 <script>
 const CSV = {
   catalog:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=0&single=true&output=csv",
   settings: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=1470648308&single=true&output=csv",
+  // Вставь сюда URL из Apps Script после деплоя:
+  orders_webhook: "https://script.google.com/macros/s/AKfycbz71d3T-d__yCaUjo8wPKx2cmwYW1ZjScWa3mXuiWCj1of9RFYWspTN6tS_2h6kAw9l/exec",
 };
 </script>
-
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -20,22 +20,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 img{max-width:100%;display:block}
 a{text-decoration:none}
 button{font-family:inherit;cursor:pointer}
-
 :root{
-  --red:#e10600;
-  --red-dark:#b00500;
-  --surface:#111;
-  --surface2:#1a1a1a;
-  --surface3:#222;
-  --border:#2a2a2a;
-  --text:#f0f0f0;
-  --muted:#888;
-  --dim:#555;
-  --radius:10px;
-  --rsm:6px;
+  --red:#e10600;--red-dark:#b00500;
+  --surface:#111;--surface2:#1a1a1a;--surface3:#222;
+  --border:#2a2a2a;--text:#f0f0f0;--muted:#888;--dim:#555;
+  --radius:10px;--rsm:6px;
 }
-
-/* ── Hero ── */
+/* Hero */
 .hero{position:relative;padding:4rem 1.5rem 3rem;overflow:hidden;text-align:center;background:#0a0a0a}
 .hero::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:repeating-linear-gradient(90deg,#fff 0,#fff 18px,#000 18px,#000 36px)}
 .hero-lines{position:absolute;inset:0;overflow:hidden;pointer-events:none}
@@ -53,8 +44,7 @@ button{font-family:inherit;cursor:pointer}
 .hero-link{display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--rsm);font-size:13px;font-weight:600;border:1px solid var(--border);color:var(--muted);transition:all .2s}
 .hero-link:hover{color:#fff;border-color:#444}
 .hero-link svg{width:16px;height:16px;flex-shrink:0}
-
-/* ── Layout ── */
+/* Layout */
 .container{max-width:1000px;margin:0 auto;padding:0 1rem}
 .toolbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem;gap:10px;flex-wrap:wrap}
 .filters{display:flex;gap:6px;flex-wrap:wrap;flex:1}
@@ -67,11 +57,9 @@ button{font-family:inherit;cursor:pointer}
 .cart-btn{display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px;font-weight:600;transition:border-color .15s;white-space:nowrap}
 .cart-btn:hover{border-color:#444}
 .cart-badge{background:var(--red);color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;min-width:20px;text-align:center}
-
-/* ── Grid ── */
+/* Grid */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:14px;padding-bottom:2rem}
-
-/* ── Card ── */
+/* Card */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s}
 .card:hover{border-color:#333;transform:translateY(-2px)}
 .card-img{width:100%;padding-top:100%;background:var(--surface2);position:relative;overflow:hidden;font-size:0}
@@ -81,23 +69,20 @@ button{font-family:inherit;cursor:pointer}
 .card-body{padding:10px 12px}
 .card-team{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
 .card-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:4px}
-.card-meta{font-size:11px;color:var(--muted);margin-bottom:2px;display:flex;flex-wrap:wrap;gap:4px}
+.card-meta{font-size:11px;color:var(--muted);margin-bottom:4px;display:flex;flex-wrap:wrap;gap:4px}
 .card-meta span{background:var(--surface3);border-radius:3px;padding:1px 5px}
 .card-sizes{font-size:11px;color:var(--muted);margin-bottom:8px}
 .card-foot{display:flex;align-items:center;justify-content:space-between}
 .price{font-size:14px;font-weight:700;color:#fff}
-.stock-num{font-size:10px;color:var(--dim);margin-top:1px}
 .add-btn{display:flex;align-items:center;gap:4px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);padding:5px 10px;font-size:11px;font-weight:600;transition:background .15s}
 .add-btn:hover{background:var(--red-dark)}
 .add-btn:disabled{background:var(--surface3);color:var(--dim);cursor:default}
-
-/* ── Overlay ── */
+/* Overlay */
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:flex-end;justify-content:center;padding:0}
 .overlay.open{display:flex}
 @media(min-width:560px){.overlay{align-items:center;padding:1rem}}
 .panel{background:var(--surface);border:1px solid var(--border);width:100%;max-width:440px;border-radius:var(--radius) var(--radius) 0 0;max-height:92vh;overflow-y:auto;position:relative;scrollbar-width:thin;scrollbar-color:#333 transparent}
 .panel::-webkit-scrollbar{width:4px}
-.panel::-webkit-scrollbar-track{background:transparent}
 .panel::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
 @media(min-width:560px){.panel{border-radius:var(--radius)}}
 .panel-head{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
@@ -105,16 +90,14 @@ button{font-family:inherit;cursor:pointer}
 .close-btn{background:none;border:none;color:var(--muted);font-size:20px;display:flex;align-items:center;padding:2px;transition:color .15s}
 .close-btn:hover{color:#fff}
 .panel-body{padding:1.25rem}
-
-/* ── Product modal carousel ── */
+/* Carousel */
 .pm-carousel{position:relative;width:100%;padding-top:100%;background:var(--surface2);border-radius:var(--rsm);margin-bottom:1rem;overflow:hidden;user-select:none;font-size:0;cursor:zoom-in}
 .pm-carousel-track{position:absolute;inset:0;display:flex;width:100%;height:100%;transition:transform .3s ease}
 .pm-carousel-slide{flex:0 0 100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:60px}
 .pm-carousel-slide img{width:100%;height:100%;object-fit:cover;object-position:center top}
-.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;background:rgba(0,0,0,.55);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;line-height:1}
+.carousel-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:5;background:rgba(0,0,0,.55);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s}
 .carousel-arrow:hover{background:rgba(0,0,0,.85)}
-.carousel-arrow.prev{left:8px}
-.carousel-arrow.next{right:8px}
+.carousel-arrow.prev{left:8px}.carousel-arrow.next{right:8px}
 .carousel-dots{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
 .carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.35);cursor:pointer;transition:background .15s}
 .carousel-dot.active{background:#fff}
@@ -126,35 +109,31 @@ button{font-family:inherit;cursor:pointer}
 .pm-price{font-size:22px;font-weight:800;color:var(--red);margin-bottom:1.25rem}
 .field-label{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
 .size-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:1.25rem}
-.size-btn{padding:6px 14px;border-radius:var(--rsm);border:1px solid var(--border);font-size:13px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s;position:relative}
-.size-btn:hover{border-color:#444;color:#fff}
+.size-btn{padding:6px 14px;border-radius:var(--rsm);border:1px solid var(--border);font-size:13px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s}
+.size-btn:hover:not(:disabled){border-color:#444;color:#fff}
 .size-btn.sel{background:var(--red);color:#fff;border-color:var(--red)}
-.size-btn.out{opacity:.35;cursor:default;text-decoration:line-through}
-.size-stock-badge{position:absolute;top:-5px;right:-5px;background:var(--surface3);color:var(--dim);font-size:9px;font-weight:700;padding:1px 4px;border-radius:3px;border:1px solid var(--border)}
+.size-btn:disabled{opacity:.28;cursor:default;text-decoration:line-through}
 .qty-row{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem}
 .qty-btn{width:34px;height:34px;border-radius:var(--rsm);border:1px solid var(--border);background:var(--surface2);color:#fff;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
 .qty-btn:hover{border-color:#444}
 .qty-val{font-size:16px;font-weight:700;color:#fff;min-width:28px;text-align:center}
 .pm-add{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;transition:background .15s}
 .pm-add:hover{background:var(--red-dark)}
-.pm-add:disabled{background:var(--surface3);color:var(--dim)}
-
-/* ── Lightbox ── */
+.pm-add:disabled{background:var(--surface3);color:var(--dim);cursor:default}
+/* Lightbox */
 .lb{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.95);flex-direction:column;align-items:center;justify-content:center}
 .lb.open{display:flex}
 .lb-img-wrap{position:relative;max-width:90vw;max-height:82vh;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:zoom-in}
 .lb-img-wrap.zoomed{cursor:zoom-out;overflow:visible}
-.lb img{max-width:90vw;max-height:82vh;object-fit:contain;border-radius:4px;transition:transform .25s ease;transform-origin:center center;user-select:none;pointer-events:none;display:block}
+.lb img{max-width:90vw;max-height:82vh;object-fit:contain;border-radius:4px;transition:transform .25s ease;user-select:none;pointer-events:none;display:block}
 .lb-img-wrap.zoomed img{transform:scale(2.2)}
-.lb-close{position:fixed;top:16px;right:20px;background:rgba(255,255,255,.1);border:none;color:#fff;width:38px;height:38px;border-radius:50%;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;z-index:10}
+.lb-close{position:fixed;top:16px;right:20px;background:rgba(255,255,255,.1);border:none;color:#fff;width:38px;height:38px;border-radius:50%;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10}
 .lb-close:hover{background:rgba(255,255,255,.2)}
-.lb-arrow{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .15s;z-index:10}
+.lb-arrow{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);border:none;color:#fff;width:44px;height:44px;border-radius:50%;font-size:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:10}
 .lb-arrow:hover{background:rgba(255,255,255,.2)}
 .lb-arrow.prev{left:16px}.lb-arrow.next{right:16px}
 .lb-counter{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.5);font-size:12px;font-weight:600;letter-spacing:1px}
-.lb-hint{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.28);font-size:11px;white-space:nowrap}
-
-/* ── Cart ── */
+/* Cart */
 .cart-empty{text-align:center;padding:2.5rem 1rem;color:var(--muted);font-size:14px}
 .cart-empty svg{width:36px;height:36px;margin:0 auto 10px;opacity:.3}
 .ci{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
@@ -162,65 +141,67 @@ button{font-family:inherit;cursor:pointer}
 .ci-img{width:40px;height:40px;border-radius:5px;object-fit:cover;flex-shrink:0}
 .ci-info{flex:1;min-width:0}
 .ci-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ci-preorder{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:var(--surface3);border-radius:3px;padding:1px 5px;vertical-align:middle;white-space:nowrap}
+.ci-preorder{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);background:var(--surface3);border-radius:3px;padding:1px 5px;vertical-align:middle}
 .ci-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .ci-qrow{display:flex;align-items:center;gap:7px;margin-top:6px}
-.ci-qbtn{width:24px;height:24px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;transition:border-color .15s}
+.ci-qbtn{width:24px;height:24px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center}
 .ci-qbtn:hover{border-color:#444}
-.ci-qval{font-size:13px;font-weight:600;color:#fff;min-width:18px;text-align:center}
 .ci-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;flex-shrink:0}
 .ci-price{font-size:13px;font-weight:700;color:#fff}
-.ci-del{background:none;border:none;color:var(--dim);font-size:16px;padding:2px;transition:color .15s}
+.ci-del{background:none;border:none;color:var(--dim);font-size:16px;padding:2px}
 .ci-del:hover{color:#e10600}
 .cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:14px;font-weight:700;color:#fff}
-.cart-actions{display:flex;flex-direction:column;gap:8px;margin-top:4px}
-.oa{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:var(--rsm);font-size:14px;font-weight:700;border:none;transition:opacity .15s;cursor:pointer}
-.oa:hover{opacity:.88}
-.oa-wa{background:#25D366;color:#fff}
-.oa-ig{background:#C13584;color:#fff}
-.oa-delivery{background:var(--red);color:#fff}
-.oa-clear{background:transparent;border:1px solid var(--border)!important;color:var(--muted)!important;font-size:13px!important;padding:9px!important}
-.oa-clear:hover{border-color:#444!important;color:#fff!important}
 
-/* ── Delivery Modal ── */
-.panel.panel-wide{max-width:540px}
-.delivery-tabs{display:flex;gap:0;margin-bottom:1.25rem;border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden}
-.dtab{flex:1;padding:9px 12px;background:transparent;border:none;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
+/* ── Delivery section in cart ── */
+.delivery-section{background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);padding:14px;margin:10px 0 4px}
+.delivery-section-title{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.delivery-tabs{display:flex;gap:0;border:1px solid var(--border);border-radius:var(--rsm);overflow:hidden;margin-bottom:12px}
+.dtab{flex:1;padding:8px 10px;background:transparent;border:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;text-align:center}
 .dtab.active{background:var(--red);color:#fff}
 .dtab-pane{display:none}
 .dtab-pane.active{display:block}
-.d-field{margin-bottom:14px}
-.d-label{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;display:block}
-.d-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-size:14px;padding:9px 12px;outline:none;transition:border-color .15s;font-family:inherit}
-.d-input:focus{border-color:#444}
+.d-field{margin-bottom:10px}
+.d-label{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px;display:block}
+.d-input{width:100%;background:var(--surface3);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-size:13px;padding:8px 10px;outline:none;transition:border-color .15s;font-family:inherit}
+.d-input:focus{border-color:#555}
 .d-input::placeholder{color:var(--dim)}
-.d-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.d-submit{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:4px}
-.d-submit:hover{background:var(--red-dark)}
-.map-section{margin-top:1rem}
-.map-section-title{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
-.map-frame{width:100%;height:220px;border-radius:var(--rsm);border:1px solid var(--border);overflow:hidden;background:var(--surface2)}
+.d-row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.delivery-filled-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:#4caf50;font-weight:600;margin-bottom:10px}
+.delivery-filled-badge::before{content:'✓';font-size:13px}
+/* Cart actions */
+.cart-actions{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.oa{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:var(--rsm);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .15s}
+.oa:not(:disabled):hover{opacity:.88}
+.oa-wa{background:#25D366;color:#fff}
+.oa-ig{background:#C13584;color:#fff}
+.oa:disabled{background:var(--surface3)!important;color:var(--dim)!important;cursor:default;opacity:1}
+.oa-clear{background:transparent!important;border:1px solid var(--border)!important;color:var(--muted)!important;font-size:13px!important;padding:9px!important}
+.oa-clear:not(:disabled):hover{border-color:#444!important;color:#fff!important}
+.delivery-required-hint{font-size:11px;color:var(--dim);text-align:center;margin-top:2px}
+/* Map */
+.map-section{margin-top:10px}
+.map-section-title{font-size:10px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.map-frame{width:100%;height:160px;border-radius:var(--rsm);border:1px solid var(--border);overflow:hidden;background:var(--surface3)}
 .map-frame iframe{width:100%;height:100%;border:none}
-.pvz-hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
-
-/* ── Toast ── */
+.pvz-hint{font-size:11px;color:var(--dim);margin-top:5px;line-height:1.5}
+.pvz-hint a{color:var(--red)}
+/* Toast */
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:#fff;color:#111;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1}
-
-/* ── Loading / States ── */
+/* States */
 .state-msg{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px;grid-column:1/-1}
 .dot{display:inline-block;animation:blink 1.2s infinite}
 .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
 @keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
-
-/* ── Footer ── */
+/* Footer */
 .footer{border-top:1px solid var(--border);padding:1.5rem 0;text-align:center;color:var(--dim);font-size:12px}
 .footer-checker{height:4px;background:repeating-linear-gradient(90deg,#fff 0,#fff 12px,#000 12px,#000 24px);margin-bottom:1rem;opacity:.15}
-
-@media(max-width:400px){
-  .grid{grid-template-columns:repeat(2,1fr);gap:10px}
-  .hero{padding:3rem 1rem 2rem}
-}
+@media(max-width:400px){.grid{grid-template-columns:repeat(2,1fr);gap:10px}.hero{padding:3rem 1rem 2rem}}
+/* Order confirm */
+.order-confirm{text-align:center;padding:1.5rem 0}
+.order-num{font-size:28px;font-weight:800;color:var(--red);margin-bottom:6px}
+.order-sub{font-size:13px;color:var(--muted);line-height:1.6}
+.order-wa-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;padding:13px;background:#25D366;color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -302,7 +283,7 @@ button{font-family:inherit;cursor:pointer}
 
 <!-- CART -->
 <div class="overlay" id="cart-ov" onclick="closeOv(event,'cart-ov')">
-  <div class="panel">
+  <div class="panel" style="max-width:480px">
     <div class="panel-head">
       <span class="panel-title" id="lbl-cart-title">Корзина</span>
       <button class="close-btn" onclick="closeId('cart-ov')">✕</button>
@@ -311,89 +292,21 @@ button{font-family:inherit;cursor:pointer}
   </div>
 </div>
 
-<!-- DELIVERY MODAL -->
-<div class="overlay" id="delivery-ov" onclick="closeOv(event,'delivery-ov')">
-  <div class="panel panel-wide">
+<!-- ORDER CONFIRM -->
+<div class="overlay" id="confirm-ov" onclick="closeOv(event,'confirm-ov')">
+  <div class="panel">
     <div class="panel-head">
-      <span class="panel-title">Оформление доставки</span>
-      <button class="close-btn" onclick="closeId('delivery-ov')">✕</button>
+      <span class="panel-title">Заказ принят</span>
+      <button class="close-btn" onclick="closeId('confirm-ov')">✕</button>
     </div>
     <div class="panel-body">
-      <div class="delivery-tabs">
-        <button class="dtab active" onclick="switchDelivery('qazpost')">📮 QazPost</button>
-        <button class="dtab" onclick="switchDelivery('cdek')">📦 CDEK</button>
-      </div>
-
-      <!-- QazPost -->
-      <div class="dtab-pane active" id="pane-qazpost">
-        <div class="d-field">
-          <label class="d-label">ФИО получателя</label>
-          <input class="d-input" id="qp-name" type="text" placeholder="Иванов Иван Иванович">
-        </div>
-        <div class="d-field">
-          <label class="d-label">Номер телефона</label>
-          <input class="d-input" id="qp-phone" type="tel" placeholder="+7 (___) ___-__-__">
-        </div>
-        <div class="d-row2">
-          <div class="d-field">
-            <label class="d-label">Почтовый индекс</label>
-            <input class="d-input" id="qp-index" type="text" placeholder="050000" maxlength="6">
-          </div>
-          <div class="d-field">
-            <label class="d-label">Город</label>
-            <input class="d-input" id="qp-city" type="text" placeholder="Алматы">
-          </div>
-        </div>
-        <div class="d-field">
-          <label class="d-label">Область</label>
-          <input class="d-input" id="qp-region" type="text" placeholder="Алматинская область">
-        </div>
-        <div class="d-field">
-          <label class="d-label">Адрес отделения QazPost</label>
-          <input class="d-input" id="qp-address" type="text" placeholder="ул. Абая 1, отделение №5">
-        </div>
-        <div class="map-section">
-          <div class="map-section-title">Ближайшие отделения QazPost</div>
-          <div class="map-frame">
-            <iframe
-              src="https://yandex.ru/map-widget/v1/?text=QazPost+Казахстан&z=12&l=map&pt=76.889709,43.238293,pm2rdl"
-              allowfullscreen
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-          </div>
-          <p class="pvz-hint">Найдите ближайшее отделение на карте и скопируйте адрес в поле выше. Или посетите <a href="https://qazpost.kz/ru/otdeleniya" target="_blank" style="color:var(--red)">qazpost.kz/ru/otdeleniya</a></p>
-        </div>
-        <button class="d-submit" onclick="submitDelivery('qazpost')">Оформить через WhatsApp</button>
-      </div>
-
-      <!-- CDEK -->
-      <div class="dtab-pane" id="pane-cdek">
-        <div class="d-field">
-          <label class="d-label">ФИО получателя</label>
-          <input class="d-input" id="cdek-name" type="text" placeholder="Иванов Иван Иванович">
-        </div>
-        <div class="d-field">
-          <label class="d-label">Номер телефона</label>
-          <input class="d-input" id="cdek-phone" type="tel" placeholder="+7 (___) ___-__-__">
-        </div>
-        <div class="d-field">
-          <label class="d-label">Адрес ПВЗ CDEK</label>
-          <input class="d-input" id="cdek-address" type="text" placeholder="г. Алматы, ул. Достык 5, ПВЗ CDEK">
-        </div>
-        <div class="map-section">
-          <div class="map-section-title">Пункты выдачи CDEK</div>
-          <div class="map-frame">
-            <iframe
-              src="https://yandex.ru/map-widget/v1/?text=CDEK+Казахстан&z=12&l=map&pt=76.889709,43.238293,pm2rdl"
-              allowfullscreen
-              loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade">
-            </iframe>
-          </div>
-          <p class="pvz-hint">Найдите удобный ПВЗ на официальном сайте: <a href="https://www.cdek.kz/ru/offices" target="_blank" style="color:var(--red)">cdek.kz/ru/offices</a> — и укажите его адрес выше.</p>
-        </div>
-        <button class="d-submit" onclick="submitDelivery('cdek')">Оформить через WhatsApp</button>
+      <div class="order-confirm">
+        <div class="order-num" id="confirm-order-num">#180626-1</div>
+        <div class="order-sub">Ваш заказ зафиксирован.<br>Напишите нам номер заказа — и мы оперативно подтвердим детали.</div>
+        <button class="order-wa-btn" id="confirm-wa-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.857L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.64-.514-5.145-1.406l-.369-.219-3.762.981.999-3.665-.24-.378A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+          Написать в WhatsApp
+        </button>
       </div>
     </div>
   </div>
@@ -408,334 +321,245 @@ button{font-family:inherit;cursor:pointer}
   </div>
   <button class="lb-arrow next" id="lb-next" onclick="lbMove(1)">›</button>
   <div class="lb-counter" id="lb-counter"></div>
-  <div class="lb-hint" id="lb-hint">Нажмите для увеличения · ESC — закрыть</div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* ════════════════════════════════════════
-   ДЕФОЛТНЫЕ НАСТРОЙКИ
-════════════════════════════════════════ */
+/* ════ DEFAULTS ════ */
 const DEFAULTS = {
-  hero_title:       "Официальный F1 мерч",
-  hero_subtitle:    "Коллекция одежды и аксессуаров команд Формулы 1. Быстрая доставка.",
-  site_title:       "🏁 Pit Stop Merch",
-  footer_text:      "© Pit Stop Merch — заказ через WhatsApp и Instagram",
-  whatsapp:         "79001234567",
-  instagram:        "pitstop_merch",
-  accent_color:     "#e10600",
-  btn_cart:         "Корзина",
-  btn_order_wa:     "Заказать в WhatsApp",
-  btn_order_ig:     "Написать в Instagram",
-  btn_order_delivery: "Оформить доставку",
-  btn_add:          "В корзину",
-  btn_add_size:     "Выберите размер",
-  btn_clear:        "Очистить корзину",
-  label_size:       "Размер",
-  label_qty:        "Количество",
-  label_year:       "Год",
-  label_color:      "Цвет",
-  label_number:     "Номер",
-  label_total:      "Итого",
-  label_pick:       "Выбрать параметры",
-  filter_all:       "Все",
-  msg_empty_cart:   "Корзина пуста",
-  msg_added:        "Добавлено в корзину ✓",
-  wa_msg_header:    "Привет! Хочу сделать заказ:",
-  wa_msg_footer:    "",
-  wa_preorder_tag:  "ПОД ЗАКАЗ",
-  wa_preorder_note: "Позиции «ПОД ЗАКАЗ» требуют времени на доставку, уточним сроки отдельно.",
-  currency_primary_symbol:   "₸",
-  currency_primary_code:     "KZT",
-  currency_secondary_symbol: "₽",
-  currency_secondary_code:   "RUB",
+  hero_title:"Официальный F1 мерч",
+  hero_subtitle:"Коллекция одежды и аксессуаров команд Формулы 1. Быстрая доставка.",
+  site_title:"🏁 F1 Merch",
+  footer_text:"© F1 Merch",
+  whatsapp:"79001234567",
+  instagram:"f1merch",
+  accent_color:"#e10600",
+  btn_cart:"Корзина",
+  btn_order_wa:"Заказать",
+  btn_order_ig:"Написать в Instagram",
+  btn_add:"В корзину",
+  btn_add_size:"Выберите размер",
+  btn_clear:"Очистить корзину",
+  label_size:"Размер",label_qty:"Количество",label_year:"Год",
+  label_color:"Цвет",label_number:"Номер",label_total:"Итого",
+  label_pick:"Выбрать параметры",filter_all:"Все",
+  msg_empty_cart:"Корзина пуста",msg_added:"Добавлено в корзину ✓",
+  wa_msg_header:"Привет! Хочу сделать заказ:",wa_msg_footer:"",
+  wa_preorder_tag:"ПОД ЗАКАЗ",
+  wa_preorder_note:"Позиции «ПОД ЗАКАЗ» требуют времени на доставку, уточним сроки.",
+  currency_primary_symbol:"₸",currency_primary_code:"KZT",
+  currency_secondary_symbol:"₽",currency_secondary_code:"RUB",
 };
+const STATUS_COLORS={"в наличии":"var(--red)","на заказ":"#555","нет":"rgba(255,255,255,.08)"};
+let S={...DEFAULTS}, products=[], cart=[], activeCat="", currency="primary";
+let deliveryData = null; // null = не заполнено
+let activeDelivery = "qazpost";
 
-const STATUS_COLORS = {
-  "в наличии": "var(--red)",
-  "на заказ":  "#555",
-  "нет":       "rgba(255,255,255,.08)",
-};
-const STATUS_COLOR_DEFAULT = "rgba(255,255,255,.08)";
-
-let S = {...DEFAULTS};
-let products = [];
-let cart = [];
-let activeCat = "";
-let currency = "primary";
-
-/* ════ FIX: НАДЁЖНЫЙ CSV PARSER ════
-   Проблема оригинала: нормализация через [^a-zа-я0-9_] нестабильна
-   в V8 для кириллицы (зависит от флагов unicode). Решение: явное
-   белое-списочное преобразование без regex-удаления символов.
-*/
-function normalizeHeader(h) {
-  return h
-    .toLowerCase()
-    .replace(/\ufeff/g, '')          // BOM
-    .replace(/\u00a0/g, ' ')        // неразрывный пробел
-    .trim()
-    .replace(/ё/g, 'е')
-    .replace(/\s+/g, '_')
-    // валюты — ДО удаления спецсимволов
-    .replace(/₸/g, '_tenge')
-    .replace(/₽/g, '_ruble')
-    .replace(/тенге/g, '_tenge')
-    .replace(/руб(?:лей|ля|ль)?/g, '_ruble')
-    .replace(/kzt/g, '_tenge')
-    .replace(/rub/g, '_ruble')
-    // удаляем всё кроме кириллицы, латиницы, цифр и _
-    .replace(/[^\u0400-\u04FFa-z0-9_]/g, '');
+/* ════ CSV ════ */
+function normalizeHeader(h){
+  return h.replace(/^\uFEFF/,'').replace(/\u00a0/g,' ').toLowerCase().trim()
+    .replace(/ё/g,'е').replace(/\s+/g,'_')
+    .replace(/₸/g,'_tenge').replace(/₽/g,'_ruble')
+    .replace(/тенге/g,'_tenge').replace(/руб(?:лей|ля|ль)?/g,'_ruble')
+    .replace(/kzt/g,'_tenge').replace(/rub/g,'_ruble')
+    .replace(/[^\u0400-\u04FFa-z0-9_]/g,'');
 }
-
-function parseCSV(text) {
-  // Убираем BOM в начале файла
-  text = text.replace(/^\uFEFF/, '');
-  const rows = text.trim().split(/\r?\n/).map(row => {
-    const cells = []; let cur = "", inQ = false;
-    for (let i = 0; i < row.length; i++) {
-      if (row[i] === '"') { inQ = !inQ; }
-      else if (row[i] === ',' && !inQ) { cells.push(cur.trim()); cur = ""; }
-      else { cur += row[i]; }
+function parseCSV(text){
+  text=text.replace(/^\uFEFF/,'');
+  const rows=text.trim().split(/\r?\n/).map(row=>{
+    const cells=[];let cur="",inQ=false;
+    for(let i=0;i<row.length;i++){
+      if(row[i]==='"'){inQ=!inQ;}
+      else if(row[i]===','&&!inQ){cells.push(cur.trim());cur="";}
+      else{cur+=row[i];}
     }
-    cells.push(cur.trim());
-    return cells;
+    cells.push(cur.trim());return cells;
   });
-  if (rows.length < 2) return [];
-
-  const headers = rows[0].map(normalizeHeader);
-
-  return rows.slice(1).filter(r => r.some(c => c)).map((r, i) => {
-    const o = { _row: i + 2 };
-    headers.forEach((h, j) => { o[h] = (r[j] || "").trim(); });
+  if(rows.length<2)return[];
+  const headers=rows[0].map(normalizeHeader);
+  return rows.slice(1).filter(r=>r.some(c=>c)).map((r,i)=>{
+    const o={_row:i+2};
+    headers.forEach((h,j)=>{o[h]=(r[j]||"").trim();});
     return o;
   });
 }
 
-/* ════ LOAD SETTINGS ════
-   FIX: ищем ключ и значение надёжнее — берём первый и второй столбцы
-   если стандартные названия не найдены.
-*/
-async function loadSettings() {
-  if (!CSV.settings) return;
-  try {
-    const r = await fetch(CSV.settings);
-    const text = await r.text();
-    const rows = parseCSV(text);
-
-    rows.forEach(row => {
-      // Ищем по нормализованным именам колонок
-      const keys = Object.keys(row);
-      // Пробуем стандартные варианты названий колонок "ключ" и "значение"
-      let k = row['ключ'] || row['key'] || row['кл'] || row['клуч'] || "";
-      let v = row['значение'] || row['value'] || row['значени'] || row['знач'] || "";
-
-      // Если не нашли — берём первые два непустых столбца
-      if (!k && keys.length >= 2) {
-        const nonMeta = keys.filter(x => x !== '_row');
-        k = row[nonMeta[0]] || "";
-        v = row[nonMeta[1]] || "";
-      }
-
-      k = k.trim(); v = v.trim();
-      if (k) S[k] = v;
+/* ════ SETTINGS ════ */
+async function loadSettings(){
+  if(!CSV.settings)return;
+  try{
+    const r=await fetch(CSV.settings);
+    const rows=parseCSV(await r.text());
+    rows.forEach(row=>{
+      const nonMeta=Object.keys(row).filter(x=>x!=='_row');
+      let k=row['ключ']||row['key']||row[nonMeta[0]]||"";
+      let v=row['значение']||row['value']||row[nonMeta[1]]||"";
+      k=k.trim();v=v.trim();
+      if(k)S[k]=v;
     });
-  } catch(e) { console.warn("Settings CSV failed, using defaults", e); }
+  }catch(e){console.warn("Settings failed",e);}
 }
 
-/* ════ LOAD CATALOG ════ */
-const DEMO = [
-  {название:"Футболка Red Bull Racing",команда:"Red Bull",категория:"Футболки",размеры:"XS,S,M,L,XL",цена_tenge:"15500",цена_ruble:"2900",наличие:"в наличии",фото:"",эмодзи:"🔵",год:"2024",цвет:"Синий",количество:"30",номер:"1",xs:"5",s:"8",m:"10",l:"5",xl:"2"},
-  {название:"Худи Ferrari Scuderia",команда:"Ferrari",категория:"Худи",размеры:"S,M,L,XL,XXL",цена_tenge:"24000",цена_ruble:"4500",наличие:"в наличии",фото:"",эмодзи:"🔴",год:"2024",цвет:"Красный",количество:"20",номер:"16",s:"3",m:"7",l:"6",xl:"4"},
-  {название:"Бейсболка Mercedes AMG",команда:"Mercedes",категория:"Головные уборы",размеры:"One Size",цена_tenge:"9600",цена_ruble:"1800",наличие:"в наличии",фото:"",эмодзи:"⬛",год:"2023",цвет:"Чёрный",количество:"45",номер:"44"},
-  {название:"Куртка McLaren Papaya",команда:"McLaren",категория:"Куртки",размеры:"M,L,XL",цена_tenge:"38500",цена_ruble:"7200",наличие:"в наличии",фото:"",эмодзи:"🟠",год:"2024",цвет:"Оранжевый",количество:"15",номер:"4",m:"5",l:"6",xl:"4"},
-  {название:"Поло Alpine F1 Team",команда:"Alpine",категория:"Поло",размеры:"S,M,L",цена_tenge:"16500",цена_ruble:"3100",наличие:"на заказ",фото:"",эмодзи:"🔵",год:"2023",цвет:"Синий",количество:"0",номер:"10"},
-  {название:"Толстовка Aston Martin",команда:"Aston Martin",категория:"Худи",размеры:"M,L,XL,XXL",цена_tenge:"26000",цена_ruble:"4900",наличие:"в наличии",фото:"",эмодзи:"🟢",год:"2024",цвет:"Зелёный",количество:"25",номер:"14",m:"8",l:"10",xl:"5",xxl:"2"},
+/* ════ CATALOG ════
+   Структура таблицы (скрин):
+   A=Название B=Команда C=Номер D=Год E=Категория F=Цвет
+   G=Размеры H=XS I=S J=M K=L L=XL M=XXL
+   N=Цена,₸ O=Цена,₽ P=Наличие Q=Фото
+*/
+const DEMO=[
+  {название:"Лонгслив Ferrari 16",команда:"Ferrari",номер:"16",год:"2026",категория:"Лонгслив",цвет:"красный",размеры:"XS,M,L",xs:"10",s:"",m:"10",l:"10",xl:"",xxl:"","цена_tenge":"16999","цена_ruble":"2502",наличие:"В наличии",фото:""},
+  {название:"Комбинезон Red Bull 3",команда:"Red Bull",номер:"3",год:"2026",категория:"Комбинезон",цвет:"синий",размеры:"XS,M,L,XL",xs:"2",s:"",m:"2",l:"2",xl:"2",xxl:"","цена_tenge":"49999","цена_ruble":"7359",наличие:"В наличии",фото:""},
+  {название:"Футболка Audi",команда:"Audi",номер:"",год:"2026",категория:"Футболка",цвет:"серая",размеры:"XS,S,M",xs:"1",s:"2",m:"3",l:"",xl:"",xxl:"","цена_tenge":"9999","цена_ruble":"1472",наличие:"В наличии",фото:""},
+  {название:"Лонгслив McLaren 81",команда:"McLaren",номер:"81",год:"2026",категория:"Лонгслив",цвет:"Папайя",размеры:"XS,S,M,L",xs:"",s:"",m:"",l:"",xl:"",xxl:"","цена_tenge":"16999","цена_ruble":"2502",наличие:"На заказ",фото:""},
 ];
 
-async function loadCatalog() {
-  if (!CSV.catalog) { products = normRows(DEMO); return; }
-  try {
-    const r = await fetch(CSV.catalog);
-    products = normRows(parseCSV(await r.text()));
-  } catch(e) {
-    console.warn("Catalog CSV failed, using demo", e);
-    products = normRows(DEMO);
-  }
+async function loadCatalog(){
+  if(!CSV.catalog){products=normRows(DEMO);return;}
+  try{
+    const r=await fetch(CSV.catalog);
+    products=normRows(parseCSV(await r.text()));
+  }catch(e){console.warn("Catalog failed, using demo",e);products=normRows(DEMO);}
 }
 
-function pick(r, ...keys) {
-  for (const k of keys) {
-    if (r[k] !== undefined && r[k] !== "") return r[k];
-  }
+function pick(r,...keys){
+  for(const k of keys){if(r[k]!==undefined&&r[k]!=="")return r[k];}
+  return "";
+}
+function toNum(v){return parseInt(String(v).replace(/[^\d]/g,""))||0;}
+
+function findPriceCol(r,hint){
+  const keys=Object.keys(r);
+  const pm=hint==='tenge'?'_tenge':'_ruble';
+  const sm=hint==='tenge'?'_ruble':'_tenge';
+  for(const k of keys)if((k.includes('цена')||k.includes('price'))&&k.includes(pm)&&r[k]!=="")return r[k];
+  for(const k of keys)if((k.includes('цена')||k.includes('price'))&&!k.includes(sm)&&r[k]!=="")return r[k];
   return "";
 }
 
-function toNum(v) {
-  return parseInt(String(v).replace(/[^\d]/g,"")) || 0;
-}
+// Маппинг нормализованных заголовков → метки размеров
+const SIZE_MAP=[
+  ['xs','XS'],['s','S'],['m','M'],['l','L'],['xl','XL'],['xxl','XXL']
+];
 
-function findPriceCol(r, hint) {
-  const keys = Object.keys(r);
-  const primary_marker   = hint === 'tenge' ? '_tenge' : '_ruble';
-  const secondary_marker = hint === 'tenge' ? '_ruble' : '_tenge';
-  for (const k of keys) {
-    if ((k.includes('цена') || k.includes('price')) && k.includes(primary_marker) && r[k] !== "") return r[k];
-  }
-  for (const k of keys) {
-    if ((k.includes('цена') || k.includes('price')) && !k.includes(secondary_marker) && r[k] !== "") return r[k];
-  }
-  return "";
-}
+function normRows(rows){
+  return rows.map((r,i)=>{
+    const photoRaw=pick(r,'фото','photo','ссылка');
+    const photos=photoRaw?photoRaw.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean):[];
 
-/* FIX: читаем остатки по размерам из отдельных колонок */
-const SIZE_KEYS = ['xs','s','m','l','xl','xxl'];
-const SIZE_LABELS = ['XS','S','M','L','XL','XXL'];
-
-function normRows(rows) {
-  return rows.map((r, i) => {
-    const photoRaw = pick(r,'фото','photo');
-    const photos = photoRaw
-      ? photoRaw.split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)
-      : [];
-
-    // Остатки по размерам: {XS: 5, S: 8, ...} или пусто если колонок нет
-    const sizeStock = {};
-    SIZE_KEYS.forEach((k, idx) => {
-      const val = r[k];
-      if (val !== undefined && val !== "") sizeStock[SIZE_LABELS[idx]] = toNum(val);
+    // Остатки по размерам из колонок XS…XXL
+    const sizeStock={};
+    SIZE_MAP.forEach(([key,label])=>{
+      const val=r[key];
+      if(val!==undefined&&val!=="")sizeStock[label]=toNum(val);
     });
 
-    return {
-      id:              i + 1,
-      name:            pick(r,'название','name'),
-      team:            pick(r,'команда','team'),
-      cat:             pick(r,'категория','cat') || "Прочее",
-      sizes:           pick(r,'размеры','sizes').replace(/\s/g,""),
-      price_primary:   toNum(findPriceCol(r, 'tenge')),
-      price_secondary: toNum(findPriceCol(r, 'ruble')),
-      avail:           pick(r,'наличие','avail','в_наличии') || "да",
+    return{
+      id:i+1,
+      name:pick(r,'название','name'),
+      team:pick(r,'команда','team'),
+      number:pick(r,'номер','number'),
+      year:pick(r,'год','year'),
+      cat:pick(r,'категория','cat')||"Прочее",
+      color:pick(r,'цвет','color'),
+      sizes:pick(r,'размеры','sizes').replace(/\s/g,""),
+      sizeStock,
+      price_primary:toNum(findPriceCol(r,'tenge')),
+      price_secondary:toNum(findPriceCol(r,'ruble')),
+      avail:pick(r,'наличие','avail')||"да",
       photos,
-      photo:           photos[0] || "",
-      emoji:           pick(r,'эмодзи','emoji') || "🏁",
-      year:            pick(r,'год','year'),
-      color:           pick(r,'цвет','color'),
-      stock_qty:       pick(r,'количество','quantity'),
-      number:          pick(r,'номер','number'),
-      sizeStock,       // остатки по размерам
+      photo:photos[0]||"",
+      emoji:"🏁",
     };
   });
 }
 
-/* ════ APPLY SETTINGS TO DOM ════ */
-function applySettings() {
-  const ac = S.accent_color || "#e10600";
-  document.documentElement.style.setProperty('--red', ac);
-  document.documentElement.style.setProperty('--red-dark', shadeHex(ac, -30));
-
-  document.title = S.site_title || "F1 Merch";
-  document.getElementById("hero-title").textContent  = S.hero_title;
-  document.getElementById("hero-subtitle").textContent = S.hero_subtitle;
-  document.getElementById("footer-text").textContent = S.footer_text;
-  document.getElementById("hero-wa").href = "https://wa.me/" + S.whatsapp;
-  document.getElementById("hero-ig").href = "https://instagram.com/" + S.instagram;
-  document.getElementById("lbl-cart").textContent = S.btn_cart;
-  document.getElementById("lbl-cart-title").textContent = S.btn_cart;
-  document.getElementById("lbl-pick").textContent = S.label_pick;
-  document.getElementById("lbl-size-h").textContent = S.label_size;
-  document.getElementById("lbl-qty-h").textContent = S.label_qty;
-
+/* ════ SETTINGS → DOM ════ */
+function applySettings(){
+  const ac=S.accent_color||"#e10600";
+  document.documentElement.style.setProperty('--red',ac);
+  document.documentElement.style.setProperty('--red-dark',shadeHex(ac,-30));
+  document.title=S.site_title||"F1 Merch";
+  document.getElementById("hero-title").textContent=S.hero_title;
+  document.getElementById("hero-subtitle").textContent=S.hero_subtitle;
+  document.getElementById("footer-text").textContent=S.footer_text;
+  document.getElementById("hero-wa").href="https://wa.me/"+S.whatsapp;
+  document.getElementById("hero-ig").href="https://instagram.com/"+S.instagram;
+  document.getElementById("lbl-cart").textContent=S.btn_cart;
+  document.getElementById("lbl-cart-title").textContent=S.btn_cart;
+  document.getElementById("lbl-pick").textContent=S.label_pick;
+  document.getElementById("lbl-size-h").textContent=S.label_size;
+  document.getElementById("lbl-qty-h").textContent=S.label_qty;
   updateCurBtn();
 }
-
-function shadeHex(hex, amt) {
-  const n = parseInt(hex.replace('#',''), 16);
-  const r = Math.max(0, Math.min(255, (n >> 16) + amt));
-  const g = Math.max(0, Math.min(255, ((n >> 8) & 0xff) + amt));
-  const b = Math.max(0, Math.min(255, (n & 0xff) + amt));
-  return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+function shadeHex(hex,amt){
+  const n=parseInt(hex.replace('#',''),16);
+  const r=Math.max(0,Math.min(255,(n>>16)+amt));
+  const g=Math.max(0,Math.min(255,((n>>8)&0xff)+amt));
+  const b=Math.max(0,Math.min(255,(n&0xff)+amt));
+  return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
 
 /* ════ CURRENCY ════ */
-function curSymbol() { return currency === "primary" ? S.currency_primary_symbol : S.currency_secondary_symbol; }
-function curCode()   { return currency === "primary" ? S.currency_primary_code   : S.currency_secondary_code; }
-function priceOf(p)  { return currency === "primary" ? p.price_primary : p.price_secondary; }
-function updateCurBtn() {
-  const btn = document.getElementById("cur-toggle");
-  if (btn) btn.textContent = curSymbol() + " " + curCode();
+function curSymbol(){return currency==="primary"?S.currency_primary_symbol:S.currency_secondary_symbol;}
+function curCode(){return currency==="primary"?S.currency_primary_code:S.currency_secondary_code;}
+function priceOf(p){return currency==="primary"?p.price_primary:p.price_secondary;}
+function updateCurBtn(){const b=document.getElementById("cur-toggle");if(b)b.textContent=curSymbol()+" "+curCode();}
+function toggleCurrency(){
+  currency=currency==="primary"?"secondary":"primary";
+  updateCurBtn();renderGrid();
+  if(document.getElementById("cart-ov").classList.contains("open"))renderCart();
+  if(document.getElementById("pm-ov").classList.contains("open")&&curP)
+    document.getElementById("pm-price").textContent=fmt(priceOf(curP));
 }
-function toggleCurrency() {
-  currency = currency === "primary" ? "secondary" : "primary";
-  updateCurBtn();
-  renderGrid();
-  if (document.getElementById("cart-ov").classList.contains("open")) renderCart();
-  if (document.getElementById("pm-ov").classList.contains("open") && curP) {
-    document.getElementById("pm-price").textContent = fmt(priceOf(curP));
-  }
-}
-function fmt(n) { return Number(n || 0).toLocaleString("ru-RU") + " " + curSymbol(); }
+function fmt(n){return Number(n||0).toLocaleString("ru-RU")+" "+curSymbol();}
 
 /* ════ RENDER ════ */
-function getCats() {
-  return [S.filter_all || "Все", ...new Set(products.map(p => p.cat))];
-}
-function renderFilters() {
-  if (!activeCat) activeCat = S.filter_all || "Все";
-  document.getElementById("filters").innerHTML = getCats().map(c =>
-    `<button class="fbtn${c === activeCat ? " active" : ""}" onclick="setF(${JSON.stringify(c)})">${c}</button>`
+function getCats(){return[S.filter_all||"Все",...new Set(products.map(p=>p.cat))];}
+function renderFilters(){
+  if(!activeCat)activeCat=S.filter_all||"Все";
+  document.getElementById("filters").innerHTML=getCats().map(c=>
+    `<button class="fbtn${c===activeCat?" active":""}" onclick="setF(${JSON.stringify(c)})">${c}</button>`
   ).join("");
 }
-function setF(c) { activeCat = c; renderFilters(); renderGrid(); }
+function setF(c){activeCat=c;renderFilters();renderGrid();}
 
-const STATUS_BLOCKED  = ["нет", "нет в наличии", "no", "0", "false", "out of stock", "недоступно"];
-const STATUS_PREORDER = ["на заказ", "под заказ", "preorder", "to order"];
+const STATUS_BLOCKED=["нет","нет в наличии","no","0","false","out of stock","недоступно"];
+const STATUS_PREORDER=["на заказ","под заказ","preorder","to order"];
+function isAvail(p){return!STATUS_BLOCKED.includes((p.avail||"").trim().toLowerCase());}
+function isPreorder(p){return STATUS_PREORDER.includes((p.avail||"").trim().toLowerCase());}
+function statusColor(s){const n=(s||"").trim().toLowerCase();return S["status_color_"+n.replace(/\s+/g,"_")]||STATUS_COLORS[n]||"rgba(255,255,255,.08)";}
+function statusTextColor(s){return S["status_text_color_"+(s||"").trim().toLowerCase().replace(/\s+/g,"_")]||"#fff";}
 
-function isAvail(p)    { return !STATUS_BLOCKED.includes((p.avail||"").trim().toLowerCase()); }
-function isPreorder(p) { return STATUS_PREORDER.includes((p.avail||"").trim().toLowerCase()); }
-
-function statusColor(status) {
-  const norm = (status||"").trim().toLowerCase();
-  const settingKey = "status_color_" + norm.replace(/\s+/g,"_");
-  if (S[settingKey]) return S[settingKey];
-  return STATUS_COLORS[norm] || STATUS_COLOR_DEFAULT;
-}
-function statusTextColor(status) {
-  const norm = (status||"").trim().toLowerCase();
-  return S["status_text_color_" + norm.replace(/\s+/g,"_")] || "#fff";
-}
-
-function driveThumb(url, size) {
-  if (!url) return "";
-  const m = url.match(/\/d\/([^/]+)/);
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w${size}`;
+function driveThumb(url,size){
+  if(!url)return"";
+  const m=url.match(/\/d\/([^/]+)/);
+  if(m)return`https://drive.google.com/thumbnail?id=${m[1]}&sz=w${size}`;
   return url;
 }
-
-function cardImgHTML(p) {
-  if (p.photos && p.photos.length > 0) {
-    const src = driveThumb(p.photos[0], 400);
-    return `<img src="${src}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'"><div class="card-img-inner"></div>`;
+function cardImgHTML(p){
+  if(p.photos&&p.photos.length>0){
+    const src=driveThumb(p.photos[0],400);
+    return`<img src="${src}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'"><div class="card-img-inner"></div>`;
   }
-  return `<div class="card-img-inner">${p.emoji || "🏁"}</div>`;
+  return`<div class="card-img-inner">${p.emoji||"🏁"}</div>`;
 }
 
-function renderGrid() {
-  const all = S.filter_all || "Все";
-  const list = activeCat === all ? products : products.filter(p => p.cat === activeCat);
-  const grid = document.getElementById("grid");
-  if (!list.length) {
-    grid.innerHTML = `<div class="state-msg">Нет товаров в этой категории</div>`;
-    return;
-  }
-  grid.innerHTML = list.map(p => {
-    const ok = isAvail(p);
-    const meta = [
-      p.year   ? `<span>${p.year}</span>` : "",
-      p.color  ? `<span>${p.color}</span>` : "",
-      p.number ? `<span>#${p.number}</span>` : "",
+function renderGrid(){
+  const all=S.filter_all||"Все";
+  const list=activeCat===all?products:products.filter(p=>p.cat===activeCat);
+  const grid=document.getElementById("grid");
+  if(!list.length){grid.innerHTML=`<div class="state-msg">Нет товаров в этой категории</div>`;return;}
+  grid.innerHTML=list.map(p=>{
+    const ok=isAvail(p);
+    const meta=[
+      p.year?`<span>${p.year}</span>`:"",
+      p.color?`<span>${p.color}</span>`:"",
+      p.number?`<span>#${p.number}</span>`:"",
     ].join("");
-    return `
+    // Показываем только размеры из колонки Размеры, без остатков
+    const szLine=p.sizes.split(",").filter(Boolean).join(" · ");
+    return`
     <div class="card" onclick="openProduct(${p.id})">
       <div class="card-img">
         ${cardImgHTML(p)}
@@ -744,14 +568,11 @@ function renderGrid() {
       <div class="card-body">
         <div class="card-team">${p.team}</div>
         <div class="card-name">${p.name}</div>
-        ${meta ? `<div class="card-meta">${meta}</div>` : ""}
-        <div class="card-sizes">${p.sizes.split(",").filter(Boolean).join(" · ")}</div>
+        ${meta?`<div class="card-meta">${meta}</div>`:""}
+        <div class="card-sizes">${szLine}</div>
         <div class="card-foot">
-          <div>
-            <div class="price">${fmt(priceOf(p))}</div>
-            ${p.stock_qty ? `<div class="stock-num">${p.stock_qty} шт.</div>` : ""}
-          </div>
-          <button class="add-btn" ${!ok ? "disabled" : ""} onclick="event.stopPropagation();openProduct(${p.id})">
+          <div class="price">${fmt(priceOf(p))}</div>
+          <button class="add-btn" ${!ok?"disabled":""} onclick="event.stopPropagation();openProduct(${p.id})">
             + ${S.btn_add}
           </button>
         </div>
@@ -761,172 +582,139 @@ function renderGrid() {
 }
 
 /* ════ CAROUSEL ════ */
-let carouselIndex = 0, carouselSlides = [];
-
-function buildCarousel(photos, emoji) {
-  const track = document.getElementById("pm-carousel-track");
-  const prev  = document.getElementById("carousel-prev");
-  const next  = document.getElementById("carousel-next");
-  const dots  = document.getElementById("carousel-dots");
-  carouselIndex = 0;
-
-  if (!photos || photos.length === 0) {
-    carouselSlides = [];
-    track.innerHTML = `<div class="pm-carousel-slide">${emoji || "🏁"}</div>`;
-    prev.style.display = "none";
-    next.style.display = "none";
-    dots.innerHTML = "";
-    return;
+let carouselIndex=0,carouselSlides=[];
+function buildCarousel(photos,emoji){
+  const track=document.getElementById("pm-carousel-track");
+  const prev=document.getElementById("carousel-prev");
+  const next=document.getElementById("carousel-next");
+  const dots=document.getElementById("carousel-dots");
+  carouselIndex=0;
+  if(!photos||photos.length===0){
+    carouselSlides=[];
+    track.innerHTML=`<div class="pm-carousel-slide">${emoji||"🏁"}</div>`;
+    prev.style.display="none";next.style.display="none";dots.innerHTML="";return;
   }
-
-  carouselSlides = photos;
-  track.innerHTML = photos.map(url => {
-    const src = driveThumb(url, 600);
-    return `<div class="pm-carousel-slide"><img src="${src}" alt="" onerror="this.parentNode.innerHTML='${emoji || "🏁"}'"></div>`;
+  carouselSlides=photos;
+  track.innerHTML=photos.map(url=>{
+    const src=driveThumb(url,600);
+    return`<div class="pm-carousel-slide"><img src="${src}" alt="" onerror="this.parentNode.innerHTML='${emoji||"🏁"}'"></div>`;
   }).join("");
-
-  const showArrows = photos.length > 1;
-  prev.style.display = showArrows ? "flex" : "none";
-  next.style.display = showArrows ? "flex" : "none";
-  dots.innerHTML = photos.length > 1
-    ? photos.map((_,i) => `<div class="carousel-dot${i===0?' active':''}" onclick="carouselGo(${i})"></div>`).join("")
-    : "";
-
-  carouselSetPos(0, false);
+  const show=photos.length>1;
+  prev.style.display=show?"flex":"none";next.style.display=show?"flex":"none";
+  dots.innerHTML=photos.length>1?photos.map((_,i)=>`<div class="carousel-dot${i===0?' active':''}" onclick="carouselGo(${i})"></div>`).join(""):"";
+  carouselSetPos(0,false);
 }
-
-function carouselSetPos(idx, animate) {
-  const track = document.getElementById("pm-carousel-track");
-  if (!animate) track.style.transition = "none";
-  track.style.transform = `translateX(-${idx * 100}%)`;
-  if (!animate) requestAnimationFrame(() => { track.style.transition = "transform .3s ease"; });
-  document.querySelectorAll(".carousel-dot").forEach((d,i) => d.classList.toggle("active", i === idx));
+function carouselSetPos(idx,animate){
+  const track=document.getElementById("pm-carousel-track");
+  if(!animate)track.style.transition="none";
+  track.style.transform=`translateX(-${idx*100}%)`;
+  if(!animate)requestAnimationFrame(()=>{track.style.transition="transform .3s ease";});
+  document.querySelectorAll(".carousel-dot").forEach((d,i)=>d.classList.toggle("active",i===idx));
 }
-
-function carouselMove(dir) {
-  if (carouselSlides.length < 2) return;
-  carouselIndex = (carouselIndex + dir + carouselSlides.length) % carouselSlides.length;
-  carouselSetPos(carouselIndex, true);
+function carouselMove(dir){
+  if(carouselSlides.length<2)return;
+  carouselIndex=(carouselIndex+dir+carouselSlides.length)%carouselSlides.length;
+  carouselSetPos(carouselIndex,true);
 }
-
-function carouselGo(idx) { carouselIndex = idx; carouselSetPos(idx, true); }
-
-let touchStartX = null;
-document.getElementById("pm-carousel").addEventListener("touchstart", e => { touchStartX = e.touches[0].clientX; }, {passive:true});
-document.getElementById("pm-carousel").addEventListener("touchend", e => {
-  if (touchStartX === null) return;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  if (Math.abs(dx) > 40) carouselMove(dx < 0 ? 1 : -1);
-  touchStartX = null;
-}, {passive:true});
-
-document.getElementById("pm-carousel").addEventListener("click", () => {
-  if (carouselSlides.length > 0) lbOpen(carouselSlides, carouselIndex);
+function carouselGo(idx){carouselIndex=idx;carouselSetPos(idx,true);}
+let touchStartX=null;
+document.getElementById("pm-carousel").addEventListener("touchstart",e=>{touchStartX=e.touches[0].clientX;},{passive:true});
+document.getElementById("pm-carousel").addEventListener("touchend",e=>{
+  if(touchStartX===null)return;
+  const dx=e.changedTouches[0].clientX-touchStartX;
+  if(Math.abs(dx)>40)carouselMove(dx<0?1:-1);
+  touchStartX=null;
+},{passive:true});
+document.getElementById("pm-carousel").addEventListener("click",()=>{
+  if(carouselSlides.length>0)lbOpen(carouselSlides,carouselIndex);
 });
 
 /* ════ PRODUCT MODAL ════ */
-let curP = null, curSize = null, curQty = 1;
-
-function openProduct(id) {
-  const p = products.find(x => x.id === id);
-  if (!isAvail(p)) return;
-  curP = p; curQty = 1;
-  const szArr = p.sizes.split(",").map(s => s.trim()).filter(Boolean);
-  curSize = szArr.length === 1 ? szArr[0] : null;
-
-  buildCarousel(p.photos, p.emoji);
-
-  document.getElementById("pm-team").textContent  = p.team;
-  document.getElementById("pm-name").textContent  = p.name;
-  document.getElementById("pm-price").textContent = fmt(priceOf(p));
-  document.getElementById("pm-qty").textContent   = "1";
-
-  const attrs = [
-    p.year   ? `<span class="pm-attr"><b>${S.label_year}:</b> ${p.year}</span>` : "",
-    p.color  ? `<span class="pm-attr"><b>${S.label_color}:</b> ${p.color}</span>` : "",
-    p.number ? `<span class="pm-attr"><b>${S.label_number}:</b> #${p.number}</span>` : "",
+let curP=null,curSize=null,curQty=1;
+function openProduct(id){
+  const p=products.find(x=>x.id===id);
+  if(!isAvail(p))return;
+  curP=p;curQty=1;
+  const szArr=p.sizes.split(",").map(s=>s.trim()).filter(Boolean);
+  curSize=szArr.length===1?szArr[0]:null;
+  buildCarousel(p.photos,p.emoji);
+  document.getElementById("pm-team").textContent=p.team;
+  document.getElementById("pm-name").textContent=p.name;
+  document.getElementById("pm-price").textContent=fmt(priceOf(p));
+  document.getElementById("pm-qty").textContent="1";
+  const attrs=[
+    p.year?`<span class="pm-attr"><b>${S.label_year}:</b> ${p.year}</span>`:"",
+    p.color?`<span class="pm-attr"><b>${S.label_color}:</b> ${p.color}</span>`:"",
+    p.number?`<span class="pm-attr"><b>${S.label_number}:</b> #${p.number}</span>`:"",
   ].join("");
-  document.getElementById("pm-attrs").innerHTML = attrs;
+  document.getElementById("pm-attrs").innerHTML=attrs;
 
-  const hasSizeStock = Object.keys(p.sizeStock).length > 0;
-
-  document.getElementById("pm-sizes").innerHTML = szArr.map(s => {
-    const stock = hasSizeStock ? (p.sizeStock[s] !== undefined ? p.sizeStock[s] : null) : null;
-    const isOut = stock !== null && stock <= 0;
-    const badge = stock !== null && stock > 0 ? `<span class="size-stock-badge">${stock}</span>` : "";
-    return `<button class="size-btn${curSize===s?" sel":""}${isOut?" out":""}"
-      ${isOut ? "disabled" : ""}
-      onclick="selSz('${s}')">${s}${badge}</button>`;
+  const hasSizeStock=Object.keys(p.sizeStock).length>0;
+  document.getElementById("pm-sizes").innerHTML=szArr.map(s=>{
+    // Размер недоступен: есть колонка и значение = 0
+    const stockVal=p.sizeStock[s];
+    const isOut=hasSizeStock&&stockVal!==undefined&&stockVal<=0;
+    return`<button class="size-btn${curSize===s?" sel":""}${isOut?" ":""}"
+      ${isOut?"disabled":""}
+      onclick="selSz('${s}')">${s}</button>`;
   }).join("");
 
   updAddBtn();
   document.getElementById("pm-ov").classList.add("open");
 }
-
-function selSz(s) {
-  curSize = s;
-  document.querySelectorAll(".size-btn").forEach(b => b.classList.toggle("sel", b.childNodes[0]?.textContent?.trim() === s || b.textContent.trim().startsWith(s)));
+function selSz(s){
+  curSize=s;
+  document.querySelectorAll(".size-btn").forEach(b=>b.classList.toggle("sel",b.textContent.trim()===s));
   updAddBtn();
 }
-
-function chQty(d) {
-  curQty = Math.max(1, Math.min(99, curQty + d));
-  document.getElementById("pm-qty").textContent = curQty;
-}
-
-function updAddBtn() {
-  const btn = document.getElementById("pm-add");
-  btn.disabled = !curSize;
-  btn.textContent = curSize ? S.btn_add : S.btn_add_size;
+function chQty(d){curQty=Math.max(1,Math.min(99,curQty+d));document.getElementById("pm-qty").textContent=curQty;}
+function updAddBtn(){
+  const btn=document.getElementById("pm-add");
+  btn.disabled=!curSize;
+  btn.textContent=curSize?S.btn_add:S.btn_add_size;
 }
 
 /* ════ CART ════ */
-function addToCart() {
-  if (!curSize || !curP) return;
-  const key = curP.id + "|" + curSize;
-  const ex = cart.find(x => x.key === key);
-  if (ex) { ex.qty += curQty; }
-  else { cart.push({
-    key, id: curP.id, name: curP.name, team: curP.team, emoji: curP.emoji, photo: curP.photo,
-    size: curSize, qty: curQty,
-    price_primary: curP.price_primary, price_secondary: curP.price_secondary,
-    year: curP.year, color: curP.color, number: curP.number,
-    avail: curP.avail, preorder: isPreorder(curP)
-  }); }
-  updCount();
-  closeId("pm-ov");
-  showToast(S.msg_added);
+function addToCart(){
+  if(!curSize||!curP)return;
+  const key=curP.id+"|"+curSize;
+  const ex=cart.find(x=>x.key===key);
+  if(ex){ex.qty+=curQty;}
+  else{cart.push({
+    key,id:curP.id,name:curP.name,team:curP.team,emoji:curP.emoji,photo:curP.photo,
+    size:curSize,qty:curQty,
+    price_primary:curP.price_primary,price_secondary:curP.price_secondary,
+    year:curP.year,color:curP.color,number:curP.number,
+    avail:curP.avail,preorder:isPreorder(curP),cat:curP.cat,
+  });}
+  updCount();closeId("pm-ov");showToast(S.msg_added);
 }
+function updCount(){document.getElementById("cart-count").textContent=cart.reduce((s,x)=>s+x.qty,0);}
+function openCart(){renderCart();document.getElementById("cart-ov").classList.add("open");}
 
-function updCount() {
-  document.getElementById("cart-count").textContent = cart.reduce((s,x) => s + x.qty, 0);
-}
-
-function openCart() { renderCart(); document.getElementById("cart-ov").classList.add("open"); }
-
-function renderCart() {
-  const body = document.getElementById("cart-body");
-  if (!cart.length) {
-    body.innerHTML = `<div class="cart-empty">
+function renderCart(){
+  const body=document.getElementById("cart-body");
+  if(!cart.length){
+    body.innerHTML=`<div class="cart-empty">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 001.99 1.61h9.72a2 2 0 001.99-1.61L23 6H6"/></svg>
       ${S.msg_empty_cart}
     </div>`;
     return;
   }
-  const itemPrice = it => currency === "primary" ? it.price_primary : it.price_secondary;
-  const total = cart.reduce((s,x) => s + itemPrice(x) * x.qty, 0);
+  const itemPrice=it=>currency==="primary"?it.price_primary:it.price_secondary;
+  const total=cart.reduce((s,x)=>s+itemPrice(x)*x.qty,0);
 
-  const items = cart.map((it, i) => {
-    const thumb = it.photo
-      ? `<img class="ci-img" src="${driveThumb(it.photo, 80)}" alt="" onerror="this.style.display='none'">`
-      : `<div class="ci-emoji">${it.emoji}</div>`;
-    const sub = [
+  const items=cart.map((it,i)=>{
+    const thumb=it.photo
+      ?`<img class="ci-img" src="${driveThumb(it.photo,80)}" alt="" onerror="this.style.display='none'">`
+      :`<div class="ci-emoji">${it.emoji}</div>`;
+    const sub=[
       `${S.label_size}: ${it.size}`,
-      it.color  ? `${S.label_color}: ${it.color}` : "",
-      it.number ? `#${it.number}` : "",
+      it.color?`${S.label_color}: ${it.color}`:"",
+      it.number?`#${it.number}`:"",
     ].filter(Boolean).join(" · ");
-    const preorderBadge = it.preorder ? `<span class="ci-preorder">${it.avail}</span>` : "";
-    return `
+    const preorderBadge=it.preorder?`<span class="ci-preorder">${it.avail}</span>`:"";
+    return`
     <div class="ci">
       ${thumb}
       <div class="ci-info">
@@ -939,168 +727,251 @@ function renderCart() {
         </div>
       </div>
       <div class="ci-right">
-        <button class="ci-del" onclick="ciDel(${i})" aria-label="Удалить">✕</button>
-        <div class="ci-price">${fmt(itemPrice(it) * it.qty)}</div>
+        <button class="ci-del" onclick="ciDel(${i})">✕</button>
+        <div class="ci-price">${fmt(itemPrice(it)*it.qty)}</div>
       </div>
     </div>`;
   }).join("");
 
+  const filled = deliveryData;
+  const deliveryBlock = `
+  <div class="delivery-section">
+    <div class="delivery-section-title">📦 Доставка</div>
+    ${filled ? `<div class="delivery-filled-badge">Данные доставки заполнены (${filled.type==='qazpost'?'QazPost':'CDEK'})</div>` : ''}
+    <div class="delivery-tabs">
+      <button class="dtab${activeDelivery==='qazpost'?' active':''}" onclick="switchDelivery('qazpost')">📮 QazPost</button>
+      <button class="dtab${activeDelivery==='cdek'?' active':''}" onclick="switchDelivery('cdek')">📦 CDEK</button>
+    </div>
+
+    <div class="dtab-pane${activeDelivery==='qazpost'?' active':''}" id="pane-qazpost">
+      <div class="d-field">
+        <label class="d-label">ФИО получателя *</label>
+        <input class="d-input" id="qp-name" type="text" placeholder="Иванов Иван Иванович" value="${filled&&filled.type==='qazpost'?filled.name:''}">
+      </div>
+      <div class="d-field">
+        <label class="d-label">Номер телефона *</label>
+        <input class="d-input" id="qp-phone" type="tel" placeholder="+7 (___) ___-__-__" value="${filled&&filled.type==='qazpost'?filled.phone:''}">
+      </div>
+      <div class="d-row2">
+        <div class="d-field">
+          <label class="d-label">Почтовый индекс</label>
+          <input class="d-input" id="qp-index" type="text" placeholder="050000" maxlength="6" value="${filled&&filled.type==='qazpost'?filled.index:''}">
+        </div>
+        <div class="d-field">
+          <label class="d-label">Город</label>
+          <input class="d-input" id="qp-city" type="text" placeholder="Алматы" value="${filled&&filled.type==='qazpost'?filled.city:''}">
+        </div>
+      </div>
+      <div class="d-field">
+        <label class="d-label">Область</label>
+        <input class="d-input" id="qp-region" type="text" placeholder="Алматинская" value="${filled&&filled.type==='qazpost'?filled.region:''}">
+      </div>
+      <div class="d-field">
+        <label class="d-label">Адрес отделения QazPost *</label>
+        <input class="d-input" id="qp-address" type="text" placeholder="ул. Абая 1, отделение №5" value="${filled&&filled.type==='qazpost'?filled.address:''}">
+      </div>
+      <div class="map-section">
+        <div class="map-section-title">Найти отделение QazPost</div>
+        <div class="map-frame"><iframe src="https://yandex.ru/map-widget/v1/?text=QazPost+Казахстан&z=11&l=map" allowfullscreen loading="lazy"></iframe></div>
+        <p class="pvz-hint">Все отделения: <a href="https://qazpost.kz/ru/otdeleniya" target="_blank">qazpost.kz/ru/otdeleniya</a></p>
+      </div>
+      <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('qazpost')">Подтвердить адрес QazPost</button>
+    </div>
+
+    <div class="dtab-pane${activeDelivery==='cdek'?' active':''}" id="pane-cdek">
+      <div class="d-field">
+        <label class="d-label">ФИО получателя *</label>
+        <input class="d-input" id="cdek-name" type="text" placeholder="Иванов Иван Иванович" value="${filled&&filled.type==='cdek'?filled.name:''}">
+      </div>
+      <div class="d-field">
+        <label class="d-label">Номер телефона *</label>
+        <input class="d-input" id="cdek-phone" type="tel" placeholder="+7 (___) ___-__-__" value="${filled&&filled.type==='cdek'?filled.phone:''}">
+      </div>
+      <div class="d-field">
+        <label class="d-label">Адрес ПВЗ CDEK *</label>
+        <input class="d-input" id="cdek-address" type="text" placeholder="г. Алматы, ул. Достык 5, ПВЗ CDEK" value="${filled&&filled.type==='cdek'?filled.address:''}">
+      </div>
+      <div class="map-section">
+        <div class="map-section-title">Найти ПВЗ CDEK</div>
+        <div class="map-frame"><iframe src="https://yandex.ru/map-widget/v1/?text=CDEK+Казахстан&z=11&l=map" allowfullscreen loading="lazy"></iframe></div>
+        <p class="pvz-hint">Все ПВЗ: <a href="https://www.cdek.kz/ru/offices" target="_blank">cdek.kz/ru/offices</a></p>
+      </div>
+      <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('cdek')">Подтвердить адрес CDEK</button>
+    </div>
+  </div>`;
+
+  const canOrder = !!filled;
+  const disabledAttr = canOrder ? "" : "disabled";
+  const hintText = canOrder ? "" : `<div class="delivery-required-hint">Сначала заполните адрес доставки</div>`;
+
   body.innerHTML = items +
-    `<div class="cart-total"><span>${S.label_total}</span><span>${fmt(total)}</span></div>
-    <div class="cart-actions">
-      <a class="oa oa-wa" href="${buildWA()}" target="_blank">
+    `<div class="cart-total"><span>${S.label_total}</span><span>${fmt(total)}</span></div>` +
+    deliveryBlock +
+    `<div class="cart-actions">
+      ${hintText}
+      <button class="oa oa-wa" ${disabledAttr} onclick="placeOrder()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.857L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.64-.514-5.145-1.406l-.369-.219-3.762.981.999-3.665-.24-.378A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
         ${S.btn_order_wa}
-      </a>
+      </button>
       <a class="oa oa-ig" href="https://instagram.com/${S.instagram}" target="_blank">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
         ${S.btn_order_ig}
       </a>
-      <button class="oa oa-delivery" onclick="openDelivery()">
-        📦 ${S.btn_order_delivery || "Оформить доставку"}
-      </button>
       <button class="oa oa-clear" onclick="clearCart()">${S.btn_clear}</button>
     </div>`;
 }
 
-function buildWA(deliveryInfo) {
-  const itemPrice = it => currency === "primary" ? it.price_primary : it.price_secondary;
-  let msg = (S.wa_msg_header || "Хочу сделать заказ:") + "\n\n";
-  cart.forEach(it => {
-    const attrs = [
-      `${S.label_size}: ${it.size}`,
-      it.color  ? `${S.label_color}: ${it.color}` : "",
-      it.number ? `#${it.number}` : "",
-    ].filter(Boolean).join(", ");
-    const preorderTag = it.preorder ? ` [${S.wa_preorder_tag || "ПОД ЗАКАЗ"}]` : "";
-    msg += `• ${it.name}${preorderTag} (${attrs})\n  ${it.qty} шт. — ${fmt(itemPrice(it) * it.qty)}\n`;
-  });
-  const total = cart.reduce((s,x) => s + itemPrice(x) * x.qty, 0);
-  msg += `\n${S.label_total}: ${fmt(total)}`;
-  if (cart.some(it => it.preorder)) {
-    msg += `\n\n${S.wa_preorder_note || "Позиции «ПОД ЗАКАЗ» требуют времени на доставку, уточним сроки отдельно."}`;
-  }
-  if (deliveryInfo) msg += "\n\n" + deliveryInfo;
-  if (S.wa_msg_footer) msg += "\n" + S.wa_msg_footer;
-  return `https://wa.me/${S.whatsapp}?text=${encodeURIComponent(msg)}`;
-}
-
-function ciQ(i, d) { cart[i].qty = Math.max(1, cart[i].qty + d); updCount(); renderCart(); }
-function ciDel(i)  { cart.splice(i, 1); updCount(); renderCart(); }
-function clearCart() { cart = []; updCount(); renderCart(); }
+function ciQ(i,d){cart[i].qty=Math.max(1,cart[i].qty+d);updCount();renderCart();}
+function ciDel(i){cart.splice(i,1);updCount();renderCart();}
+function clearCart(){cart=[];deliveryData=null;updCount();renderCart();}
 
 /* ════ DELIVERY ════ */
-let activeDelivery = 'qazpost';
-
-function openDelivery() {
-  closeId('cart-ov');
-  setTimeout(() => {
-    document.getElementById('delivery-ov').classList.add('open');
-  }, 200);
+function switchDelivery(type){
+  activeDelivery=type;
+  renderCart(); // перерисуем корзину чтобы подсветить нужный таб
 }
 
-function switchDelivery(type) {
-  activeDelivery = type;
-  document.querySelectorAll('.dtab').forEach((t, i) => {
-    t.classList.toggle('active', ['qazpost','cdek'][i] === type);
-  });
-  document.querySelectorAll('.dtab-pane').forEach(p => p.classList.remove('active'));
-  document.getElementById('pane-' + type).classList.add('active');
+function saveDelivery(type){
+  let data={type};
+  if(type==='qazpost'){
+    const name=(document.getElementById('qp-name')||{}).value?.trim()||"";
+    const phone=(document.getElementById('qp-phone')||{}).value?.trim()||"";
+    const address=(document.getElementById('qp-address')||{}).value?.trim()||"";
+    if(!name||!phone||!address){showToast("Заполните обязательные поля (*)");return;}
+    data={type,name,phone,
+      index:(document.getElementById('qp-index')||{}).value?.trim()||"",
+      city:(document.getElementById('qp-city')||{}).value?.trim()||"",
+      region:(document.getElementById('qp-region')||{}).value?.trim()||"",
+      address};
+  }else{
+    const name=(document.getElementById('cdek-name')||{}).value?.trim()||"";
+    const phone=(document.getElementById('cdek-phone')||{}).value?.trim()||"";
+    const address=(document.getElementById('cdek-address')||{}).value?.trim()||"";
+    if(!name||!phone||!address){showToast("Заполните обязательные поля (*)");return;}
+    data={type,name,phone,address};
+  }
+  deliveryData=data;
+  showToast("Адрес доставки сохранён ✓");
+  renderCart();
 }
 
-function submitDelivery(type) {
-  let info = "";
-  if (type === 'qazpost') {
-    const name    = document.getElementById('qp-name').value.trim();
-    const phone   = document.getElementById('qp-phone').value.trim();
-    const index   = document.getElementById('qp-index').value.trim();
-    const city    = document.getElementById('qp-city').value.trim();
-    const region  = document.getElementById('qp-region').value.trim();
-    const address = document.getElementById('qp-address').value.trim();
+function deliveryText(){
+  if(!deliveryData)return"";
+  const d=deliveryData;
+  if(d.type==='qazpost'){
+    return`📮 Доставка: QazPost\nПолучатель: ${d.name}\nТелефон: ${d.phone}${d.index?"\nИндекс: "+d.index:""}${d.city?"\nГород: "+d.city:""}${d.region?"\nОбласть: "+d.region:""}\nОтделение: ${d.address}`;
+  }
+  return`📦 Доставка: CDEK\nПолучатель: ${d.name}\nТелефон: ${d.phone}\nПВЗ: ${d.address}`;
+}
 
-    if (!name || !phone || !address) {
-      showToast("Заполните обязательные поля");
-      return;
-    }
-    info = `📮 Доставка: QazPost\nПолучатель: ${name}\nТелефон: ${phone}${index ? "\nИндекс: " + index : ""}${city ? "\nГород: " + city : ""}${region ? "\nОбласть: " + region : ""}\nОтделение: ${address}`;
-  } else {
-    const name    = document.getElementById('cdek-name').value.trim();
-    const phone   = document.getElementById('cdek-phone').value.trim();
-    const address = document.getElementById('cdek-address').value.trim();
+/* ════ ORDER NUMBER ════ */
+function genOrderNum(){
+  const now=new Date();
+  const dd=String(now.getDate()).padStart(2,'0');
+  const mm=String(now.getMonth()+1).padStart(2,'0');
+  const yy=String(now.getFullYear()).slice(-2);
+  const seq=Number(localStorage.getItem('f1_order_seq')||0)+1;
+  localStorage.setItem('f1_order_seq',seq);
+  return`${dd}${mm}${yy}-${seq}`;
+}
 
-    if (!name || !phone || !address) {
-      showToast("Заполните обязательные поля");
-      return;
-    }
-    info = `📦 Доставка: CDEK\nПолучатель: ${name}\nТелефон: ${phone}\nПВЗ: ${address}`;
+/* ════ PLACE ORDER ════ */
+let lastOrderNum="";
+async function placeOrder(){
+  if(!deliveryData){showToast("Заполните адрес доставки");return;}
+  const orderNum=genOrderNum();
+  lastOrderNum=orderNum;
+
+  const itemPrice=it=>currency==="primary"?it.price_primary:it.price_secondary;
+  const total=cart.reduce((s,x)=>s+itemPrice(x)*x.qty,0);
+
+  // Запись в Google Sheets (если webhook настроен)
+  if(CSV.orders_webhook){
+    const payload={
+      order_num:orderNum,
+      date:new Date().toLocaleString("ru-RU"),
+      delivery_type:deliveryData.type,
+      recipient:deliveryData.name,
+      phone:deliveryData.phone,
+      address:deliveryData.address,
+      city:deliveryData.city||"",
+      region:deliveryData.region||"",
+      index:deliveryData.index||"",
+      items:cart.map(it=>`${it.name} (${it.size}) x${it.qty}`).join("; "),
+      total:total,
+      currency:curCode(),
+    };
+    try{
+      await fetch(CSV.orders_webhook,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload),
+      });
+    }catch(e){console.warn("Webhook error",e);}
   }
 
-  const url = buildWA(info);
-  window.open(url, '_blank');
-  closeId('delivery-ov');
+  // WhatsApp сообщение — только номер заказа
+  const waMsg=`${S.wa_msg_header||"Привет!"}\n\nХочу оформить заказ #${orderNum}`;
+  const waUrl=`https://wa.me/${S.whatsapp}?text=${encodeURIComponent(waMsg)}`;
+
+  // Показываем confirm modal
+  document.getElementById("confirm-order-num").textContent="#"+orderNum;
+  document.getElementById("confirm-wa-btn").onclick=()=>{window.open(waUrl,'_blank');};
+  closeId("cart-ov");
+  document.getElementById("confirm-ov").classList.add("open");
+
+  // Очищаем корзину и доставку
+  cart=[];deliveryData=null;updCount();
 }
 
 /* ════ OVERLAYS ════ */
-function closeOv(e, id) { if (e.target.id === id) document.getElementById(id).classList.remove("open"); }
-function closeId(id)    { document.getElementById(id).classList.remove("open"); }
-function showToast(msg) {
-  const t = document.getElementById("toast");
-  t.textContent = msg; t.classList.add("show");
-  setTimeout(() => t.classList.remove("show"), 2200);
+function closeOv(e,id){if(e.target.id===id)document.getElementById(id).classList.remove("open");}
+function closeId(id){document.getElementById(id).classList.remove("open");}
+function showToast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),2500);
 }
 
 /* ════ LIGHTBOX ════ */
-let lbPhotos = [], lbIdx = 0;
-
-function lbOpen(photos, startIdx) {
-  lbPhotos = photos; lbIdx = startIdx || 0;
-  lbRender();
-  document.getElementById("lb").classList.add("open");
-  document.body.style.overflow = "hidden";
-}
-function lbClose() {
-  document.getElementById("lb").classList.remove("open");
-  document.getElementById("lb-wrap").classList.remove("zoomed");
-  document.body.style.overflow = "";
-}
-function lbRender() {
-  const wrap    = document.getElementById("lb-wrap");
+let lbPhotos=[],lbIdx=0;
+function lbOpen(photos,startIdx){lbPhotos=photos;lbIdx=startIdx||0;lbRender();document.getElementById("lb").classList.add("open");document.body.style.overflow="hidden";}
+function lbClose(){document.getElementById("lb").classList.remove("open");document.getElementById("lb-wrap").classList.remove("zoomed");document.body.style.overflow="";}
+function lbRender(){
+  const wrap=document.getElementById("lb-wrap");
   wrap.classList.remove("zoomed");
-  document.getElementById("lb-img").src = driveThumb(lbPhotos[lbIdx], 1200);
-  const multi = lbPhotos.length > 1;
-  document.getElementById("lb-counter").textContent = multi ? `${lbIdx+1} / ${lbPhotos.length}` : "";
-  document.getElementById("lb-prev").style.display = multi ? "flex" : "none";
-  document.getElementById("lb-next").style.display = multi ? "flex" : "none";
+  document.getElementById("lb-img").src=driveThumb(lbPhotos[lbIdx],1200);
+  const multi=lbPhotos.length>1;
+  document.getElementById("lb-counter").textContent=multi?`${lbIdx+1} / ${lbPhotos.length}`:"";
+  document.getElementById("lb-prev").style.display=multi?"flex":"none";
+  document.getElementById("lb-next").style.display=multi?"flex":"none";
 }
-function lbMove(dir) { lbIdx = (lbIdx + dir + lbPhotos.length) % lbPhotos.length; lbRender(); }
-function lbToggleZoom() { document.getElementById("lb-wrap").classList.toggle("zoomed"); }
-function lbBgClick(e) { if (e.target === document.getElementById("lb")) lbClose(); }
-
-document.addEventListener("keydown", e => {
-  if (!document.getElementById("lb").classList.contains("open")) return;
-  if (e.key === "Escape")     lbClose();
-  if (e.key === "ArrowRight") lbMove(1);
-  if (e.key === "ArrowLeft")  lbMove(-1);
+function lbMove(dir){lbIdx=(lbIdx+dir+lbPhotos.length)%lbPhotos.length;lbRender();}
+function lbToggleZoom(){document.getElementById("lb-wrap").classList.toggle("zoomed");}
+function lbBgClick(e){if(e.target===document.getElementById("lb"))lbClose();}
+document.addEventListener("keydown",e=>{
+  if(!document.getElementById("lb").classList.contains("open"))return;
+  if(e.key==="Escape")lbClose();
+  if(e.key==="ArrowRight")lbMove(1);
+  if(e.key==="ArrowLeft")lbMove(-1);
 });
-
-let lbTouchX = null;
-document.getElementById("lb").addEventListener("touchstart", e => { lbTouchX = e.touches[0].clientX; }, {passive:true});
-document.getElementById("lb").addEventListener("touchend", e => {
-  if (lbTouchX === null) return;
-  const dx = e.changedTouches[0].clientX - lbTouchX;
-  if (Math.abs(dx) > 50) lbMove(dx < 0 ? 1 : -1);
-  lbTouchX = null;
-}, {passive:true});
+let lbTouchX=null;
+document.getElementById("lb").addEventListener("touchstart",e=>{lbTouchX=e.touches[0].clientX;},{passive:true});
+document.getElementById("lb").addEventListener("touchend",e=>{
+  if(lbTouchX===null)return;
+  const dx=e.changedTouches[0].clientX-lbTouchX;
+  if(Math.abs(dx)>50)lbMove(dx<0?1:-1);
+  lbTouchX=null;
+},{passive:true});
 
 /* ════ BOOT ════ */
-async function init() {
-  await Promise.all([loadSettings(), loadCatalog()]);
+async function init(){
+  await Promise.all([loadSettings(),loadCatalog()]);
   applySettings();
-  activeCat = S.filter_all || "Все";
+  activeCat=S.filter_all||"Все";
   renderFilters();
   renderGrid();
 }
-
 init();
 </script>
 </body>
