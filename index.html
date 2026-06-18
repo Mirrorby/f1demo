@@ -10,7 +10,7 @@ const CSV = {
   catalog:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=0&single=true&output=csv",
   settings: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQX6uoCwD-7fcpfGgvU_vWKlsmrn7dr0Q21bFohUpOMukETLfHniwLPv3j6b8LIJ2EYJnU5AJWpcnan/pub?gid=1470648308&single=true&output=csv",
   // Вставь сюда URL из Apps Script после деплоя:
-  orders_webhook: "https://script.google.com/macros/s/AKfycbz71d3T-d__yCaUjo8wPKx2cmwYW1ZjScWa3mXuiWCj1of9RFYWspTN6tS_2h6kAw9l/exec",
+  orders_webhook: "https://script.google.com/macros/s/AKfycbyabqCKNwA8nWhDQntgbA1A0bMOUHG_W5BGCDdm-wJH9wrTyNuB6yAIbXBNSFw8fZP3/exec",
 };
 </script>
 <style>
@@ -27,7 +27,7 @@ button{font-family:inherit;cursor:pointer}
   --radius:10px;--rsm:6px;
 }
 /* Hero */
-.hero{position:relative;padding:4rem 1.5rem 3rem;overflow:hidden;text-align:center;background:#0a0a0a}
+.hero{position:relative;padding:2.5rem 1.5rem 2rem;overflow:hidden;text-align:center;background:#0a0a0a}
 .hero::before{content:'';position:absolute;top:0;left:0;right:0;height:6px;background:repeating-linear-gradient(90deg,#fff 0,#fff 18px,#000 18px,#000 36px)}
 .hero-lines{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .hero-lines span{position:absolute;height:1px;background:linear-gradient(90deg,transparent,rgba(225,6,0,.35),transparent);animation:sl 3s linear infinite;opacity:0}
@@ -902,12 +902,19 @@ async function placeOrder(){
       status:"В обработке",
     };
     try{
-      await fetch(CSV.orders_webhook,{
-        method:"POST",
-        mode:"no-cors",          // ← ключевое изменение
-        body:JSON.stringify(payload), // Content-Type не ставим — будет text/plain (simple request)
-      });
-    }catch(e){console.warn("Webhook error",e);}
+      // Диагностика — видно в DevTools Console
+      if(!CSV.orders_webhook){
+        console.warn("⚠️ orders_webhook не задан — запись в таблицу пропущена");
+      } else {
+        console.log("📤 Отправляем заказ на webhook:", CSV.orders_webhook);
+        await fetch(CSV.orders_webhook,{
+          method:"POST",
+          mode:"no-cors",
+          body:JSON.stringify(payload),
+        });
+        console.log("✅ Webhook вызван (ответ opaque из-за no-cors — это нормально)");
+      }
+    }catch(e){console.warn("❌ Webhook error",e);}
   }
 
   // WhatsApp сообщение — только номер заказа
