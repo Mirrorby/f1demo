@@ -532,7 +532,7 @@ function getCats(){return[S.filter_all||"Все",...new Set(products.map(p=>p.ca
 function renderFilters(){
   if(!activeCat)activeCat=S.filter_all||"Все";
   document.getElementById("filters").innerHTML=getCats().map(c=>
-    `<button class="fbtn${c===activeCat?" active":""}" onclick="setF(${JSON.stringify(c)})">${c}</button>`
+    `<button class="fbtn${c===activeCat?" active":""}" onclick="setF('${c.replace(/'/g,"\\'")}')">${c}</button>`
   ).join("");
 }
 function setF(c){activeCat=c;renderFilters();renderGrid();}
@@ -801,7 +801,7 @@ function renderCart(){
         <input class="d-input" id="qp-address" type="text" placeholder="ул. Абая 1, отделение №5" value="${filled&&filled.type==='qazpost'?filled.address:''}">
       </div>
       <p class="pvz-hint">Найти отделения: <a href="https://qazpost.kz/ru/otdeleniya" target="_blank">qazpost.kz/ru/otdeleniya</a></p>
-      <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('qazpost')">Подтвердить адрес QazPost</button>
+      <button class="d-submit" id="submit-qazpost" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer;opacity:${filled&&filled.type==='qazpost'?'.4':'1'};cursor:${filled&&filled.type==='qazpost'?'default':'pointer'}" onclick="saveDelivery('qazpost')">Подтвердить адрес QazPost</button>
     </div>
 
     <div class="dtab-pane${activeDelivery==='cdek'?' active':''}" id="pane-cdek">
@@ -818,7 +818,7 @@ function renderCart(){
         <input class="d-input" id="cdek-address" type="text" placeholder="г. Алматы, ул. Достык 5, ПВЗ CDEK" value="${filled&&filled.type==='cdek'?filled.address:''}">
       </div>
       <p class="pvz-hint">Найти ПВЗ: <a href="https://www.cdek.kz/ru/offices" target="_blank">cdek.kz/ru/offices</a></p>
-      <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('cdek')">Подтвердить адрес CDEK</button>
+      <button class="d-submit" id="submit-cdek" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer;opacity:${filled&&filled.type==='cdek'?'.4':'1'};cursor:${filled&&filled.type==='cdek'?'default':'pointer'}" onclick="saveDelivery('cdek')">Подтвердить адрес CDEK</button>
     </div>
   </div>`;
 
@@ -836,8 +836,20 @@ function renderCart(){
       </button>
       <button class="oa oa-clear" onclick="clearCart()">${S.btn_clear}</button>
     </div>`;
+  requestAnimationFrame(()=>attachDeliveryWatchers());
 }
 
+function attachDeliveryWatchers(){
+  const inputs = document.querySelectorAll('.d-input');
+  inputs.forEach(inp => {
+    inp.addEventListener('input', ()=>{
+      const type = activeDelivery;
+      const btn = document.getElementById('submit-'+type);
+      if(btn){btn.style.opacity='1';btn.style.cursor='pointer';}
+    }, {once:false});
+  });
+}
+  
 function ciQ(i,d){cart[i].qty=Math.max(1,cart[i].qty+d);updCount();renderCart();}
 function ciDel(i){cart.splice(i,1);updCount();renderCart();}
 function clearCart(){cart=[];deliveryData=null;updCount();renderCart();}
@@ -897,51 +909,53 @@ function genOrderNum(){
 let lastOrderNum="";
 async function placeOrder(){
   if(!deliveryData){showToast("Заполните адрес доставки");return;}
-  const orderNum=genOrderNum();
-  lastOrderNum=orderNum;
+  const placeBtn=document.querySelector('.oa-place');
+  if(placeBtn){placeBtn.disabled=true;placeBtn.textContent='Оформление…';}
+  try{
+    const orderNum=genOrderNum();
+    lastOrderNum=orderNum;
+    const itemPrice=it=>currency==="primary"?it.price_primary:it.price_secondary;
+    const total=cart.reduce((s,x)=>s+itemPrice(x)*x.qty,0);
 
-  const itemPrice=it=>currency==="primary"?it.price_primary:it.price_secondary;
-  const total=cart.reduce((s,x)=>s+itemPrice(x)*x.qty,0);
+    if(CSV.orders_webhook){
+      const payload={
+        order_num:orderNum,
+        date:new Date().toLocaleString("ru-RU"),
+        delivery_type:deliveryData.type,
+        recipient:deliveryData.name,
+        phone:deliveryData.phone,
+        address:deliveryData.address,
+        city:deliveryData.city||"",
+        region:deliveryData.region||"",
+        index:deliveryData.index||"",
+        items:cart.map(it=>`${it.name} (${it.sizeNote?"⚠️ размер уточнить":it.size}) ${it.qty} шт.`).join("\n"),
+        total:total,
+        currency:curCode(),
+        status:"В обработке",
+      };
+      try{
+        console.log("📤 Отправляем заказ:", CSV.orders_webhook);
+        await fetch(CSV.orders_webhook,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)});
+        console.log("✅ Webhook вызван");
+      }catch(e){console.warn("❌ Webhook error",e);}
+    }
 
-  // Запись в Google Sheets (если webhook настроен)
-  // CORS-fix: Apps Script не возвращает заголовки CORS для fetch из браузера.
-  // Решение: mode:"no-cors" + Content-Type:"text/plain" (simple request).
-  // Ответ придёт opaque (не читаем), но запись в таблицу сработает.
-  if(CSV.orders_webhook){
-    const payload={
-      order_num:orderNum,
-      date:new Date().toLocaleString("ru-RU"),
-      delivery_type:deliveryData.type,
-      recipient:deliveryData.name,
-      phone:deliveryData.phone,
-      address:deliveryData.address,
-      city:deliveryData.city||"",
-      region:deliveryData.region||"",
-      index:deliveryData.index||"",
-      items:cart.map(it=>`${it.name} (${it.sizeNote?"⚠️ размер уточнить":it.size}) x${it.qty}`).join("; "),
-      total:total,
-      currency:curCode(),
-      pvz_link:deliveryData.pvzLink||"",
-      status:"В обработке",
-    };
-    try{
-      // Диагностика — видно в DevTools Console
-      if(!CSV.orders_webhook){
-        console.warn("⚠️ orders_webhook не задан — запись в таблицу пропущена");
-      } else {
-        console.log("📤 Отправляем заказ на webhook:", CSV.orders_webhook);
-        await fetch(CSV.orders_webhook,{
-          method:"POST",
-          mode:"no-cors",
-          body:JSON.stringify(payload),
-        });
-        console.log("✅ Webhook вызван (ответ opaque из-за no-cors — это нормально)");
-      }
-    }catch(e){console.warn("❌ Webhook error",e);}
+    const waMsg=`${S.wa_msg_header||"Привет!"}\n\n#${orderNum}`;
+    const waUrl=`https://wa.me/${S.whatsapp}?text=${encodeURIComponent(waMsg)}`;
+    document.getElementById("confirm-order-num").textContent="#"+orderNum;
+    document.getElementById("confirm-wa-btn").onclick=()=>{window.open(waUrl,'_blank');};
+    closeId("cart-ov");
+    document.getElementById("confirm-ov").classList.add("open");
+    cart=[];deliveryData=null;updCount();
+
+  }finally{
+    const b=document.querySelector('.oa-place');
+    if(b){b.disabled=false;b.textContent='Оформить заказ';}
   }
+}
 
   // WhatsApp сообщение — только номер заказа
-  const waMsg=`${S.wa_msg_header||"Привет!"}\n\nХочу оформить заказ #${orderNum}`;
+  const waMsg=`${S.wa_msg_header||"Привет!"}\n\n#${orderNum}`;
   const waUrl=`https://wa.me/${S.whatsapp}?text=${encodeURIComponent(waMsg)}`;
 
   // Показываем confirm modal
