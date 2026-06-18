@@ -40,10 +40,14 @@ button{font-family:inherit;cursor:pointer}
 .hero-badge{display:inline-flex;align-items:center;gap:6px;background:var(--red);color:#fff;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:4px 12px;border-radius:3px;margin-bottom:1.25rem}
 .hero-title{font-size:clamp(1.8rem,5vw,3rem);font-weight:800;line-height:1.1;letter-spacing:-.02em;color:#fff;margin-bottom:.75rem}
 .hero-subtitle{font-size:clamp(.9rem,2vw,1.05rem);color:var(--muted);line-height:1.6;max-width:480px;margin:0 auto 1.5rem}
-.hero-contacts{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-.hero-link{display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:var(--rsm);font-size:13px;font-weight:600;border:1px solid var(--border);color:var(--muted);transition:all .2s}
-.hero-link:hover{color:#fff;border-color:#444}
-.hero-link svg{width:16px;height:16px;flex-shrink:0}
+.hero-contacts{display:flex;flex-direction:column;align-items:center;gap:8px}
+.hero-support-label{font-size:12px;color:var(--muted);letter-spacing:.3px}
+.hero-contact-btns{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.hero-link{display:flex;align-items:center;gap:8px;padding:10px 22px;border-radius:var(--rsm);font-size:13px;font-weight:700;border:none;color:#fff;transition:transform .15s,opacity .15s}
+.hero-link:hover{opacity:.88;transform:translateY(-1px)}
+.hero-link-wa{background:#25D366}
+.hero-link-ig{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.hero-link svg{width:17px;height:17px;flex-shrink:0}
 /* Layout */
 .container{max-width:1000px;margin:0 auto;padding:0 1rem}
 .toolbar{display:flex;align-items:center;justify-content:space-between;padding:1.25rem 0 1rem;gap:10px;flex-wrap:wrap}
@@ -175,6 +179,7 @@ button{font-family:inherit;cursor:pointer}
 .oa-wa{background:#25D366;color:#fff}
 .oa-ig{background:#C13584;color:#fff}
 .oa:disabled{background:var(--surface3)!important;color:var(--dim)!important;cursor:default;opacity:1}
+.oa-place{background:var(--red);color:#fff}
 .oa-clear{background:transparent!important;border:1px solid var(--border)!important;color:var(--muted)!important;font-size:13px!important;padding:9px!important}
 .oa-clear:not(:disabled):hover{border-color:#444!important;color:#fff!important}
 .delivery-required-hint{font-size:11px;color:var(--dim);text-align:center;margin-top:2px}
@@ -202,6 +207,22 @@ button{font-family:inherit;cursor:pointer}
 .order-num{font-size:28px;font-weight:800;color:var(--red);margin-bottom:6px}
 .order-sub{font-size:13px;color:var(--muted);line-height:1.6}
 .order-wa-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;padding:13px;background:#25D366;color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer}
+/* Product description */
+.pm-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1rem;padding:10px 12px;background:var(--surface2);border-radius:var(--rsm);border-left:3px solid var(--border)}
+/* 2GIS map container */
+.dgis-map-wrap{position:relative;width:100%;height:200px;border-radius:var(--rsm);border:1px solid var(--border);overflow:hidden;background:var(--surface3);margin-bottom:5px}
+.dgis-map-wrap #dgis-map-qp,
+.dgis-map-wrap #dgis-map-cdek{width:100%;height:100%}
+.map-search-bar{display:flex;gap:6px;margin-bottom:8px}
+.map-search-input{flex:1;background:var(--surface3);border:1px solid var(--border);border-radius:var(--rsm);color:var(--text);font-size:12px;padding:7px 10px;outline:none;font-family:inherit}
+.map-search-input:focus{border-color:#555}
+.map-search-btn{padding:7px 12px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.map-pvz-list{max-height:130px;overflow-y:auto;margin-bottom:8px;scrollbar-width:thin;scrollbar-color:#333 transparent}
+.map-pvz-item{padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px;line-height:1.4;transition:background .12s}
+.map-pvz-item:hover{background:var(--surface2)}
+.map-pvz-item strong{display:block;color:var(--text);font-weight:600;margin-bottom:2px}
+.map-pvz-item span{color:var(--muted)}
+.map-pvz-empty{padding:10px;font-size:12px;color:var(--dim);text-align:center}
 </style>
 </head>
 <body>
@@ -216,14 +237,17 @@ button{font-family:inherit;cursor:pointer}
     <h1 class="hero-title" id="hero-title">Загрузка…</h1>
     <p class="hero-subtitle" id="hero-subtitle"></p>
     <div class="hero-contacts">
-      <a class="hero-link" id="hero-wa" href="#" target="_blank">
+      <p class="hero-support-label" id="hero-support-label">По всем вопросам пишите нам</p>
+      <div class="hero-contact-btns">
+      <a class="hero-link hero-link-wa" id="hero-wa" href="#" target="_blank">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.857L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.64-.514-5.145-1.406l-.369-.219-3.762.981.999-3.665-.24-.378A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
         WhatsApp
       </a>
-      <a class="hero-link" id="hero-ig" href="#" target="_blank">
+      <a class="hero-link hero-link-ig" id="hero-ig" href="#" target="_blank">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
         Instagram
       </a>
+      </div>
     </div>
   </div>
 </section>
@@ -266,6 +290,7 @@ button{font-family:inherit;cursor:pointer}
       </div>
       <div class="pm-team" id="pm-team"></div>
       <div class="pm-name" id="pm-name"></div>
+      <div class="pm-desc" id="pm-desc" style="display:none"></div>
       <div class="pm-attrs" id="pm-attrs"></div>
       <div class="pm-price" id="pm-price"></div>
       <div class="field-label" id="lbl-size-h">Размер</div>
@@ -348,6 +373,7 @@ const DEFAULTS = {
   wa_msg_header:"Привет! Хочу сделать заказ:",wa_msg_footer:"",
   wa_preorder_tag:"ПОД ЗАКАЗ",
   wa_preorder_note:"Позиции «ПОД ЗАКАЗ» требуют времени на доставку, уточним сроки.",
+  support_label:"По всем вопросам пишите нам",
   currency_primary_symbol:"₸",currency_primary_code:"KZT",
   currency_secondary_symbol:"₽",currency_secondary_code:"RUB",
 };
@@ -467,6 +493,7 @@ function normRows(rows){
       price_primary:toNum(findPriceCol(r,'tenge')),
       price_secondary:toNum(findPriceCol(r,'ruble')),
       avail:pick(r,'наличие','avail')||"да",
+      description:pick(r,'описание','description','desc'),
       photos,
       photo:photos[0]||"",
       emoji:"🏁",
@@ -485,6 +512,8 @@ function applySettings(){
   document.getElementById("footer-text").textContent=S.footer_text;
   document.getElementById("hero-wa").href="https://wa.me/"+S.whatsapp;
   document.getElementById("hero-ig").href="https://instagram.com/"+S.instagram;
+  const sl=document.getElementById("hero-support-label");
+  if(sl)sl.textContent=S.support_label||"По всем вопросам пишите нам";
   document.getElementById("lbl-cart").textContent=S.btn_cart;
   document.getElementById("lbl-cart-title").textContent=S.btn_cart;
   document.getElementById("lbl-pick").textContent=S.label_pick;
@@ -636,12 +665,19 @@ function openProduct(id){
   if(!isAvail(p))return;
   curP=p;curQty=1;
   const szArr=p.sizes.split(",").map(s=>s.trim()).filter(Boolean);
-  curSize=szArr.length===1?szArr[0]:null;
+  const isPre=isPreorder(p);
+  // Для преордера без размеров — сразу ставим заглушку
+  const noSizes=szArr.length===0;
+  curSize=szArr.length===1?szArr[0]:(isPre&&noSizes?"Уточнить размер":null);
   buildCarousel(p.photos,p.emoji);
   document.getElementById("pm-team").textContent=p.team;
   document.getElementById("pm-name").textContent=p.name;
   document.getElementById("pm-price").textContent=fmt(priceOf(p));
   document.getElementById("pm-qty").textContent="1";
+  // Описание
+  const descEl=document.getElementById("pm-desc");
+  if(p.description){descEl.textContent=p.description;descEl.style.display="block";}
+  else{descEl.style.display="none";}
   const attrs=[
     p.year?`<span class="pm-attr"><b>${S.label_year}:</b> ${p.year}</span>`:"",
     p.color?`<span class="pm-attr"><b>${S.label_color}:</b> ${p.color}</span>`:"",
@@ -650,14 +686,21 @@ function openProduct(id){
   document.getElementById("pm-attrs").innerHTML=attrs;
 
   const hasSizeStock=Object.keys(p.sizeStock).length>0;
-  document.getElementById("pm-sizes").innerHTML=szArr.map(s=>{
-    // Размер недоступен: есть колонка и значение = 0
-    const stockVal=p.sizeStock[s];
-    const isOut=hasSizeStock&&stockVal!==undefined&&stockVal<=0;
-    return`<button class="size-btn${curSize===s?" sel":""}${isOut?" ":""}"
-      ${isOut?"disabled":""}
-      onclick="selSz('${s}')">${s}</button>`;
-  }).join("");
+
+  if(noSizes&&isPre){
+    // Нет ни одного размера — преордер, показываем информационную плашку
+    document.getElementById("pm-sizes").innerHTML=
+      `<div style="font-size:12px;color:var(--muted);background:var(--surface3);padding:8px 12px;border-radius:var(--rsm);width:100%">Размер будет уточнён менеджером при подтверждении заказа</div>`;
+  }else{
+    document.getElementById("pm-sizes").innerHTML=szArr.map(s=>{
+      const stockVal=p.sizeStock[s];
+      // Размер заблокирован только если точно 0 и это НЕ преордер
+      const isOut=!isPre&&hasSizeStock&&stockVal!==undefined&&stockVal<=0;
+      return`<button class="size-btn${curSize===s?" sel":""}${isOut?" ":""}"
+        ${isOut?"disabled":""}
+        onclick="selSz('${s}')">${s}</button>`;
+    }).join("");
+  }
 
   updAddBtn();
   document.getElementById("pm-ov").classList.add("open");
@@ -670,19 +713,22 @@ function selSz(s){
 function chQty(d){curQty=Math.max(1,Math.min(99,curQty+d));document.getElementById("pm-qty").textContent=curQty;}
 function updAddBtn(){
   const btn=document.getElementById("pm-add");
-  btn.disabled=!curSize;
-  btn.textContent=curSize?S.btn_add:S.btn_add_size;
+  // Если товар на заказ и размер = "Уточнить размер" (заглушка) — кнопка активна
+  const ready=!!curSize;
+  btn.disabled=!ready;
+  btn.textContent=ready?S.btn_add:(S.btn_add_size||"Выберите размер");
 }
 
 /* ════ CART ════ */
 function addToCart(){
   if(!curSize||!curP)return;
+  const sizeNote=curSize==="Уточнить размер"; // флаг для пометки в заказе
   const key=curP.id+"|"+curSize;
   const ex=cart.find(x=>x.key===key);
   if(ex){ex.qty+=curQty;}
   else{cart.push({
     key,id:curP.id,name:curP.name,team:curP.team,emoji:curP.emoji,photo:curP.photo,
-    size:curSize,qty:curQty,
+    size:curSize,qty:curQty,sizeNote,
     price_primary:curP.price_primary,price_secondary:curP.price_secondary,
     year:curP.year,color:curP.color,number:curP.number,
     avail:curP.avail,preorder:isPreorder(curP),cat:curP.cat,
@@ -709,7 +755,7 @@ function renderCart(){
       ?`<img class="ci-img" src="${driveThumb(it.photo,80)}" alt="" onerror="this.style.display='none'">`
       :`<div class="ci-emoji">${it.emoji}</div>`;
     const sub=[
-      `${S.label_size}: ${it.size}`,
+      it.sizeNote?`⚠️ Размер: уточнить у менеджера`:`${S.label_size}: ${it.size}`,
       it.color?`${S.label_color}: ${it.color}`:"",
       it.number?`#${it.number}`:"",
     ].filter(Boolean).join(" · ");
@@ -771,9 +817,13 @@ function renderCart(){
         <input class="d-input" id="qp-address" type="text" placeholder="ул. Абая 1, отделение №5" value="${filled&&filled.type==='qazpost'?filled.address:''}">
       </div>
       <div class="map-section">
-        <div class="map-section-title">Найти отделение QazPost</div>
-        <div class="map-frame"><iframe src="https://yandex.ru/map-widget/v1/?text=QazPost+Казахстан&z=11&l=map" allowfullscreen loading="lazy"></iframe></div>
-        <p class="pvz-hint">Все отделения: <a href="https://qazpost.kz/ru/otdeleniya" target="_blank">qazpost.kz/ru/otdeleniya</a></p>
+        <div class="map-section-title">🔍 Найти отделение QazPost</div>
+        <div class="map-search-bar">
+          <input class="map-search-input" id="qp-map-search" type="text" placeholder="Введите город или улицу...">
+          <button class="map-search-btn" onclick="pvzSearch('qazpost')">Найти</button>
+        </div>
+        <div class="map-pvz-list" id="qp-pvz-list"><div class="map-pvz-empty">Введите запрос для поиска отделений</div></div>
+        <p class="pvz-hint">Нажмите на результат — адрес подставится в поле выше. Или зайдите на <a href="https://qazpost.kz/ru/otdeleniya" target="_blank">qazpost.kz/ru/otdeleniya</a></p>
       </div>
       <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('qazpost')">Подтвердить адрес QazPost</button>
     </div>
@@ -792,9 +842,13 @@ function renderCart(){
         <input class="d-input" id="cdek-address" type="text" placeholder="г. Алматы, ул. Достык 5, ПВЗ CDEK" value="${filled&&filled.type==='cdek'?filled.address:''}">
       </div>
       <div class="map-section">
-        <div class="map-section-title">Найти ПВЗ CDEK</div>
-        <div class="map-frame"><iframe src="https://yandex.ru/map-widget/v1/?text=CDEK+Казахстан&z=11&l=map" allowfullscreen loading="lazy"></iframe></div>
-        <p class="pvz-hint">Все ПВЗ: <a href="https://www.cdek.kz/ru/offices" target="_blank">cdek.kz/ru/offices</a></p>
+        <div class="map-section-title">🔍 Найти ПВЗ CDEK</div>
+        <div class="map-search-bar">
+          <input class="map-search-input" id="cdek-map-search" type="text" placeholder="Введите город или улицу...">
+          <button class="map-search-btn" onclick="pvzSearch('cdek')">Найти</button>
+        </div>
+        <div class="map-pvz-list" id="cdek-pvz-list"><div class="map-pvz-empty">Введите запрос для поиска ПВЗ</div></div>
+        <p class="pvz-hint">Нажмите на результат — адрес подставится в поле выше. Или зайдите на <a href="https://www.cdek.kz/ru/offices" target="_blank">cdek.kz/ru/offices</a></p>
       </div>
       <button class="d-submit" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer" onclick="saveDelivery('cdek')">Подтвердить адрес CDEK</button>
     </div>
@@ -809,14 +863,9 @@ function renderCart(){
     deliveryBlock +
     `<div class="cart-actions">
       ${hintText}
-      <button class="oa oa-wa" ${disabledAttr} onclick="placeOrder()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.857L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.64-.514-5.145-1.406l-.369-.219-3.762.981.999-3.665-.24-.378A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
-        ${S.btn_order_wa}
+      <button class="oa oa-place" ${disabledAttr} onclick="placeOrder()">
+        Оформить заказ
       </button>
-      <a class="oa oa-ig" href="https://instagram.com/${S.instagram}" target="_blank">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-        ${S.btn_order_ig}
-      </a>
       <button class="oa oa-clear" onclick="clearCart()">${S.btn_clear}</button>
     </div>`;
 }
@@ -842,13 +891,14 @@ function saveDelivery(type){
       index:(document.getElementById('qp-index')||{}).value?.trim()||"",
       city:(document.getElementById('qp-city')||{}).value?.trim()||"",
       region:(document.getElementById('qp-region')||{}).value?.trim()||"",
-      address};
+      address,
+      pvzLink:pvzLastLink['qazpost']||""};
   }else{
     const name=(document.getElementById('cdek-name')||{}).value?.trim()||"";
     const phone=(document.getElementById('cdek-phone')||{}).value?.trim()||"";
     const address=(document.getElementById('cdek-address')||{}).value?.trim()||"";
     if(!name||!phone||!address){showToast("Заполните обязательные поля (*)");return;}
-    data={type,name,phone,address};
+    data={type,name,phone,address,pvzLink:pvzLastLink['cdek']||""};
   }
   deliveryData=data;
   showToast("Адрес доставки сохранён ✓");
@@ -886,6 +936,9 @@ async function placeOrder(){
   const total=cart.reduce((s,x)=>s+itemPrice(x)*x.qty,0);
 
   // Запись в Google Sheets (если webhook настроен)
+  // CORS-fix: Apps Script не возвращает заголовки CORS для fetch из браузера.
+  // Решение: mode:"no-cors" + Content-Type:"text/plain" (simple request).
+  // Ответ придёт opaque (не читаем), но запись в таблицу сработает.
   if(CSV.orders_webhook){
     const payload={
       order_num:orderNum,
@@ -897,15 +950,17 @@ async function placeOrder(){
       city:deliveryData.city||"",
       region:deliveryData.region||"",
       index:deliveryData.index||"",
-      items:cart.map(it=>`${it.name} (${it.size}) x${it.qty}`).join("; "),
+      items:cart.map(it=>`${it.name} (${it.sizeNote?"⚠️ размер уточнить":it.size}) x${it.qty}`).join("; "),
       total:total,
       currency:curCode(),
+      pvz_link:deliveryData.pvzLink||"",
+      status:"В обработке",
     };
     try{
       await fetch(CSV.orders_webhook,{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(payload),
+        mode:"no-cors",          // ← ключевое изменение
+        body:JSON.stringify(payload), // Content-Type не ставим — будет text/plain (simple request)
       });
     }catch(e){console.warn("Webhook error",e);}
   }
@@ -924,7 +979,75 @@ async function placeOrder(){
   cart=[];deliveryData=null;updCount();
 }
 
-/* ════ OVERLAYS ════ */
+/* ════ PVZ SEARCH via 2GIS Geocoder ════
+   Используем публичный 2GIS API геокодирования (не требует ключа для базового поиска).
+   Ищем по запросу + фильтруем по названию сервиса (QazPost / CDEK).
+   При клике — подставляем адрес в поле и формируем ссылку 2GIS.
+*/
+let pvzLastLink = { qazpost: "", cdek: "" };
+
+async function pvzSearch(type) {
+  const inputId  = type === 'qazpost' ? 'qp-map-search'  : 'cdek-map-search';
+  const listId   = type === 'qazpost' ? 'qp-pvz-list'    : 'cdek-pvz-list';
+  const query    = (document.getElementById(inputId)||{}).value?.trim() || "";
+  const list     = document.getElementById(listId);
+  if (!list) return;
+  if (!query) { list.innerHTML = '<div class="map-pvz-empty">Введите название города или улицы</div>'; return; }
+
+  const brand    = type === 'qazpost' ? 'QazPost' : 'CDEK';
+  const fullQ    = encodeURIComponent(brand + ' ' + query);
+  const url      = `https://catalog.api.2gis.com/3.0/items?q=${fullQ}&fields=items.point,items.address_name,items.full_name,items.url&page_size=10&key=ruczx2627201072543`;
+
+  list.innerHTML = '<div class="map-pvz-empty">Ищем…</div>';
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+    const items = (data.result?.items || []).filter(it =>
+      (it.full_name || it.name || "").toLowerCase().includes(brand.toLowerCase())
+    );
+    if (!items.length) {
+      list.innerHTML = `<div class="map-pvz-empty">Ничего не найдено. Попробуйте другой запрос.</div>`;
+      return;
+    }
+    list.innerHTML = items.map((it, idx) => {
+      const name = it.full_name || it.name || brand;
+      const addr = it.address_name || "";
+      const lat  = it.point?.lat || "";
+      const lon  = it.point?.lon || "";
+      const dgisUrl = lat && lon
+        ? `https://2gis.kz/geo/${lon},${lat}`
+        : `https://2gis.kz/search/${encodeURIComponent(name + ' ' + addr)}`;
+      return `<div class="map-pvz-item" onclick="pvzSelect('${type}',${JSON.stringify(addr)},${JSON.stringify(dgisUrl)})">
+        <strong>${name}</strong>
+        <span>${addr}</span>
+      </div>`;
+    }).join("");
+  } catch(e) {
+    list.innerHTML = `<div class="map-pvz-empty">Ошибка запроса. Проверьте интернет.</div>`;
+    console.warn("pvzSearch error", e);
+  }
+}
+
+function pvzSelect(type, address, dgisUrl) {
+  const addrFieldId = type === 'qazpost' ? 'qp-address' : 'cdek-address';
+  const el = document.getElementById(addrFieldId);
+  if (el) { el.value = address; el.focus(); }
+  pvzLastLink[type] = dgisUrl;
+  // Подсвечиваем что адрес выбран
+  const listId = type === 'qazpost' ? 'qp-pvz-list' : 'cdek-pvz-list';
+  document.querySelectorAll(`#${listId} .map-pvz-item`).forEach(el => el.style.background = '');
+  // Показываем toast
+  showToast(`Адрес выбран ✓`);
+}
+
+// Enter в поле поиска
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const active = document.activeElement;
+    if (active && active.id === 'qp-map-search')   pvzSearch('qazpost');
+    if (active && active.id === 'cdek-map-search')  pvzSearch('cdek');
+  }
+});
 function closeOv(e,id){if(e.target.id===id)document.getElementById(id).classList.remove("open");}
 function closeId(id){document.getElementById(id).classList.remove("open");}
 function showToast(msg){
