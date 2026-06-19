@@ -894,17 +894,6 @@ function deliveryText(){
   return`📦 Доставка: CDEK\nПолучатель: ${d.name}\nТелефон: ${d.phone}\nПВЗ: ${d.address}`;
 }
 
-/* ════ ORDER NUMBER ════ */
-function genOrderNum(){
-  const now=new Date();
-  const dd=String(now.getDate()).padStart(2,'0');
-  const mm=String(now.getMonth()+1).padStart(2,'0');
-  const yy=String(now.getFullYear()).slice(-2);
-  const seq=Number(localStorage.getItem('f1_order_seq')||0)+1;
-  localStorage.setItem('f1_order_seq',seq);
-  return`${dd}${mm}${yy}-${seq}`;
-}
-
 /* ════ PLACE ORDER ════ */
 let lastOrderNum="";
 async function placeOrder(){
@@ -912,14 +901,12 @@ async function placeOrder(){
   const placeBtn=document.querySelector('.oa-place');
   if(placeBtn){placeBtn.disabled=true;placeBtn.textContent='Оформление…';}
   try{
-    const orderNum=genOrderNum();
-    lastOrderNum=orderNum;
     const itemPrice=it=>currency==="primary"?it.price_primary:it.price_secondary;
     const total=cart.reduce((s,x)=>s+itemPrice(x)*x.qty,0);
 
+    let orderNum="";
     if(CSV.orders_webhook){
       const payload={
-        order_num:orderNum,
         date:new Date().toLocaleString("ru-RU"),
         delivery_type:deliveryData.type,
         recipient:deliveryData.name,
@@ -939,10 +926,18 @@ async function placeOrder(){
       };
       try{
         console.log("📤 Отправляем заказ:", CSV.orders_webhook);
-        await fetch(CSV.orders_webhook,{method:"POST",mode:"no-cors",body:JSON.stringify(payload)});
-        console.log("✅ Webhook вызван");
+        const resp=await fetch(CSV.orders_webhook,{method:"POST",body:JSON.stringify(payload)});
+        const result=await resp.json();
+        orderNum=result.order_num||"";
+        console.log("✅ Заказ создан:", orderNum);
       }catch(e){console.warn("❌ Webhook error",e);}
     }
+
+    if(!orderNum){
+      // запасной вариант на случай сбоя сети — не должен происходить в норме
+      orderNum=new Date().toLocaleDateString("ru-RU").replace(/\./g,"")+"-?";
+    }
+    lastOrderNum=orderNum;
 
     const waMsg=`${S.wa_msg_header||"Привет!"}\n\n#${orderNum}`;
     const waUrl=`https://wa.me/${S.whatsapp}?text=${encodeURIComponent(waMsg)}`;
