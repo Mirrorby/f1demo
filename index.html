@@ -928,6 +928,9 @@ async function placeOrder(){
         console.log("📤 Отправляем заказ:", CSV.orders_webhook);
         const resp=await fetch(CSV.orders_webhook,{method:"POST",body:JSON.stringify(payload)});
         const result=await resp.json();
+        console.log("📥 Сырой ответ сервера:", rawText);
+        let result={};
+        try{result=JSON.parse(rawText);}catch(parseErr){console.warn("⚠️ Не удалось распарсить JSON:", parseErr);}
         orderNum=result.order_num||"";
         console.log("✅ Заказ создан:", orderNum);
       }catch(e){console.warn("❌ Webhook error",e);}
