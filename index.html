@@ -46,6 +46,7 @@ button{font-family:inherit;cursor:pointer}
 .hero-link{display:flex;align-items:center;gap:8px;padding:10px 22px;border-radius:var(--rsm);font-size:13px;font-weight:700;border:none;color:#fff;transition:transform .15s,opacity .15s}
 .hero-link:hover{opacity:.88;transform:translateY(-1px)}
 .hero-link-wa{background:#25D366}
+.hero-link-tg{background:#229ED9}
 .hero-link-ig{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
 .hero-link svg{width:17px;height:17px;flex-shrink:0}
 /* Layout */
@@ -70,6 +71,7 @@ button{font-family:inherit;cursor:pointer}
 .card-img-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:42px}
 .card-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top}
 .avail-pill{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;padding:3px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px;z-index:2}
+.discount-pill{position:absolute;top:8px;right:8px;font-size:10px;font-weight:800;padding:3px 7px;border-radius:3px;letter-spacing:.3px;z-index:2;background:#ffd400;color:#111}
 .card-body{padding:10px 12px}
 .card-team{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
 .card-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.3;margin-bottom:4px}
@@ -78,6 +80,8 @@ button{font-family:inherit;cursor:pointer}
 .card-sizes{font-size:11px;color:var(--muted);margin-bottom:8px}
 .card-foot{display:flex;align-items:center;justify-content:space-between}
 .price{font-size:14px;font-weight:700;color:#fff}
+.price-row{display:flex;flex-direction:column;line-height:1.25}
+.price-old{font-size:11px;color:var(--dim);text-decoration:line-through}
 .add-btn{display:flex;align-items:center;gap:4px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);padding:5px 10px;font-size:11px;font-weight:600;transition:background .15s}
 .add-btn:hover{background:var(--red-dark)}
 .add-btn:disabled{background:var(--surface3);color:var(--dim);cursor:default}
@@ -110,7 +114,10 @@ button{font-family:inherit;cursor:pointer}
 .pm-attrs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
 .pm-attr{font-size:11px;background:var(--surface3);border-radius:3px;padding:3px 7px;color:var(--muted)}
 .pm-attr b{color:var(--text);font-weight:600}
-.pm-price{font-size:22px;font-weight:800;color:var(--red);margin-bottom:1.25rem}
+.pm-price-row{display:flex;align-items:baseline;gap:10px;margin-bottom:1.25rem;flex-wrap:wrap}
+.pm-price{font-size:22px;font-weight:800;color:var(--red)}
+.pm-price-old{font-size:14px;color:var(--dim);text-decoration:line-through}
+.pm-discount-badge{font-size:11px;font-weight:800;background:#ffd400;color:#111;padding:2px 7px;border-radius:3px}
 .field-label{font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
 .size-grid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:1.25rem}
 .size-btn{padding:6px 14px;border-radius:var(--rsm);border:1px solid var(--border);font-size:13px;font-weight:600;background:transparent;color:var(--muted);transition:all .15s}
@@ -146,12 +153,14 @@ button{font-family:inherit;cursor:pointer}
 .ci-info{flex:1;min-width:0}
 .ci-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ci-preorder{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);background:var(--surface3);border-radius:3px;padding:1px 5px;vertical-align:middle}
+.ci-discount{display:inline-block;margin-left:6px;font-size:10px;font-weight:700;color:#111;background:#ffd400;border-radius:3px;padding:1px 5px;vertical-align:middle}
 .ci-sub{font-size:12px;color:var(--muted);margin-top:2px}
 .ci-qrow{display:flex;align-items:center;gap:7px;margin-top:6px}
 .ci-qbtn{width:24px;height:24px;border-radius:4px;border:1px solid var(--border);background:var(--surface2);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center}
 .ci-qbtn:hover{border-color:#444}
 .ci-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:space-between;flex-shrink:0}
 .ci-price{font-size:13px;font-weight:700;color:#fff}
+.ci-price-old{font-size:11px;color:var(--dim);text-decoration:line-through}
 .ci-del{background:none;border:none;color:var(--dim);font-size:16px;padding:2px}
 .ci-del:hover{color:#e10600}
 .cart-total{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:14px;font-weight:700;color:#fff}
@@ -177,6 +186,7 @@ button{font-family:inherit;cursor:pointer}
 .oa{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:var(--rsm);font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .15s}
 .oa:not(:disabled):hover{opacity:.88}
 .oa-wa{background:#25D366;color:#fff}
+.oa-tg{background:#229ED9;color:#fff}
 .oa-ig{background:#C13584;color:#fff}
 .oa:disabled{background:var(--surface3)!important;color:var(--dim)!important;cursor:default;opacity:1}
 .oa-place{background:var(--red);color:#fff}
@@ -206,7 +216,9 @@ button{font-family:inherit;cursor:pointer}
 .order-confirm{text-align:center;padding:1.5rem 0}
 .order-num{font-size:28px;font-weight:800;color:var(--red);margin-bottom:6px}
 .order-sub{font-size:13px;color:var(--muted);line-height:1.6}
-.order-wa-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;padding:13px;background:#25D366;color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer}
+.order-contact-btns{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.order-wa-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer}
+.order-tg-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:#229ED9;color:#fff;border:none;border-radius:var(--rsm);font-size:14px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -226,6 +238,10 @@ button{font-family:inherit;cursor:pointer}
       <a class="hero-link hero-link-wa" id="hero-wa" href="#" target="_blank">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.857L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.64-.514-5.145-1.406l-.369-.219-3.762.981.999-3.665-.24-.378A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
         WhatsApp
+      </a>
+      <a class="hero-link hero-link-tg" id="hero-tg" href="#" target="_blank">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 8.2c-.18 1.896-.957 6.502-1.355 8.627-.168.901-.499 1.202-.815 1.232-.692.064-1.218-.457-1.889-.898-1.05-.69-1.644-1.119-2.663-1.793-1.177-.776-.414-1.203.257-1.9.176-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.04-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.119.099.198.246.219.402.018.137.04.32.034.514z"/></svg>
+        Telegram
       </a>
       <a class="hero-link hero-link-ig" id="hero-ig" href="#" target="_blank">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
@@ -276,7 +292,9 @@ button{font-family:inherit;cursor:pointer}
       <div class="pm-name" id="pm-name"></div>
       <div class="pm-desc" id="pm-desc" style="display:none"></div>
       <div class="pm-attrs" id="pm-attrs"></div>
-      <div class="pm-price" id="pm-price"></div>
+      <div class="pm-price-row" id="pm-price-row">
+        <span class="pm-price" id="pm-price"></span>
+      </div>
       <div class="field-label" id="lbl-size-h">Размер</div>
       <div class="size-grid" id="pm-sizes"></div>
       <div class="field-label" id="lbl-qty-h">Количество</div>
@@ -312,10 +330,16 @@ button{font-family:inherit;cursor:pointer}
       <div class="order-confirm">
         <div class="order-num" id="confirm-order-num">#180626-1</div>
         <div class="order-sub">Ваш заказ зафиксирован.<br>Напишите нам номер заказа — и мы оперативно подтвердим детали.</div>
-        <button class="order-wa-btn" id="confirm-wa-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.857L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.64-.514-5.145-1.406l-.369-.219-3.762.981.999-3.665-.24-.378A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
-          Написать в WhatsApp
-        </button>
+        <div class="order-contact-btns">
+          <button class="order-wa-btn" id="confirm-wa-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.555 4.122 1.528 5.857L0 24l6.335-1.652A11.954 11.954 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.64-.514-5.145-1.406l-.369-.219-3.762.981.999-3.665-.24-.378A9.956 9.956 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
+            Написать в WhatsApp
+          </button>
+          <button class="order-tg-btn" id="confirm-tg-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 8.2c-.18 1.896-.957 6.502-1.355 8.627-.168.901-.499 1.202-.815 1.232-.692.064-1.218-.457-1.889-.898-1.05-.69-1.644-1.119-2.663-1.793-1.177-.776-.414-1.203.257-1.9.176-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.04-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635.099-.002.321.023.465.141.119.099.198.246.219.402.018.137.04.32.034.514z"/></svg>
+            Написать в Telegram
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -342,6 +366,7 @@ const DEFAULTS = {
   site_title:"🏁 F1 Merch",
   footer_text:"© F1 Merch",
   whatsapp:"79001234567",
+  telegram:"f1merch",
   instagram:"f1merch",
   accent_color:"#e10600",
   btn_cart:"Корзина",
@@ -355,11 +380,13 @@ const DEFAULTS = {
   label_pick:"Выбрать параметры",filter_all:"Все",
   msg_empty_cart:"Корзина пуста",msg_added:"Добавлено в корзину ✓",
   wa_msg_header:"Привет! Хочу сделать заказ:",wa_msg_footer:"",
+  tg_msg_header:"Привет! Хочу сделать заказ:",tg_msg_footer:"",
   wa_preorder_tag:"ПОД ЗАКАЗ",
   wa_preorder_note:"Позиции «ПОД ЗАКАЗ» требуют времени на доставку, уточним сроки.",
   support_label:"По всем вопросам пишите нам",
   currency_primary_symbol:"₸",currency_primary_code:"KZT",
   currency_secondary_symbol:"₽",currency_secondary_code:"RUB",
+  almaty_hint:"Курьерская доставка по Алматы. Адрес передадим курьеру, стоимость и время доставки уточнит менеджер.",
 };
 const STATUS_COLORS={"в наличии":"var(--red)","на заказ":"#555","нет":"rgba(255,255,255,.08)"};
 let S={...DEFAULTS}, products=[], cart=[], activeCat="", currency="primary";
@@ -415,7 +442,8 @@ async function loadSettings(){
    Структура таблицы (скрин):
    A=Название B=Команда C=Номер D=Год E=Категория F=Цвет
    G=Размеры H=XS I=S J=M K=L L=XL M=XXL
-   N=Цена,₸ O=Цена,₽ P=Наличие Q=Фото
+   N=Цена,₸ O=Цена,₽ P=Наличие Q=Фото R=Описание
+   S=Скидка,% T=Цена со скидкой,₸  (новые колонки, необязательные)
 */
 const DEMO=[
   {название:"Лонгслив Ferrari 16",команда:"Ferrari",номер:"16",год:"2026",категория:"Лонгслив",цвет:"красный",размеры:"XS,M,L",xs:"10",s:"",m:"10",l:"10",xl:"",xxl:"","цена_tenge":"16999","цена_ruble":"2502",наличие:"В наличии",фото:""},
@@ -447,6 +475,23 @@ function findPriceCol(r,hint){
   return "";
 }
 
+// Колонки скидки ищем по смыслу заголовка, а не по жёсткому имени —
+// так поле продолжает работать, даже если в таблице немного другая формулировка.
+function findDiscountPercentCol(r){
+  for(const k of Object.keys(r)){
+    if(k==='_row')continue;
+    if((k.includes('скидк')||k.includes('discount'))&&!k.includes('цена')&&!k.includes('price')&&r[k]!=="")return r[k];
+  }
+  return "";
+}
+function findDiscountPriceCol(r){
+  for(const k of Object.keys(r)){
+    if(k==='_row')continue;
+    if((k.includes('цена')||k.includes('price'))&&(k.includes('скидк')||k.includes('discount'))&&r[k]!=="")return r[k];
+  }
+  return "";
+}
+
 // Маппинг нормализованных заголовков → метки размеров
 const SIZE_MAP=[
   ['xs','XS'],['s','S'],['m','M'],['l','L'],['xl','XL'],['xxl','XXL']
@@ -464,6 +509,26 @@ function normRows(rows){
       if(val!==undefined&&val!=="")sizeStock[label]=toNum(val);
     });
 
+    const price_primary_orig=toNum(findPriceCol(r,'tenge'));
+    const price_secondary_orig=toNum(findPriceCol(r,'ruble'));
+
+    // Скидка: приоритет у явно указанной "фактической суммы" (в тенге по умолчанию),
+    // если её нет — считаем от процента. Проценты/суммы = 0 или отсутствуют → скидки нет.
+    const rawDiscPercent=toNum(findDiscountPercentCol(r));
+    const rawDiscPrice=toNum(findDiscountPriceCol(r));
+
+    let discountPercent=0, price_primary=price_primary_orig, price_secondary=price_secondary_orig;
+
+    if(rawDiscPrice>0 && price_primary_orig>0 && rawDiscPrice<price_primary_orig){
+      price_primary=rawDiscPrice;
+      discountPercent=Math.round((1-price_primary/price_primary_orig)*100);
+      price_secondary=price_secondary_orig>0?Math.round(price_secondary_orig*(1-discountPercent/100)):price_secondary_orig;
+    }else if(rawDiscPercent>0 && rawDiscPercent<100){
+      discountPercent=rawDiscPercent;
+      price_primary=Math.round(price_primary_orig*(1-discountPercent/100));
+      price_secondary=Math.round(price_secondary_orig*(1-discountPercent/100));
+    }
+
     return{
       id:i+1,
       name:pick(r,'название','name'),
@@ -474,8 +539,12 @@ function normRows(rows){
       color:pick(r,'цвет','color'),
       sizes:pick(r,'размеры','sizes').replace(/\s/g,""),
       sizeStock,
-      price_primary:toNum(findPriceCol(r,'tenge')),
-      price_secondary:toNum(findPriceCol(r,'ruble')),
+      price_primary,
+      price_secondary,
+      price_primary_orig,
+      price_secondary_orig,
+      discount_percent:discountPercent,
+      has_discount:discountPercent>0,
       avail:pick(r,'наличие','avail')||"да",
       description:pick(r,'описание','description','desc'),
       photos,
@@ -495,6 +564,7 @@ function applySettings(){
   document.getElementById("hero-subtitle").textContent=S.hero_subtitle;
   document.getElementById("footer-text").textContent=S.footer_text;
   document.getElementById("hero-wa").href="https://wa.me/"+S.whatsapp;
+  document.getElementById("hero-tg").href="https://t.me/"+tgUsername(S.telegram);
   document.getElementById("hero-ig").href="https://instagram.com/"+S.instagram;
   const sl=document.getElementById("hero-support-label");
   if(sl)sl.textContent=S.support_label||"По всем вопросам пишите нам";
@@ -504,6 +574,15 @@ function applySettings(){
   document.getElementById("lbl-size-h").textContent=S.label_size;
   document.getElementById("lbl-qty-h").textContent=S.label_qty;
   updateCurBtn();
+}
+// Принимает в настройках как просто username ("f1merch"),
+// так и @username или полную ссылку — на выходе всегда чистый username для t.me/
+function tgUsername(v){
+  if(!v)return"";
+  return String(v).trim()
+    .replace(/^https?:\/\/(www\.)?t\.me\//i,'')
+    .replace(/^@/,'')
+    .replace(/\/$/,'');
 }
 function shadeHex(hex,amt){
   const n=parseInt(hex.replace('#',''),16);
@@ -517,13 +596,14 @@ function shadeHex(hex,amt){
 function curSymbol(){return currency==="primary"?S.currency_primary_symbol:S.currency_secondary_symbol;}
 function curCode(){return currency==="primary"?S.currency_primary_code:S.currency_secondary_code;}
 function priceOf(p){return currency==="primary"?p.price_primary:p.price_secondary;}
+function priceOfOrig(p){return currency==="primary"?p.price_primary_orig:p.price_secondary_orig;}
 function updateCurBtn(){const b=document.getElementById("cur-toggle");if(b)b.textContent=curSymbol()+" "+curCode();}
 function toggleCurrency(){
   currency=currency==="primary"?"secondary":"primary";
   updateCurBtn();renderGrid();
   if(document.getElementById("cart-ov").classList.contains("open"))renderCart();
   if(document.getElementById("pm-ov").classList.contains("open")&&curP)
-    document.getElementById("pm-price").textContent=fmt(priceOf(curP));
+    renderModalPrice(curP);
 }
 function fmt(n){return Number(n||0).toLocaleString("ru-RU")+" "+curSymbol();}
 
@@ -572,11 +652,15 @@ function renderGrid(){
     ].join("");
     // Показываем только размеры из колонки Размеры, без остатков
     const szLine=p.sizes.split(",").filter(Boolean).join(" · ");
+    const priceBlock=p.has_discount
+      ?`<div class="price-row"><span class="price-old">${fmt(priceOfOrig(p))}</span><span class="price">${fmt(priceOf(p))}</span></div>`
+      :`<div class="price">${fmt(priceOf(p))}</div>`;
     return`
     <div class="card" onclick="openProduct(${p.id})">
       <div class="card-img">
         ${cardImgHTML(p)}
         <span class="avail-pill" style="background:${statusColor(p.avail)};color:${statusTextColor(p.avail)}">${p.avail}</span>
+        ${p.has_discount?`<span class="discount-pill">-${p.discount_percent}%</span>`:""}
       </div>
       <div class="card-body">
         <div class="card-team">${p.team}</div>
@@ -584,7 +668,7 @@ function renderGrid(){
         ${meta?`<div class="card-meta">${meta}</div>`:""}
         <div class="card-sizes">${szLine}</div>
         <div class="card-foot">
-          <div class="price">${fmt(priceOf(p))}</div>
+          ${priceBlock}
           <button class="add-btn" ${!ok?"disabled":""} onclick="event.stopPropagation();openProduct(${p.id})">
             + ${S.btn_add}
           </button>
@@ -644,6 +728,14 @@ document.getElementById("pm-carousel").addEventListener("click",()=>{
 
 /* ════ PRODUCT MODAL ════ */
 let curP=null,curSize=null,curQty=1;
+function renderModalPrice(p){
+  const row=document.getElementById("pm-price-row");
+  if(p.has_discount){
+    row.innerHTML=`<span class="pm-price-old">${fmt(priceOfOrig(p))}</span><span class="pm-price">${fmt(priceOf(p))}</span><span class="pm-discount-badge">-${p.discount_percent}%</span>`;
+  }else{
+    row.innerHTML=`<span class="pm-price">${fmt(priceOf(p))}</span>`;
+  }
+}
 function openProduct(id){
   const p=products.find(x=>x.id===id);
   if(!isAvail(p))return;
@@ -656,7 +748,7 @@ function openProduct(id){
   buildCarousel(p.photos,p.emoji);
   document.getElementById("pm-team").textContent=p.team;
   document.getElementById("pm-name").textContent=p.name;
-  document.getElementById("pm-price").textContent=fmt(priceOf(p));
+  renderModalPrice(p);
   document.getElementById("pm-qty").textContent="1";
   // Описание
   const descEl=document.getElementById("pm-desc");
@@ -713,7 +805,10 @@ function addToCart(){
   else{cart.push({
     key,id:curP.id,name:curP.name,team:curP.team,emoji:curP.emoji,photo:curP.photo,
     size:curSize,qty:curQty,sizeNote,
+    // В корзину/заказ идёт уже цена с учётом скидки (если она есть)
     price_primary:curP.price_primary,price_secondary:curP.price_secondary,
+    price_primary_orig:curP.price_primary_orig,price_secondary_orig:curP.price_secondary_orig,
+    discount_percent:curP.discount_percent,has_discount:curP.has_discount,
     year:curP.year,color:curP.color,number:curP.number,
     avail:curP.avail,preorder:isPreorder(curP),cat:curP.cat,
   });}
@@ -732,6 +827,7 @@ function renderCart(){
     return;
   }
   const itemPrice=it=>currency==="primary"?it.price_primary:it.price_secondary;
+  const itemPriceOrig=it=>currency==="primary"?it.price_primary_orig:it.price_secondary_orig;
   const total=cart.reduce((s,x)=>s+itemPrice(x)*x.qty,0);
 
   const items=cart.map((it,i)=>{
@@ -744,11 +840,15 @@ function renderCart(){
       it.number?`#${it.number}`:"",
     ].filter(Boolean).join(" · ");
     const preorderBadge=it.preorder?`<span class="ci-preorder">${it.avail}</span>`:"";
+    const discountBadge=it.has_discount?`<span class="ci-discount">-${it.discount_percent}%</span>`:"";
+    const priceHTML=it.has_discount
+      ?`<span class="ci-price-old">${fmt(itemPriceOrig(it)*it.qty)}</span><span class="ci-price">${fmt(itemPrice(it)*it.qty)}</span>`
+      :`<span class="ci-price">${fmt(itemPrice(it)*it.qty)}</span>`;
     return`
     <div class="ci">
       ${thumb}
       <div class="ci-info">
-        <div class="ci-name">${it.name}${preorderBadge}</div>
+        <div class="ci-name">${it.name}${preorderBadge}${discountBadge}</div>
         <div class="ci-sub">${sub}</div>
         <div class="ci-qrow">
           <button class="ci-qbtn" onclick="ciQ(${i},-1)">−</button>
@@ -758,19 +858,21 @@ function renderCart(){
       </div>
       <div class="ci-right">
         <button class="ci-del" onclick="ciDel(${i})">✕</button>
-        <div class="ci-price">${fmt(itemPrice(it)*it.qty)}</div>
+        ${priceHTML}
       </div>
     </div>`;
   }).join("");
 
   const filled = deliveryData;
+  const deliveryTypeLabel = filled ? (filled.type==='qazpost'?'QazPost':(filled.type==='cdek'?'CDEK':'Алматы (курьер)')) : '';
   const deliveryBlock = `
   <div class="delivery-section">
     <div class="delivery-section-title">📦 Доставка</div>
-    ${filled ? `<div class="delivery-filled-badge">Данные доставки заполнены (${filled.type==='qazpost'?'QazPost':'CDEK'})</div>` : ''}
+    ${filled ? `<div class="delivery-filled-badge">Данные доставки заполнены (${deliveryTypeLabel})</div>` : ''}
     <div class="delivery-tabs">
       <button class="dtab${activeDelivery==='qazpost'?' active':''}" onclick="switchDelivery('qazpost')">📮 QazPost</button>
       <button class="dtab${activeDelivery==='cdek'?' active':''}" onclick="switchDelivery('cdek')">📦 CDEK</button>
+      <button class="dtab${activeDelivery==='almaty'?' active':''}" onclick="switchDelivery('almaty')">🏙️ Алматы</button>
     </div>
 
     <div class="dtab-pane${activeDelivery==='qazpost'?' active':''}" id="pane-qazpost">
@@ -819,6 +921,27 @@ function renderCart(){
       </div>
       <p class="pvz-hint">Найти ПВЗ: <a href="https://www.cdek.kz/ru/offices" target="_blank">cdek.kz/ru/offices</a></p>
       <button class="d-submit" id="submit-cdek" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer;opacity:${filled&&filled.type==='cdek'?'.4':'1'};cursor:${filled&&filled.type==='cdek'?'default':'pointer'}" onclick="saveDelivery('cdek')">Подтвердить адрес CDEK</button>
+    </div>
+
+    <div class="dtab-pane${activeDelivery==='almaty'?' active':''}" id="pane-almaty">
+      <div class="d-field">
+        <label class="d-label">ФИО получателя *</label>
+        <input class="d-input" id="alm-name" type="text" placeholder="Иванов Иван Иванович" value="${filled&&filled.type==='almaty'?filled.name:''}">
+      </div>
+      <div class="d-field">
+        <label class="d-label">Номер телефона *</label>
+        <input class="d-input" id="alm-phone" type="tel" placeholder="+7 (___) ___-__-__" value="${filled&&filled.type==='almaty'?filled.phone:''}">
+      </div>
+      <div class="d-field">
+        <label class="d-label">Адрес доставки по Алматы *</label>
+        <input class="d-input" id="alm-address" type="text" placeholder="ул. Абая 10, кв. 5, домофон 25" value="${filled&&filled.type==='almaty'?filled.address:''}">
+      </div>
+      <div class="d-field">
+        <label class="d-label">Комментарий курьеру</label>
+        <input class="d-input" id="alm-comment" type="text" placeholder="Необязательно" value="${filled&&filled.type==='almaty'?filled.comment:''}">
+      </div>
+      <p class="pvz-hint">${S.almaty_hint}</p>
+      <button class="d-submit" id="submit-almaty" style="width:100%;margin-top:12px;padding:11px;background:var(--red);color:#fff;border:none;border-radius:var(--rsm);font-size:13px;font-weight:700;cursor:pointer;opacity:${filled&&filled.type==='almaty'?'.4':'1'};cursor:${filled&&filled.type==='almaty'?'default':'pointer'}" onclick="saveDelivery('almaty')">Подтвердить адрес по Алматы</button>
     </div>
   </div>`;
 
@@ -873,12 +996,19 @@ function saveDelivery(type){
       region:(document.getElementById('qp-region')||{}).value?.trim()||"",
       address,
       pvzLink:""};
-  }else{
+  }else if(type==='cdek'){
     const name=(document.getElementById('cdek-name')||{}).value?.trim()||"";
     const phone=(document.getElementById('cdek-phone')||{}).value?.trim()||"";
     const address=(document.getElementById('cdek-address')||{}).value?.trim()||"";
     if(!name||!phone||!address){showToast("Заполните обязательные поля (*)");return;}
     data={type,name,phone,address,pvzLink:""};
+  }else{ // almaty
+    const name=(document.getElementById('alm-name')||{}).value?.trim()||"";
+    const phone=(document.getElementById('alm-phone')||{}).value?.trim()||"";
+    const address=(document.getElementById('alm-address')||{}).value?.trim()||"";
+    const comment=(document.getElementById('alm-comment')||{}).value?.trim()||"";
+    if(!name||!phone||!address){showToast("Заполните обязательные поля (*)");return;}
+    data={type,name,phone,address,comment,city:"Алматы"};
   }
   deliveryData=data;
   showToast("Адрес доставки сохранён ✓");
@@ -891,7 +1021,10 @@ function deliveryText(){
   if(d.type==='qazpost'){
     return`📮 Доставка: QazPost\nПолучатель: ${d.name}\nТелефон: ${d.phone}${d.index?"\nИндекс: "+d.index:""}${d.city?"\nГород: "+d.city:""}${d.region?"\nОбласть: "+d.region:""}\nОтделение: ${d.address}`;
   }
-  return`📦 Доставка: CDEK\nПолучатель: ${d.name}\nТелефон: ${d.phone}\nПВЗ: ${d.address}`;
+  if(d.type==='cdek'){
+    return`📦 Доставка: CDEK\nПолучатель: ${d.name}\nТелефон: ${d.phone}\nПВЗ: ${d.address}`;
+  }
+  return`🏙️ Доставка: курьер по Алматы\nПолучатель: ${d.name}\nТелефон: ${d.phone}\nАдрес: ${d.address}${d.comment?"\nКомментарий: "+d.comment:""}`;
 }
 
 /* ════ PLACE ORDER ════ */
@@ -944,8 +1077,11 @@ async function placeOrder(){
 
     const waMsg=`${S.wa_msg_header||"Привет!"}\n\n#${orderNum}`;
     const waUrl=`https://wa.me/${S.whatsapp}?text=${encodeURIComponent(waMsg)}`;
+    const tgMsg=`${S.tg_msg_header||S.wa_msg_header||"Привет!"}\n\n#${orderNum}`;
+    const tgUrl=`https://t.me/${tgUsername(S.telegram)}?text=${encodeURIComponent(tgMsg)}`;
     document.getElementById("confirm-order-num").textContent="#"+orderNum;
     document.getElementById("confirm-wa-btn").onclick=()=>{window.open(waUrl,'_blank');};
+    document.getElementById("confirm-tg-btn").onclick=()=>{window.open(tgUrl,'_blank');};
     closeId("cart-ov");
     document.getElementById("confirm-ov").classList.add("open");
     cart=[];deliveryData=null;updCount();
