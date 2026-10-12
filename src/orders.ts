@@ -4,6 +4,7 @@ import type { StoreRow, Settings, Customer, OrderRow, OrderItem } from './types'
 import { HttpError, int, object, requireThat, text } from './validation';
 export async function placeOrder(env: Env, s: StoreRow, input: unknown, key: string, ip: string) {
   requireThat(s.status === 'active', 'Это демонстрация. Реальные заказы отключены.', 409);
+  requireThat(s.orders_enabled === 1, 'Приём заказов приостановлен', 409);
   requireThat(s.owner_id, 'Владелец магазина ещё не подключён', 409);
   requireThat(/^[a-zA-Z0-9_-]{16,80}$/.test(key), 'Требуется ключ повторного запроса');
   const d = object(input),
@@ -155,7 +156,13 @@ export function orderView(o: OrderRow) {
     items: JSON.parse(o.items),
   };
 }
-export async function changeStatus(env: Env, storeId: string, id: string, next: string) {
+export async function changeStatus(
+  env: Env,
+  storeId: string,
+  id: string,
+  next: string,
+  access: StoreRow,
+) {
   const old = await stmt(
     env,
     'SELECT * FROM orders WHERE store_id=? AND id=?',
@@ -173,11 +180,14 @@ export async function changeStatus(env: Env, storeId: string, id: string, next: 
   requireThat(allowed[old.status]?.includes(next), 'Недопустимый переход статуса', 409);
   const result = await stmt(
     env,
-    'UPDATE orders SET status=? WHERE id=? AND store_id=? AND status=? RETURNING id',
+    'UPDATE orders SET status=? WHERE id=? AND store_id=? AND status=? AND EXISTS(SELECT 1 FROM stores WHERE id=? AND owner_id IS ? AND version=?) RETURNING id',
     next,
     id,
     storeId,
     old.status,
+    access.id,
+    access.owner_id,
+    access.version,
   ).first<{ id: string }>();
   requireThat(result, 'Статус уже изменён. Обновите заказ.', 409);
 }

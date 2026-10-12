@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { createHmac } from 'node:crypto';
 import { build } from 'esbuild';
 import { unstable_splitSqlQuery } from 'wrangler';
@@ -117,9 +117,10 @@ export async function start() {
     }),
   );
   db = await mf.getD1Database('DB');
-  const sql = await readFile('migrations/0001_engine.sql', 'utf8');
-  const statements = unstable_splitSqlQuery(sql);
-  for (const statement of statements) await db.prepare(statement.trim()).run();
+  for (const file of (await readdir('migrations')).filter((f) => f.endsWith('.sql')).sort()) {
+    const statements = unstable_splitSqlQuery(await readFile('migrations/' + file, 'utf8'));
+    await db.batch(statements.map((statement) => db.prepare(statement.trim())));
+  }
   const fixture = {
     name: 'Store A',
     slug: 'store-a',

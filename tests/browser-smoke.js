@@ -71,9 +71,58 @@ try {
   await page.getByRole('button', { name: 'Создать демо', exact: true }).click();
   await page.getByRole('heading', { name: 'Browser factory', exact: true }).waitFor();
   const factory = page.locator('section').filter({ hasText: 'Browser factory' });
+  await factory.getByRole('button', { name: 'Редактировать магазин', exact: true }).click();
+  const editor = page.frameLocator('#store-editor');
+  await editor.getByRole('heading', { name: 'Всё под рукой' }).waitFor();
+  await editor.getByRole('button', { name: 'Добавить товар', exact: true }).click();
+  await editor.locator('#name').fill('Товар оператора');
+  await editor.locator('#category').fill('Демо');
+  await editor.locator('#price-BYN').fill('25');
+  await editor.locator('#photo-upload').setInputFiles(imageFile);
+  await editor.locator('#notice').filter({ hasText: 'Фотографии загружены' }).waitFor();
+  await editor.getByRole('button', { name: 'Сохранить товар', exact: true }).click();
+  await editor.getByRole('heading', { name: 'Товар оператора' }).waitFor();
+  await editor.getByRole('button', { name: 'Настройки', exact: true }).click();
+  await editor.locator('#hero-title').fill('Подготовлено оператором');
+  await editor.locator('#logo-upload').setInputFiles(imageFile);
+  await editor.locator('#notice').filter({ hasText: 'Логотип загружен' }).waitFor();
+  await editor.getByRole('button', { name: 'Сохранить настройки' }).click();
+  await editor.locator('#notice').filter({ hasText: 'Настройки сохранены' }).waitFor();
+  assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+  await page.getByRole('button', { name: 'Все магазины', exact: false }).click();
+  const answers = ['Browser clone', 'browser-clone'];
+  const copyDialogs = (dialog) => dialog.accept(answers.shift());
+  page.on('dialog', copyDialogs);
+  await factory.getByRole('button', { name: 'Копировать магазин', exact: true }).click();
+  await page.getByRole('heading', { name: 'Browser clone', exact: true }).waitFor();
+  page.off('dialog', copyDialogs);
+  const cloned = (await req('/api/stores/browser-clone')).body;
+  assert.equal(cloned.products[0].name, 'Товар оператора');
+  assert.ok(cloned.store.settings.logo.startsWith('/media/' + cloned.store.id + '/'));
+  const cloneCard = page.locator('section').filter({ hasText: 'Browser clone' });
+  page.once('dialog', (dialog) => dialog.accept('browser-clone'));
+  await cloneCard.getByRole('button', { name: 'Удалить демо', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Демо удалено' }).waitFor();
+  assert.equal((await req('/api/stores/browser-clone')).status, 404);
   await factory.locator('input').fill('555');
   await factory.getByRole('button', { name: 'Создать приглашение' }).click();
   await factory.locator('a[href^="https://t.me/"]').waitFor();
+  const activeShop = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Store A', exact: true }) });
+  page.once('dialog', (dialog) => dialog.accept());
+  await activeShop.getByRole('button', { name: 'Приостановить заказы', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Состояние приёма заказов сохранено' }).waitFor();
+  const pausedSite = await browser.newPage();
+  await pausedSite.goto(origin + '/shop/' + shop.slug);
+  await pausedSite
+    .locator('#demo-banner')
+    .filter({ hasText: 'Приём заказов временно приостановлен' })
+    .waitFor();
+  await pausedSite.close();
+  page.once('dialog', (dialog) => dialog.accept());
+  await activeShop.getByRole('button', { name: 'Возобновить заказы', exact: true }).click();
+  await activeShop.getByRole('button', { name: 'Приостановить заказы', exact: true }).waitFor();
   assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
   await page.goto(origin + '/admin?store=' + shop.id);
   await page.getByRole('heading', { name: 'Всё под рукой' }).waitFor();

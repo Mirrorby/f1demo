@@ -19,6 +19,7 @@ export interface StoreRow {
   status: 'demo' | 'active';
   settings: string;
   owner_id: string | null;
+  orders_enabled: number;
   version: number;
 }
 export interface Variant {

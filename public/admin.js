@@ -1,5 +1,14 @@
 'use strict';
 const tg = window.Telegram?.WebApp;
+const platformMode = document.body.dataset.mode === 'platform';
+let platformKey = '';
+function storeState() {
+  return store.status === 'demo'
+    ? 'Демонстрация'
+    : store.acceptingOrders
+      ? 'Магазин активен'
+      : 'Приём заказов приостановлен';
+}
 const main = document.getElementById('main');
 let stores = [],
   store = null,
@@ -28,10 +37,10 @@ function notice(msg) {
   el.hidden = !msg;
 }
 async function api(path, method = 'GET', data, contentType = 'application/json') {
-  const r = await fetch('/api/admin/' + path, {
+  const r = await fetch('/api/' + (platformMode ? 'platform' : 'admin') + '/' + path, {
     method,
     headers: {
-      Authorization: 'tma ' + tg.initData,
+      Authorization: platformMode ? 'Bearer ' + platformKey : 'tma ' + tg.initData,
       ...(data !== undefined ? { 'Content-Type': contentType } : {}),
     },
     body:
@@ -74,7 +83,7 @@ async function show(next = tab) {
     if (tab === 'home') {
       await reload();
       if (seq !== generation) return;
-      main.innerHTML = `<div class="stats"><div class="card"><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div><div class="card"><div class="stat">${store.stats.newOrderCount}</div><p>Новых заказов</p></div></div><div class="card"><h2>Всё под рукой</h2><p>Каталог и настройки обновляются на сайте сразу после сохранения.</p><div class="actions"><button class="primary" data-action="add">Добавить товар</button><button data-tab="orders">Посмотреть заказы</button></div></div><div class="card"><h3>${store.status === 'demo' ? 'Демонстрация' : 'Магазин активен'}</h3><p>${store.status === 'demo' ? 'Заказы отключены. После продажи разработчик активирует магазин.' : 'Новые заказы появятся в Telegram и в разделе «Заказы».'}</p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть мой сайт</a></div>`;
+      main.innerHTML = `<div class="stats"><div class="card"><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div><div class="card"><div class="stat">${store.stats.newOrderCount}</div><p>Новых заказов</p></div></div><div class="card"><h2>Всё под рукой</h2><p>Каталог и настройки обновляются на сайте сразу после сохранения.</p><div class="actions"><button class="primary" data-action="add">Добавить товар</button><button data-tab="orders">Посмотреть заказы</button></div></div><div class="card"><h3>${storeState()}</h3><p>${store.status === 'demo' ? 'Заказы отключены. После продажи разработчик активирует магазин.' : 'Новые заказы появятся в Telegram и в разделе «Заказы».'}</p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть мой сайт</a></div>`;
     } else if (tab === 'products') {
       await reload();
       if (seq !== generation) return;
@@ -93,7 +102,7 @@ async function show(next = tab) {
         )}</select><div style="margin-top:16px">${orders.map((o, i) => `<button class="card product" data-order="${i}"><div class="info"><h3>№${o.number} · ${esc(o.customer.name)}</h3><p>${esc(statusNames[o.status])} · ${(o.totalMinor / 100).toLocaleString('ru-RU')} ${o.currency}</p><p>${new Date(o.createdAt * 1000).toLocaleString('ru-RU')}</p></div><span>›</span></button>`).join('') || '<p>Заказов пока нет.</p>'}</div><div class="actions"><button data-page="prev" ${orderOffset === 0 ? 'disabled' : ''}>Назад</button><button data-page="next" ${orders.length < 50 ? 'disabled' : ''}>Далее</button></div>`;
     } else if (tab === 'settings') renderSettings();
     else if (tab === 'site')
-      main.innerHTML = `<h2>Мой сайт</h2><div class="card"><h3>${esc(store.name)}</h3><p>${store.status === 'demo' ? 'Демонстрация — заказы отключены' : 'Активный магазин'}</p><p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">${esc(siteUrl())}</a></p><button class="primary" data-action="copy">Скопировать ссылку</button></div>`;
+      main.innerHTML = `<h2>Мой сайт</h2><div class="card"><h3>${esc(store.name)}</h3><p>${storeState()}</p><p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">${esc(siteUrl())}</a></p><button class="primary" data-action="copy">Скопировать ссылку</button></div>`;
   } catch (e) {
     notice(e.message);
   }
@@ -261,7 +270,7 @@ document.addEventListener('click', async (event) => {
       notice('Ссылка скопирована');
     }
     if (button.dataset.action === 'delete') {
-      const ok = tg.showConfirm
+      const ok = tg?.showConfirm
         ? await new Promise((resolve) => tg.showConfirm('Удалить товар из каталога?', resolve))
         : confirm('Удалить товар?');
       if (!ok) return;
@@ -402,15 +411,38 @@ document.addEventListener('submit', async (event) => {
   }
 });
 (async () => {
-  if (!tg?.initData) {
+  if (platformMode) {
+    if (window.parent === window) {
+      main.innerHTML = '<p>Откройте редактор из <a href="/platform">панели фабрики</a>.</p>';
+      document.getElementById('nav').hidden = true;
+      return;
+    }
+    platformKey = await new Promise((resolve) => {
+      const listener = (event) => {
+        if (
+          event.origin !== location.origin ||
+          event.source !== window.parent ||
+          event.data?.type !== 'catalog-platform-key'
+        )
+          return;
+        window.removeEventListener('message', listener);
+        resolve(event.data.key);
+      };
+      window.addEventListener('message', listener);
+      window.parent.postMessage({ type: 'catalog-editor-ready' }, location.origin);
+    });
+  }
+  if (!platformMode && !tg?.initData) {
     document.getElementById('store-name').textContent = 'Мой магазин';
     main.innerHTML =
       '<div class="card"><h2>Откройте панель в Telegram</h2><p>Нажмите «Управлять магазином» в личном чате с ботом.</p></div>';
     document.getElementById('nav').hidden = true;
     return;
   }
-  tg.ready();
-  tg.expand();
+  if (!platformMode) {
+    tg.ready();
+    tg.expand();
+  }
   try {
     stores = await api('stores');
     if (!stores.length)
@@ -418,7 +450,7 @@ document.addEventListener('submit', async (event) => {
     const params = new URLSearchParams(location.search);
     store = stores.find((s) => s.id === params.get('store')) || stores[0];
     const picker = document.getElementById('store-picker');
-    picker.hidden = stores.length < 2;
+    picker.hidden = platformMode || stores.length < 2;
     picker.innerHTML = stores
       .map(
         (s) =>
@@ -431,6 +463,6 @@ document.addEventListener('submit', async (event) => {
   } catch (e) {
     notice(e.message);
     main.innerHTML =
-      '<p>Не удалось подключиться. Закройте панель и откройте её заново через бота.</p>';
+      '<p>Не удалось подключиться. Обновите страницу или откройте панель заново.</p>';
   }
 })();

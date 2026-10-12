@@ -11,6 +11,14 @@ import {
 } from './catalog';
 import { placeOrder, changeStatus, orderView } from './orders';
 import { flushNotifications, inviteOwner, origin, webhook, setupTelegram } from './telegram';
+import {
+  cleanupMedia,
+  deleteDemo,
+  listCopies,
+  processCopy,
+  setOrderIntake,
+  startCopy,
+} from './factory';
 import { HttpError, object, requireThat, text, jsonBody, limitedBytes, int } from './validation';
 import type { OrderRow, ProductRow, StoreRow } from './types';
 function json(data: unknown, status = 200) {
@@ -23,7 +31,8 @@ function json(data: unknown, status = 200) {
     },
   });
 }
-async function upload(request: Request, env: Env, storeId: string) {
+async function upload(request: Request, env: Env, access: StoreRow) {
+  const storeId = access.id;
   const bytes = await limitedBytes(request, 3 * 1024 * 1024);
   requireThat(bytes.length >= 12, 'Пустое изображение');
   let ext = '',
@@ -50,6 +59,15 @@ async function upload(request: Request, env: Env, storeId: string) {
   await env.IMAGES.put(key, bytes, {
     httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000, immutable' },
   });
+  const current = await stmt(
+    env,
+    'SELECT version,owner_id FROM stores WHERE id=?',
+    storeId,
+  ).first<StoreRow>();
+  if (!current || current.owner_id !== access.owner_id || current.version !== access.version) {
+    await env.IMAGES.delete(key);
+    throw new HttpError(409, 'Магазин изменён. Обновите панель.');
+  }
   return { url: '/media/' + key };
 }
 async function route(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -76,12 +94,30 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     }
     if (path === '/api/platform/stores' && method === 'POST')
       return json(await createStore(env, await jsonBody(request), origin(env)), 201);
+    if (path === '/api/platform/copies' && method === 'GET') return json(await listCopies(env));
+    const copyStep = path.match(/^\/api\/platform\/copies\/([a-f0-9-]{36})\/continue$/);
+    if (copyStep && method === 'POST') {
+      await processCopy(env, origin(env), copyStep[1]);
+      return json({ ok: true });
+    }
     const match = path.match(
-      /^\/api\/platform\/stores\/([a-f0-9-]{36})\/(invite|activate|export)$/,
+      /^\/api\/platform\/stores\/([a-f0-9-]{36})\/(invite|activate|export|intake|copy|delete-demo)$/,
     );
     if (match) {
       const s = await stmt(env, 'SELECT * FROM stores WHERE id=?', match[1]).first<StoreRow>();
       requireThat(s, 'Магазин не найден', 404);
+      if (match[2] === 'intake' && method === 'POST')
+        return json(await setOrderIntake(env, s, await jsonBody(request)));
+      if (match[2] === 'copy' && method === 'POST') {
+        const job = await startCopy(env, s, await jsonBody(request));
+        ctx.waitUntil(processCopy(env, origin(env), job.id));
+        return json(job, 202);
+      }
+      if (match[2] === 'delete-demo' && method === 'POST') {
+        await deleteDemo(env, s, await jsonBody(request));
+        ctx.waitUntil(cleanupMedia(env));
+        return json({ ok: true });
+      }
       if (match[2] === 'invite' && method === 'POST')
         return json(await inviteOwner(env, s, await jsonBody(request)));
       if (match[2] === 'activate' && method === 'POST') {
@@ -93,8 +129,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         );
         await stmt(
           env,
-          "UPDATE stores SET status='active',version=version+1 WHERE id=?",
+          "UPDATE stores SET status='active',version=version+1 WHERE id=? AND version=? AND owner_id IS ?",
           s.id,
+          s.version,
+          s.owner_id,
         ).run();
         return json({ url: origin(env) + '/shop/' + s.slug });
       }
@@ -102,8 +140,9 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         return json({ schemaVersion: 1, ...publicStore(s), products: await catalog(env, s.id) });
     }
   }
-  if (path.startsWith('/api/admin/')) {
-    const owner = await telegramAuth(request, env);
+  if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
+    const isPlatform = path.startsWith('/api/platform/');
+    const owner = isPlatform ? null : await telegramAuth(request, env);
     if (path === '/api/admin/stores' && method === 'GET') {
       const stores = await stmt(
         env,
@@ -113,12 +152,15 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return json(stores.results.map(publicStore));
     }
     const match = path.match(
-      /^\/api\/admin\/stores\/([a-f0-9-]{36})(?:\/(products|orders|settings|images)(?:\/([a-f0-9-]{36}))?)?$/,
+      /^\/api\/(?:admin|platform)\/stores\/([a-f0-9-]{36})(?:\/(products|orders|settings|images)(?:\/([a-f0-9-]{36}))?)?$/,
     );
     if (match) {
-      const s = await ownedStore(env, match[1], owner),
+      const s = isPlatform
+          ? await stmt(env, 'SELECT * FROM stores WHERE id=?', match[1]).first<StoreRow>()
+          : await ownedStore(env, match[1], owner!),
         section = match[2],
         id = match[3];
+      requireThat(s, 'Магазин не найден', 404);
       if (!section && method === 'GET') {
         const stats = await stmt(
           env,
@@ -138,10 +180,13 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           version = int(d.version, 1, Number.MAX_SAFE_INTEGER);
         const result = await stmt(
           env,
-          'UPDATE products SET deleted_at=unixepoch(),version=version+1 WHERE store_id=? AND id=? AND deleted_at IS NULL AND version=?',
+          'UPDATE products SET deleted_at=unixepoch(),version=version+1 WHERE store_id=? AND id=? AND deleted_at IS NULL AND version=? AND EXISTS(SELECT 1 FROM stores WHERE id=? AND owner_id IS ? AND version=?)',
           s.id,
           id,
           version,
+          s.id,
+          s.owner_id,
+          s.version,
         ).run();
         requireThat(result.meta.changes === 1, 'Товар уже изменён или удалён', 409);
         return json({ ok: true });
@@ -177,7 +222,13 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         return json(orders.results.map(orderView));
       }
       if (section === 'orders' && id && method === 'PATCH') {
-        await changeStatus(env, s.id, id, text(object(await jsonBody(request)).status, 20, true));
+        await changeStatus(
+          env,
+          s.id,
+          id,
+          text(object(await jsonBody(request)).status, 20, true),
+          s,
+        );
         return json({ ok: true });
       }
       if (section === 'settings' && !id && method === 'PUT') {
@@ -185,7 +236,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         return json({ ok: true });
       }
       if (section === 'images' && !id && method === 'POST')
-        return json(await upload(request, env, s.id), 201);
+        return json(await upload(request, env, s), 201);
     }
   }
   const publicMatch = path.match(/^\/api\/stores\/([a-z0-9-]{1,80})(?:\/(orders))?$/);
@@ -225,6 +276,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path === '/') assetPath = '/welcome.html';
   if (path === '/admin' || path === '/admin/') assetPath = '/admin.html';
   if (path === '/platform' || path === '/platform/') assetPath = '/platform.html';
+  if (path === '/platform/editor') assetPath = '/platform-editor.html';
   const storefront = path.match(/^\/(demo|shop)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {
     const s = await storeBySlug(env, storefront[2]);
@@ -243,6 +295,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   secured.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   if (path === '/platform' || path === '/platform/' || path === '/platform.html')
     secured.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+  if (path === '/platform/editor' || path === '/platform-editor.html')
+    secured.headers.set('Content-Security-Policy', "frame-ancestors 'self'");
   return secured;
 }
 export default {
@@ -259,6 +313,8 @@ export default {
   },
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(flushNotifications(env));
+    await processCopy(env, origin(env));
+    await cleanupMedia(env);
     await stmt(env, 'DELETE FROM owner_invites WHERE expires_at<unixepoch()-86400').run();
   },
 } satisfies ExportedHandler<Env>;

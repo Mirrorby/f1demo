@@ -1,5 +1,5 @@
 import { digest, equalSecret } from './auth';
-import { stmt, ownedStore } from './catalog';
+import { stmt, ownedStore, storeMutationGuard } from './catalog';
 import { changeStatus } from './orders';
 import type { OrderRow, StoreRow, OrderItem, Customer } from './types';
 import { object, requireThat, text } from './validation';
@@ -25,23 +25,27 @@ export function origin(env: Env): string {
   return u.origin;
 }
 export async function inviteOwner(env: Env, s: StoreRow, input: unknown) {
-  requireThat(!s.owner_id, 'Владелец уже подключён', 409);
   const d = object(input);
+  requireThat(!s.owner_id || d.transfer === true, 'Для смены владельца подтвердите передачу', 409);
   const owner = text(d.telegramUserId, 20, true);
   requireThat(/^[1-9]\d{0,15}$/.test(owner), 'Укажите Telegram ID владельца');
+  requireThat(owner !== s.owner_id, 'Этот аккаунт уже владеет магазином', 409);
   requireThat(/^[a-z0-9_]{5,32}$/i.test(env.BOT_USERNAME), 'Настройте BOT_USERNAME', 503);
   const token =
     crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
   const hash = await digest(token);
   await env.DB.batch([
+    storeMutationGuard(env, s),
     stmt(env, 'DELETE FROM owner_invites WHERE store_id=? AND used_at IS NULL', s.id),
     stmt(
       env,
-      'INSERT INTO owner_invites(token_hash,store_id,expected_owner_id,expires_at) VALUES(?,?,?,unixepoch()+86400)',
+      'INSERT INTO owner_invites(token_hash,store_id,expected_owner_id,source_owner_id,store_version,expires_at) SELECT ?,id,?,owner_id,version,unixepoch()+86400 FROM stores WHERE id=? AND version=?',
       hash,
-      s.id,
       owner,
+      s.id,
+      s.version,
     ),
+    stmt(env, 'DELETE FROM mutation_guards'),
   ]);
   return { url: `https://t.me/${env.BOT_USERNAME}?start=claim_${token}`, expiresIn: 86400 };
 }
@@ -49,7 +53,7 @@ async function claim(env: Env, token: string, user: string) {
   const hash = await digest(token);
   const result = await stmt(
     env,
-    'UPDATE stores SET owner_id=?,version=version+1 WHERE owner_id IS NULL AND id=(SELECT store_id FROM owner_invites WHERE token_hash=? AND expected_owner_id=? AND expires_at>unixepoch() AND used_at IS NULL) RETURNING *',
+    'UPDATE stores SET owner_id=?,version=version+1 WHERE EXISTS(SELECT 1 FROM owner_invites i WHERE i.store_id=stores.id AND i.token_hash=? AND i.expected_owner_id=? AND i.expires_at>unixepoch() AND i.used_at IS NULL AND stores.owner_id IS i.source_owner_id AND (i.store_version IS NULL OR stores.version=i.store_version)) RETURNING *',
     user,
     hash,
     user,
@@ -114,12 +118,13 @@ export async function webhook(request: Request, env: Env, input: unknown) {
     try {
       const order = await stmt(env, 'SELECT * FROM orders WHERE id=?', parts[1]).first<OrderRow>();
       requireThat(order, 'Заказ не найден', 404);
-      await ownedStore(env, order.store_id, String(from.id));
+      const access = await ownedStore(env, order.store_id, String(from.id));
       await changeStatus(
         env,
         order.store_id,
         order.id,
         { a: 'processing', c: 'completed', x: 'cancelled' }[parts[0]]!,
+        access,
       );
     } catch (e) {
       answer = e instanceof Error ? e.message : 'Ошибка';

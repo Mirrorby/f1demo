@@ -48,7 +48,7 @@ My Profile → API Tokens → Create Token → Custom Token. Имя: `catalog-fa
 - User → User Details → Read.
 - User → Memberships → Read.
 
-Account Resources: Include → Specific account → ваш аккаунт проекта. Сохраните токен. В настройке Workers Builds выберите этот token в поле API token. Автоматический стандартный build token может не иметь D1 Edit; это право нужно для миграции.
+Account Resources: Include → Specific account → ваш аккаунт проекта. Сохраните токен. Сохраните значение именно User API token: вручную созданный токен может отсутствовать в списке Workers Builds. В поле API token самого Worker выберите Create new token и создайте `catalog-factory-build`, не меняя его права. Ваш пользовательский токен передаётся команде через Secret `CATALOG_DEPLOY_TOKEN`, как описано ниже. Автоматический стандартный build token может не иметь D1 Edit; это право нужно для миграции.
 
 Этот токен Cloudflare отличается от PLATFORM_API_KEY. Первый управляет инфраструктурой при деплое, второй даёт доступ к панели фабрики.
 
@@ -64,7 +64,9 @@ Workers & Pages → Create application → импорт из GitHub. Дайте 
 | Root directory     | корень репозитория, `/` или пусто |
 | Build command      | `npm ci`                          |
 | Deploy command     | `npm run deploy:cloudflare`       |
-| API token          | `catalog-factory-deploy`          |
+| API token          | новый `catalog-factory-build`     |
+
+Если мастер не показывает Production branch, после создания откройте Worker → Settings → Builds → Branch control и выберите `feat/catalog-factory-mvp` вместо `main`.
 
 Не выбирайте Pages: этому проекту нужен Worker с Static Assets. На первом этапе отключите builds других веток.
 
@@ -72,18 +74,19 @@ Workers & Pages → Create application → импорт из GitHub. Дайте 
 
 Добавляйте в Build variables and secrets (на этапе подключения или Worker → Settings → Build), не только в runtime Variables & Secrets.
 
-| Имя                       | Тип       | Значение                                   |
-| ------------------------- | --------- | ------------------------------------------ |
-| `NODE_VERSION`            | Plaintext | `24`                                       |
-| `CLOUDFLARE_ACCOUNT_ID`   | Plaintext | Account ID аккаунта Cloudflare             |
-| `DATABASE_ID`             | Plaintext | UUID вашей D1 базы                         |
-| `BOT_USERNAME`            | Plaintext | username бота без `@`                      |
-| `PUBLIC_ORIGIN`           | Plaintext | полный HTTPS origin вашего Worker          |
-| `PLATFORM_API_KEY`        | Secret    | первый случайный ключ из менеджера паролей |
-| `TELEGRAM_BOT_TOKEN`      | Secret    | токен BotFather                            |
-| `TELEGRAM_WEBHOOK_SECRET` | Secret    | второй случайный ключ                      |
+| Имя                       | Тип       | Значение                                                            |
+| ------------------------- | --------- | ------------------------------------------------------------------- |
+| `CATALOG_DEPLOY_TOKEN`    | Secret    | значение вручную созданного User API token `catalog-factory-deploy` |
+| `NODE_VERSION`            | Plaintext | `24`                                                                |
+| `CLOUDFLARE_ACCOUNT_ID`   | Plaintext | Account ID аккаунта Cloudflare                                      |
+| `DATABASE_ID`             | Plaintext | UUID вашей D1 базы                                                  |
+| `BOT_USERNAME`            | Plaintext | username бота без `@`                                               |
+| `PUBLIC_ORIGIN`           | Plaintext | полный HTTPS origin вашего Worker                                   |
+| `PLATFORM_API_KEY`        | Secret    | первый случайный ключ из менеджера паролей                          |
+| `TELEGRAM_BOT_TOKEN`      | Secret    | токен BotFather                                                     |
+| `TELEGRAM_WEBHOOK_SECRET` | Secret    | второй случайный ключ                                               |
 
-Нажмите Deploy. Если wizard ещё не позволил добавить поля, сохраните созданный проект, откройте Settings → Build, добавьте значения и выберите Retry build с текущей конфигурацией.
+В поле Deploy command укажите `CLOUDFLARE_API_TOKEN="$CATALOG_DEPLOY_TOKEN" npm run deploy:cloudflare`. Нажмите Deploy. Если wizard ещё не позволил добавить поля, сохраните созданный проект, откройте Settings → Build, добавьте значения и запустите новую сборку ветки `feat/catalog-factory-mvp` с текущей конфигурацией.
 
 Помощник создаёт временный конфиг с ID базы и публичными переменными, применяет миграции, затем публикует Worker и три runtime secrets. Временный файл секретов удаляется после команды. Оригинальный `wrangler.jsonc` в GitHub менять не требуется.
 
@@ -123,3 +126,9 @@ Build settings и runtime settings — разные. Для этого пути 
 - BOT_USERNAME не совпадает с токеном: проверьте бота в BotFather и оба Build поля, затем deploy.
 - Панель владельца требует Telegram: открывайте `/admin` кнопкой из бота.
 - После привязки активация ещё недоступна: обновите список в `/platform`.
+
+## 8. Работа оператора
+
+Создайте демо, затем «Редактировать магазин»: наполните каталог и оформление без Telegram-привязки. Вернитесь кнопкой «Все магазины», создайте приглашение на Telegram ID клиента и активируйте после его подключения.
+
+Копирование, передача владельца, пауза заказов и удаление демо описаны в README в разделе «Управление магазинами в панели фабрики».

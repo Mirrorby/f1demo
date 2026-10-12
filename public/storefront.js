@@ -109,7 +109,10 @@ async function loadStore() {
     };
   });
   document.getElementById('cur-toggle').hidden = codes.length < 2;
-  document.getElementById('demo-banner').hidden = currentStore.status !== 'demo';
+  const banner = document.getElementById('demo-banner');
+  banner.hidden = currentStore.status !== 'demo' && currentStore.acceptingOrders;
+  if (currentStore.status !== 'demo' && !currentStore.acceptingOrders)
+    banner.textContent = 'Приём заказов временно приостановлен';
   document.getElementById('hero-badge').textContent =
     currentStore.status === 'demo' ? 'Демо магазина' : 'Каталог';
   const logo = document.getElementById('hero-logo');
@@ -563,11 +566,11 @@ function renderCart() {
    <p class="pvz-hint">${esc(currentStore.settings.deliveryHint)}</p>
    <button class="d-submit" onclick="saveDelivery()" style="padding:12px;background:var(--red);color:white;border:0;border-radius:6px">Сохранить данные доставки</button>
    ${filled ? '<p class="delivery-filled-badge">Данные доставки сохранены</p>' : ''}</div>`;
-  const canOrder = !!filled && currentStore.status !== 'demo';
+  const canOrder = !!filled && currentStore.status !== 'demo' && currentStore.acceptingOrders;
   const disabledAttr = canOrder ? '' : 'disabled';
   const hintText = canOrder
     ? ''
-    : `<div class="delivery-required-hint">Сначала заполните адрес доставки</div>`;
+    : `<div class="delivery-required-hint">${currentStore.status === 'demo' ? 'Это демонстрация магазина' : !currentStore.acceptingOrders ? 'Приём заказов приостановлен' : 'Сначала заполните адрес доставки'}</div>`;
 
   body.innerHTML =
     items +
@@ -576,7 +579,7 @@ function renderCart() {
     `<div class="cart-actions">
       ${hintText}
       <button class="oa oa-place" ${disabledAttr} onclick="placeOrder()">
-        ${currentStore.status === 'demo' ? 'Заказы отключены в демо' : 'Оформить заказ'}
+        ${currentStore.status === 'demo' ? 'Заказы отключены в демо' : !currentStore.acceptingOrders ? 'Приём заказов приостановлен' : 'Оформить заказ'}
       </button>
       <button class="oa oa-clear" onclick="clearCart()">${esc(S.btn_clear)}</button>
     </div>`;
@@ -627,6 +630,10 @@ async function placeOrder() {
   if (submitting || !cart.length) return;
   if (currentStore.status === 'demo') {
     showToast('Это демонстрация. Реальные заказы отключены.');
+    return;
+  }
+  if (!currentStore.acceptingOrders) {
+    showToast('Приём заказов приостановлен');
     return;
   }
   if (!deliveryData) {

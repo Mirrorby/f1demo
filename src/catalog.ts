@@ -24,6 +24,7 @@ export function publicStore(s: StoreRow) {
     name: s.name,
     status: s.status,
     version: s.version,
+    acceptingOrders: s.orders_enabled === 1,
     settings: JSON.parse(s.settings) as Settings,
   };
 }
@@ -74,11 +75,11 @@ export function variantStatements(env: Env, storeId: string, id: string, variant
     ),
   );
 }
-export async function createStore(env: Env, input: unknown, origin: string) {
+export async function createStore(env: Env, input: unknown, origin: string, targetId?: string) {
   const d = object(input);
   requireThat(d.status === undefined || d.status === 'demo', 'Новый магазин создаётся как демо');
   const name = text(d.name, 200, true),
-    id = crypto.randomUUID();
+    id = targetId ?? crypto.randomUUID();
   const cfg = settings(
     {
       ...object(d.settings ?? {}),
@@ -99,7 +100,7 @@ export async function createStore(env: Env, input: unknown, origin: string) {
   if (await stmt(env, 'SELECT id FROM stores WHERE slug=?', slug).first())
     slug = slug.slice(0, 65) + '-' + crypto.randomUUID().slice(0, 8);
   const raw = d.products ?? [];
-  requireThat(Array.isArray(raw) && raw.length <= 200, 'Максимум 200 товаров при создании');
+  requireThat(Array.isArray(raw) && raw.length <= (targetId ? 500 : 200), 'Слишком много товаров');
   const normalized = raw.map((p) => ({ id: crypto.randomUUID(), ...product(p, cfg, id) }));
   // A JSON table insert keeps the number of D1 statements below Free's per-invocation limit.
   const products = normalized.map((p) => ({ id: p.id, data: JSON.stringify(p.data) }));
@@ -133,7 +134,7 @@ export async function saveProduct(env: Env, s: StoreRow, input: unknown, id?: st
     cfg = JSON.parse(s.settings) as Settings;
   const normalized = product(d, cfg, s.id, !!id);
   const pid = id ?? crypto.randomUUID();
-  const statements: D1PreparedStatement[] = [];
+  const statements: D1PreparedStatement[] = [storeMutationGuard(env, s)];
   if (id) {
     const old = await stmt(
       env,
@@ -235,7 +236,7 @@ export async function updateSettings(env: Env, s: StoreRow, input: unknown) {
   try {
     result = await stmt(
       env,
-      'UPDATE stores SET name=?,settings=?,version=version+1 WHERE id=? AND owner_id=? AND version=?',
+      'UPDATE stores SET name=?,settings=?,version=version+1 WHERE id=? AND owner_id IS ? AND version=?',
       name,
       JSON.stringify(cfg),
       s.id,
@@ -248,4 +249,13 @@ export async function updateSettings(env: Env, s: StoreRow, input: unknown) {
     throw e;
   }
   requireThat(result.meta.changes === 1, 'Настройки уже изменены. Обновите панель.', 409);
+}
+export function storeMutationGuard(env: Env, s: StoreRow) {
+  return stmt(
+    env,
+    'INSERT INTO mutation_guards(ok) SELECT CASE WHEN EXISTS(SELECT 1 FROM stores WHERE id=? AND owner_id IS ? AND version=?) THEN 1 ELSE 0 END',
+    s.id,
+    s.owner_id,
+    s.version,
+  );
 }

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <title>Мой магазин</title>
+    <link rel="stylesheet" href="/admin.css" />
+    <script defer src="/admin.js"></script>
+  </head>
+  <body data-mode="platform">
+    <header>
+      <div>
+        <span class="eyebrow">Редактор магазина</span>
+        <h1 id="store-name">Загрузка…</h1>
+      </div>
+      <select id="store-picker" aria-label="Выбрать магазин" hidden></select>
+    </header>
+    <div id="notice" role="status" hidden></div>
+    <main id="main"><p>Подключаем магазин…</p></main>
+    <nav id="nav" aria-label="Разделы">
+      <button data-tab="home">Главная</button><button data-tab="products">Товары</button
+      ><button data-tab="orders">Заказы</button><button data-tab="settings">Настройки</button
+      ><button data-tab="site">Мой сайт</button>
+    </nav>
+  </body>
+</html>
