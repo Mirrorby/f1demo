@@ -1,0 +1,4 @@
+# Copy to .dev.vars. Use random values, never commit real secrets.
+PLATFORM_API_KEY=replace-with-a-random-key-at-least-32-characters
+TELEGRAM_BOT_TOKEN=replace-with-BotFather-token
+TELEGRAM_WEBHOOK_SECRET=replace-with-a-random-webhook-secret

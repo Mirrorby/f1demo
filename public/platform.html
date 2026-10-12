@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Настройка фабрики каталогов</title>
+    <link rel="stylesheet" href="/admin.css" />
+    <script defer src="/platform.js"></script>
+  </head>
+  <body>
+    <header>
+      <div>
+        <span class="eyebrow">Панель разработчика</span>
+        <h1>Фабрика каталогов</h1>
+      </div>
+      <button id="logout" hidden>Выйти</button>
+    </header>
+    <div id="notice" role="status" hidden></div>
+    <main id="main">
+      <form id="login-form" class="card">
+        <h2>Подключиться</h2>
+        <p>
+          Введите PLATFORM_API_KEY, который вы сохранили при настройке Cloudflare. Этот ключ
+          управляет всеми магазинами. Владельцам магазинов передавайте персональные приглашения.
+        </p>
+        <label for="platform-key">Ключ платформы</label
+        ><input
+          id="platform-key"
+          type="password"
+          autocomplete="off"
+          minlength="32"
+          required
+        /><button class="primary" type="submit" style="margin-top: 16px">Подключиться</button>
+      </form>
+    </main>
+  </body>
+</html>
