@@ -205,7 +205,9 @@ async function uploadImage(file) {
   bitmap.close();
   const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', 0.82));
   if (!blob || blob.size > 3 * 1024 * 1024) throw new Error('Изображение слишком большое');
-  return (await api(base() + '/images', 'POST', blob, 'image/webp')).url;
+  // WebKit can fall back to PNG when its canvas encoder does not support WebP.
+  // Use the actual Blob type so the server's signature validation still matches.
+  return (await api(base() + '/images', 'POST', blob, blob.type)).url;
 }
 document.addEventListener('click', async (event) => {
   const button = event.target.closest('button');
@@ -301,9 +303,15 @@ document.addEventListener('change', async (event) => {
       }
     }
     if (el.id === 'logo-upload') {
+      const save = document.querySelector('#settings-form [type=submit]');
+      save.disabled = true;
       notice('Загружаем логотип…');
-      document.getElementById('logo').value = await uploadImage(el.files[0]);
-      notice('Логотип загружен. Сохраните настройки.');
+      try {
+        document.getElementById('logo').value = await uploadImage(el.files[0]);
+        notice('Логотип загружен. Сохраните настройки.');
+      } finally {
+        save.disabled = false;
+      }
     }
   } catch (e) {
     notice(e.message);

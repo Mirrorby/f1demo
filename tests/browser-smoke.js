@@ -39,6 +39,21 @@ try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } }),
     errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  // Reproduce WebKit's canvas fallback: requested WebP becomes an actual PNG Blob.
+  await page.addInitScript(() => {
+    const toBlob = HTMLCanvasElement.prototype.toBlob;
+    HTMLCanvasElement.prototype.toBlob = function (callback, type, quality) {
+      return toBlob.call(this, callback, type === 'image/webp' ? 'image/png' : type, quality);
+    };
+  });
+  const imageFile = {
+    name: 'catalog.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGN8yMbAwMDAxMDAwMDAAAAL3wDrtkO4LAAAAABJRU5ErkJggg==',
+      'base64',
+    ),
+  };
   await page.route('https://telegram.org/js/**', (route) =>
     route.fulfill({
       contentType: 'application/javascript',
@@ -67,16 +82,32 @@ try {
   await page.locator('#category').fill('Аксессуары');
   await page.locator('#price-BYN').fill('15.50');
   await page.locator('#price-RUB').fill('450');
+  await page.locator('#photo-upload').setInputFiles(imageFile);
+  await page.locator('#notice').filter({ hasText: 'Фотографии загружены' }).waitFor();
+  await page.waitForFunction(() => {
+    const image = document.querySelector('#photos img');
+    return image?.complete && image.naturalWidth > 0;
+  });
   await page.getByRole('button', { name: 'Сохранить товар', exact: true }).click();
   await page.getByRole('heading', { name: 'Новая кепка' }).waitFor();
   const data = (await req('/api/stores/' + shop.slug)).body;
   assert.ok(data.products.some((p) => p.name === 'Новая кепка' && p.prices.BYN === 1550));
+  const uploadedPhoto = data.products.find((p) => p.name === 'Новая кепка').photos[0];
+  assert.ok(uploadedPhoto.endsWith('.png'));
+  assert.equal((await req(uploadedPhoto)).headers.get('Content-Type'), 'image/png');
   await page.getByRole('button', { name: 'Настройки', exact: true }).click();
   await page.locator('#store-title').fill('Тестовый магазин');
+  await page.locator('#logo-upload').setInputFiles(imageFile);
+  await page.locator('#notice').filter({ hasText: 'Логотип загружен' }).waitFor();
   await page.getByRole('button', { name: 'Сохранить настройки' }).click();
   await page.locator('#store-name').filter({ hasText: 'Тестовый магазин' }).waitFor();
   await page.goto(origin + '/shop/' + shop.slug);
   await page.locator('#hero-title').filter({ hasText: 'Тестовый магазин' }).waitFor();
+  await page.waitForFunction(() => {
+    const logo = document.getElementById('hero-logo');
+    const photo = document.querySelector('.card img');
+    return !logo.hidden && logo.naturalWidth > 0 && photo?.naturalWidth > 0;
+  });
   assert.ok(await page.locator('.card-name').filter({ hasText: 'Новая кепка' }).count());
   await page.locator('.card').filter({ hasText: 'Новая кепка' }).click();
   await page.getByRole('button', { name: 'В корзину', exact: true }).click();
