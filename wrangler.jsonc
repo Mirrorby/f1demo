@@ -30,10 +30,6 @@
   "triggers": {
     "crons": ["*/10 * * * *"],
   },
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 0.1,
-  },
   "secrets": {
     "required": ["PLATFORM_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET"],
   },
@@ -42,15 +38,12 @@
       "enabled": true,
       "head_sampling_rate": 1,
       "invocation_logs": true,
-      "persist": true
+      "persist": true,
     },
     "traces": {
       "enabled": false,
       "head_sampling_rate": 1,
-      "persist": true
+      "persist": true,
     },
-    "issue_detection": {
-      "enabled": false
-    }
-  }
+  },
 }

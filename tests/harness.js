@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHmac } from 'node:crypto';
 import { build } from 'esbuild';
+import { unstable_splitSqlQuery } from 'wrangler';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 export let mf, db, shop, demo, second, catalog, secondCatalog;
 let telegramFails = false;
@@ -117,10 +118,7 @@ export async function start() {
   );
   db = await mf.getD1Database('DB');
   const sql = await readFile('migrations/0001_engine.sql', 'utf8');
-  const clean = sql.replace(/^\s*--[^\n]*\n/gm, '');
-  const statements = clean.match(
-    /CREATE TRIGGER[\s\S]*?\nEND;|(?:PRAGMA|CREATE TABLE|CREATE INDEX|ALTER TABLE)[^;]+;/g,
-  );
+  const statements = unstable_splitSqlQuery(sql);
   for (const statement of statements) await db.prepare(statement.trim()).run();
   const fixture = {
     name: 'Store A',

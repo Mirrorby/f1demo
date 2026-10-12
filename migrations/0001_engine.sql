@@ -43,22 +43,23 @@ CREATE TABLE notification_outbox (
 CREATE INDEX outbox_pending ON notification_outbox(sent_at,next_attempt);
 -- The order insert and inventory reservation execute as ONE SQLite transaction.
 -- Guards recheck status, product revision and stock after any competing request.
+-- Parenthesize CASE so D1's remote parser keeps its END inside the trigger body.
 CREATE TRIGGER order_guard BEFORE INSERT ON orders BEGIN
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM stores WHERE id=NEW.store_id AND status='active' AND owner_id IS NOT NULL)
-  THEN RAISE(ABORT,'STORE_NOT_ACTIVE') END;
- SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM stores s,json_each(s.settings,'$.currencies') c WHERE s.id=NEW.store_id AND c.value=NEW.currency)
+ SELECT (CASE WHEN NOT EXISTS(SELECT 1 FROM stores WHERE id=NEW.store_id AND status='active' AND owner_id IS NOT NULL)
+  THEN RAISE(ABORT,'STORE_NOT_ACTIVE') END);
+ SELECT (CASE WHEN NOT EXISTS(SELECT 1 FROM stores s,json_each(s.settings,'$.currencies') c WHERE s.id=NEW.store_id AND c.value=NEW.currency)
   OR NOT EXISTS(SELECT 1 FROM stores s,json_each(s.settings,'$.deliveryMethods') d WHERE s.id=NEW.store_id AND d.value=json_extract(NEW.customer,'$.deliveryMethod'))
-  THEN RAISE(ABORT,'CATALOG_CHANGED') END;
- SELECT CASE WHEN (SELECT COUNT(*) FROM orders WHERE store_id=NEW.store_id AND ip_hash=NEW.ip_hash AND created_at>unixepoch()-3600)>=10
-  THEN RAISE(ABORT,'RATE_LIMIT') END;
- SELECT CASE WHEN EXISTS(
+  THEN RAISE(ABORT,'CATALOG_CHANGED') END);
+ SELECT (CASE WHEN (SELECT COUNT(*) FROM orders WHERE store_id=NEW.store_id AND ip_hash=NEW.ip_hash AND created_at>unixepoch()-3600)>=10
+  THEN RAISE(ABORT,'RATE_LIMIT') END);
+ SELECT (CASE WHEN EXISTS(
   SELECT 1 FROM json_each(NEW.items) j
   LEFT JOIN products p ON p.id=json_extract(j.value,'$.productId') AND p.store_id=NEW.store_id
   LEFT JOIN variants v ON v.id=json_extract(j.value,'$.variantId') AND v.product_id=p.id AND v.store_id=NEW.store_id
   WHERE p.id IS NULL OR p.deleted_at IS NOT NULL OR v.id IS NULL OR v.archived=1
    OR p.version!=json_extract(j.value,'$.version') OR json_extract(p.data,'$.availability')='unavailable'
    OR (json_extract(p.data,'$.availability')!='preorder' AND v.stock IS NOT NULL AND v.stock<json_extract(j.value,'$.quantity'))
- ) THEN RAISE(ABORT,'CATALOG_CHANGED') END;
+ ) THEN RAISE(ABORT,'CATALOG_CHANGED') END);
 END;
 CREATE TRIGGER order_reserve AFTER INSERT ON orders BEGIN
  UPDATE variants SET stock=stock-(SELECT json_extract(j.value,'$.quantity') FROM json_each(NEW.items) j WHERE json_extract(j.value,'$.variantId')=variants.id)
@@ -78,18 +79,18 @@ END;
 -- Optimistic edits use a transactional assertion to avoid partial batch writes.
 CREATE TABLE mutation_guards(ok INTEGER NOT NULL CHECK(ok=1));
 CREATE TRIGGER product_limit BEFORE INSERT ON products BEGIN
- SELECT CASE WHEN (SELECT COUNT(*) FROM products WHERE store_id=NEW.store_id AND deleted_at IS NULL)>=500
-  THEN RAISE(ABORT,'PRODUCT_LIMIT') END;
+ SELECT (CASE WHEN (SELECT COUNT(*) FROM products WHERE store_id=NEW.store_id AND deleted_at IS NULL)>=500
+  THEN RAISE(ABORT,'PRODUCT_LIMIT') END);
 END;
 CREATE TRIGGER product_currency_insert BEFORE INSERT ON products BEGIN
- SELECT CASE WHEN EXISTS(SELECT 1 FROM stores s,json_each(s.settings,'$.currencies') c WHERE s.id=NEW.store_id AND json_extract(NEW.data,'$.prices.'||c.value) IS NULL)
-  THEN RAISE(ABORT,'CATALOG_CHANGED') END;
+ SELECT (CASE WHEN EXISTS(SELECT 1 FROM stores s,json_each(s.settings,'$.currencies') c WHERE s.id=NEW.store_id AND json_extract(NEW.data,'$.prices.'||c.value) IS NULL)
+  THEN RAISE(ABORT,'CATALOG_CHANGED') END);
 END;
 CREATE TRIGGER product_currency_update BEFORE UPDATE OF data ON products BEGIN
- SELECT CASE WHEN EXISTS(SELECT 1 FROM stores s,json_each(s.settings,'$.currencies') c WHERE s.id=NEW.store_id AND json_extract(NEW.data,'$.prices.'||c.value) IS NULL)
-  THEN RAISE(ABORT,'CATALOG_CHANGED') END;
+ SELECT (CASE WHEN EXISTS(SELECT 1 FROM stores s,json_each(s.settings,'$.currencies') c WHERE s.id=NEW.store_id AND json_extract(NEW.data,'$.prices.'||c.value) IS NULL)
+  THEN RAISE(ABORT,'CATALOG_CHANGED') END);
 END;
 CREATE TRIGGER store_currency_update BEFORE UPDATE OF settings ON stores BEGIN
- SELECT CASE WHEN EXISTS(SELECT 1 FROM products p,json_each(NEW.settings,'$.currencies') c WHERE p.store_id=NEW.id AND p.deleted_at IS NULL AND json_extract(p.data,'$.prices.'||c.value) IS NULL)
-  THEN RAISE(ABORT,'CATALOG_CHANGED') END;
+ SELECT (CASE WHEN EXISTS(SELECT 1 FROM products p,json_each(NEW.settings,'$.currencies') c WHERE p.store_id=NEW.id AND p.deleted_at IS NULL AND json_extract(p.data,'$.prices.'||c.value) IS NULL)
+  THEN RAISE(ABORT,'CATALOG_CHANGED') END);
 END;
