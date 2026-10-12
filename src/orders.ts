@@ -4,7 +4,6 @@ import type { StoreRow, Settings, Customer, OrderRow, OrderItem } from './types'
 import { HttpError, int, object, requireThat, text } from './validation';
 export async function placeOrder(env: Env, s: StoreRow, input: unknown, key: string, ip: string) {
   requireThat(s.status === 'active', 'Это демонстрация. Реальные заказы отключены.', 409);
-  requireThat(s.orders_enabled === 1, 'Приём заказов приостановлен', 409);
   requireThat(s.owner_id, 'Владелец магазина ещё не подключён', 409);
   requireThat(/^[a-zA-Z0-9_-]{16,80}$/.test(key), 'Требуется ключ повторного запроса');
   const d = object(input),
@@ -62,6 +61,7 @@ export async function placeOrder(env: Env, s: StoreRow, input: unknown, key: str
     );
     return receipt(previous);
   }
+  requireThat(s.orders_enabled === 1, 'Приём заказов приостановлен', 409);
   const ps = await catalog(env, s.id);
   const items: OrderItem[] = selected.map((i) => {
     const p = ps.find((p) => p.id === i.productId),

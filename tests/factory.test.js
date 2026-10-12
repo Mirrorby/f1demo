@@ -1,6 +1,18 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { start, stop, mf, db, shop, platform, admin, req, WEBHOOK, PLATFORM } from './harness.js';
+import {
+  start,
+  stop,
+  mf,
+  db,
+  shop,
+  platform,
+  admin,
+  req,
+  WEBHOOK,
+  PLATFORM,
+  orderFor,
+} from './harness.js';
 before(start);
 after(stop);
 const fixture = {
@@ -133,6 +145,12 @@ test('transfer keeps the old owner until acceptance, then rejects old access and
   assert.equal((await admin(666, base)).status, 404);
 });
 test('pause blocks checkout and the SQL race guard while leaving the storefront open', async () => {
+  const body = orderFor();
+  const key = crypto.randomUUID();
+  const placed = await req(`/api/stores/${shop.slug}/orders`, 'POST', body, {
+    'Idempotency-Key': key,
+  });
+  assert.equal(placed.status, 201);
   const s = (await platform(`stores/${shop.id}`, 'GET')).body;
   assert.equal(
     (await platform(`stores/${shop.id}/intake`, 'POST', { enabled: false, version: s.version }))
@@ -143,14 +161,24 @@ test('pause blocks checkout and the SQL race guard while leaving the storefront 
   assert.equal((await req('/api/stores/' + shop.slug)).body.store.acceptingOrders, false);
   assert.equal(
     (
-      await req(
-        `/api/stores/${shop.slug}/orders`,
-        'POST',
-        {},
-        { 'Idempotency-Key': crypto.randomUUID() },
-      )
+      await req(`/api/stores/${shop.slug}/orders`, 'POST', body, {
+        'Idempotency-Key': crypto.randomUUID(),
+      })
     ).status,
     409,
+  );
+  assert.equal(
+    (await req(`/api/stores/${shop.slug}/orders`, 'POST', body, { 'Idempotency-Key': key })).body
+      .id,
+    placed.body.id,
+  );
+  assert.equal(
+    (
+      await platform(`stores/${shop.id}/orders/${placed.body.id}`, 'PATCH', {
+        status: 'processing',
+      })
+    ).status,
+    200,
   );
   await assert.rejects(
     db
