@@ -313,7 +313,7 @@ export default {
   },
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(flushNotifications(env));
-    await processCopy(env, origin(env));
+    await processCopy(env, origin(env), undefined, 2);
     await cleanupMedia(env);
     await stmt(env, 'DELETE FROM owner_invites WHERE expires_at<unixepoch()-86400').run();
   },

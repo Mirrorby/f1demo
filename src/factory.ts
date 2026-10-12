@@ -121,7 +121,7 @@ export async function listCopies(env: Env) {
   ).all();
   return rows.results;
 }
-export async function processCopy(env: Env, origin: string, jobId?: string) {
+export async function processCopy(env: Env, origin: string, jobId?: string, chunkSize = 4) {
   const job = await stmt(
     env,
     "UPDATE store_copy_jobs SET lease_until=unixepoch()+300 WHERE id=(SELECT id FROM store_copy_jobs WHERE status='pending' AND lease_until<unixepoch() AND (? IS NULL OR id=?) ORDER BY created_at LIMIT 1) RETURNING *",
@@ -131,7 +131,7 @@ export async function processCopy(env: Env, origin: string, jobId?: string) {
   if (!job) return;
   try {
     const files = JSON.parse(job.files) as CopyFile[];
-    const end = Math.min(files.length, job.cursor + 4);
+    const end = Math.min(files.length, job.cursor + chunkSize);
     for (let i = job.cursor; i < end; i++) {
       const object = await env.IMAGES.get(files[i].source);
       requireThat(object, 'Исходное фото больше недоступно', 409);

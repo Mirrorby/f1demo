@@ -107,9 +107,7 @@ try {
   await factory.locator('input').fill('555');
   await factory.getByRole('button', { name: 'Создать приглашение' }).click();
   await factory.locator('a[href^="https://t.me/"]').waitFor();
-  const activeShop = page
-    .locator('section')
-    .filter({ has: page.getByRole('heading', { name: 'Store A', exact: true }) });
+  const activeShop = page.locator(`section[data-store-id="${shop.id}"]`);
   page.once('dialog', (dialog) => dialog.accept());
   await activeShop.getByRole('button', { name: 'Приостановить заказы', exact: true }).click();
   await page.locator('#notice').filter({ hasText: 'Состояние приёма заказов сохранено' }).waitFor();
