@@ -26,4 +26,12 @@ jobs:
       - run: npm test
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+        env:
+          BROWSER_SCREENSHOT_DIR: test-artifacts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: browser-screenshots
+          path: test-artifacts
+          retention-days: 7
       - run: npm run build

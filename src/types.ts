@@ -1,4 +1,5 @@
 export interface Settings {
+  theme: 'minimal' | 'fashion' | 'home' | 'beauty';
   description: string;
   accentColor: string;
   logo: string;
@@ -35,9 +36,10 @@ export interface ProductData {
   discountPercent: number;
   availability: 'available' | 'preorder' | 'unavailable';
   photos: string[];
-  team: string;
-  year: string;
-  number: string;
+  brand: string;
+  collection: string;
+  sku: string;
+  attributes: { label: string; value: string }[];
   color: string;
 }
 export interface Product extends ProductData {

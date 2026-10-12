@@ -1,20 +1,20 @@
 /* ════ DEFAULTS ════ */
 const DEFAULTS = {
-  hero_title: 'Официальный F1 мерч',
-  hero_subtitle: 'Коллекция одежды и аксессуаров команд Формулы 1. Быстрая доставка.',
-  site_title: '🏁 F1 Merch',
-  footer_text: '© F1 Merch',
-  whatsapp: '79001234567',
-  telegram: 'f1merch',
-  instagram: 'f1merch',
-  accent_color: '#e10600',
+  hero_title: 'Ваш магазин',
+  hero_subtitle: 'Выберите то, что вам нравится.',
+  site_title: 'Каталог',
+  footer_text: '© Магазин',
+  whatsapp: '',
+  telegram: '',
+  instagram: '',
+  accent_color: '#354f46',
   btn_cart: 'Корзина',
   btn_order_wa: 'Заказать',
   btn_order_ig: 'Написать в Instagram',
   btn_add: 'В корзину',
-  btn_add_size: 'Выберите размер',
+  btn_add_size: 'Выберите вариант',
   btn_clear: 'Очистить корзину',
-  label_size: 'Размер',
+  label_size: 'Вариант',
   label_qty: 'Количество',
   label_year: 'Год',
   label_color: 'Цвет',
@@ -35,8 +35,6 @@ const DEFAULTS = {
   currency_primary_code: 'KZT',
   currency_secondary_symbol: '₽',
   currency_secondary_code: 'RUB',
-  almaty_hint:
-    'Курьерская доставка по Алматы. Адрес передадим курьеру, стоимость и время доставки уточнит менеджер.',
 };
 const STATUS_COLORS = {
   'в наличии': 'var(--red)',
@@ -49,7 +47,7 @@ let S = { ...DEFAULTS },
   activeCat = '',
   currency = 'primary';
 let deliveryData = null; // null = не заполнено
-let activeDelivery = 'qazpost';
+let activeDelivery = 'Доставка';
 
 function esc(v) {
   return String(v ?? '').replace(
@@ -60,12 +58,17 @@ function esc(v) {
 let currentStore = null,
   submitting = false;
 const slug = location.pathname.split('/')[2];
+const templatePreview = location.pathname.startsWith('/templates/');
 async function loadStore() {
-  const r = await fetch('/api/stores/' + encodeURIComponent(slug), { cache: 'no-store' });
+  const r = await fetch(
+    (templatePreview ? '/api/templates/' : '/api/stores/') + encodeURIComponent(slug),
+    { cache: 'no-store' },
+  );
   const data = await r.json();
   if (!r.ok) throw new Error(data.error || 'Не удалось загрузить магазин');
   currentStore = data.store;
   const cfg = currentStore.settings;
+  document.documentElement.dataset.theme = cfg.theme || 'minimal';
   const codes = cfg.currencies,
     symbol = (c) => ({ BYN: 'Br', RUB: '₽', KZT: '₸', USD: '$', EUR: '€' })[c] || c;
   S = {
@@ -91,6 +94,10 @@ async function loadStore() {
       ...p,
       id: i + 1,
       backendId: p.id,
+      brand: p.brand ?? p.team ?? '',
+      collection: p.collection ?? p.year ?? '',
+      sku: p.sku ?? p.number ?? '',
+      attributes: p.attributes || [],
       cat: p.category,
       sizes: p.variants.map((v) => v.label).join(','),
       sizeStock: Object.fromEntries(p.variants.map((v) => [v.label, v.stock])),
@@ -111,6 +118,9 @@ async function loadStore() {
   document.getElementById('cur-toggle').hidden = codes.length < 2;
   const banner = document.getElementById('demo-banner');
   banner.hidden = currentStore.status !== 'demo' && currentStore.acceptingOrders;
+  if (templatePreview)
+    banner.textContent =
+      'Предпросмотр шаблона · товары и цены приведены для примера · заказы отключены';
   if (currentStore.status !== 'demo' && !currentStore.acceptingOrders)
     banner.textContent = 'Приём заказов временно приостановлен';
   document.getElementById('hero-badge').textContent =
@@ -123,10 +133,10 @@ async function loadStore() {
 
 /* ════ SETTINGS → DOM ════ */
 function applySettings() {
-  const ac = S.accent_color || '#e10600';
+  const ac = S.accent_color || '#354f46';
   document.documentElement.style.setProperty('--red', ac);
   document.documentElement.style.setProperty('--red-dark', shadeHex(ac, -30));
-  document.title = S.site_title || 'F1 Merch';
+  document.title = S.site_title || 'Каталог';
   document.getElementById('hero-title').textContent = S.hero_title;
   document.getElementById('hero-subtitle').textContent = S.hero_subtitle;
   document.getElementById('footer-text').textContent = S.footer_text;
@@ -142,7 +152,7 @@ function applySettings() {
   document.getElementById('lbl-qty-h').textContent = S.label_qty;
   updateCurBtn();
 }
-// Принимает в настройках как просто username ("f1merch"),
+// Принимает в настройках username,
 // так и @username или полную ссылку — на выходе всегда чистый username для t.me/
 function tgUsername(v) {
   if (!v) return '';
@@ -231,7 +241,7 @@ function cardImgHTML(p) {
     const src = driveThumb(p.photos[0], 400);
     return `<img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy" onerror="this.style.display='none'"><div class="card-img-inner"></div>`;
   }
-  return `<div class="card-img-inner">${p.emoji || '🏁'}</div>`;
+  return `<div class="card-img-inner">${p.emoji || '◈'}</div>`;
 }
 
 function renderGrid() {
@@ -246,9 +256,9 @@ function renderGrid() {
     .map((p) => {
       const ok = isAvail(p);
       const meta = [
-        p.year ? `<span>${esc(p.year)}</span>` : '',
+        p.collection ? `<span>${esc(p.collection)}</span>` : '',
         p.color ? `<span>${esc(p.color)}</span>` : '',
-        p.number ? `<span>#${esc(p.number)}</span>` : '',
+        p.sku ? `<span>${esc(p.sku)}</span>` : '',
       ].join('');
       // Показываем только размеры из колонки Размеры, без остатков
       const szLine = p.variants.map((v) => v.label).join(' · ');
@@ -263,7 +273,7 @@ function renderGrid() {
         ${p.has_discount ? `<span class="discount-pill">-${p.discount_percent}%</span>` : ''}
       </div>
       <div class="card-body">
-        <div class="card-team">${esc(p.team)}</div>
+        <div class="card-team">${esc(p.brand)}</div>
         <div class="card-name">${esc(p.name)}</div>
         ${meta ? `<div class="card-meta">${meta}</div>` : ''}
         <div class="card-sizes">${esc(szLine)}</div>
@@ -290,7 +300,7 @@ function buildCarousel(photos, emoji) {
   carouselIndex = 0;
   if (!photos || photos.length === 0) {
     carouselSlides = [];
-    track.innerHTML = `<div class="pm-carousel-slide">${emoji || '🏁'}</div>`;
+    track.innerHTML = `<div class="pm-carousel-slide">${emoji || '◈'}</div>`;
     prev.style.display = 'none';
     next.style.display = 'none';
     dots.innerHTML = '';
@@ -381,9 +391,9 @@ function openProduct(id) {
   const isPre = isPreorder(p);
   // Для преордера без размеров — сразу ставим заглушку
   const noSizes = szArr.length === 0;
-  curSize = szArr.length === 1 ? szArr[0] : isPre && noSizes ? 'Уточнить размер' : null;
+  curSize = szArr.length === 1 ? szArr[0] : isPre && noSizes ? 'Уточнить вариант' : null;
   buildCarousel(p.photos, p.emoji);
-  document.getElementById('pm-team').textContent = p.team;
+  document.getElementById('pm-team').textContent = p.brand;
   document.getElementById('pm-name').textContent = p.name;
   renderModalPrice(p);
   document.getElementById('pm-qty').textContent = '1';
@@ -396,18 +406,22 @@ function openProduct(id) {
     descEl.style.display = 'none';
   }
   const attrs = [
-    p.year ? `<span class="pm-attr"><b>${esc(S.label_year)}:</b> ${esc(p.year)}</span>` : '',
+    p.collection ? `<span class="pm-attr"><b>Коллекция:</b> ${esc(p.collection)}</span>` : '',
     p.color ? `<span class="pm-attr"><b>${esc(S.label_color)}:</b> ${esc(p.color)}</span>` : '',
-    p.number ? `<span class="pm-attr"><b>${esc(S.label_number)}:</b> #${esc(p.number)}</span>` : '',
+    p.sku ? `<span class="pm-attr"><b>Артикул:</b> ${esc(p.sku)}</span>` : '',
   ].join('');
-  document.getElementById('pm-attrs').innerHTML = attrs;
+  document.getElementById('pm-attrs').innerHTML =
+    attrs +
+    p.attributes
+      .map((a) => `<span class="pm-attr"><b>${esc(a.label)}:</b> ${esc(a.value)}</span>`)
+      .join('');
 
   const hasSizeStock = Object.keys(p.sizeStock).length > 0;
 
   if (noSizes && isPre) {
     // Нет ни одного размера — преордер, показываем информационную плашку
     document.getElementById('pm-sizes').innerHTML =
-      `<div style="font-size:12px;color:var(--muted);background:var(--surface3);padding:8px 12px;border-radius:var(--rsm);width:100%">Размер будет уточнён менеджером при подтверждении заказа</div>`;
+      `<div style="font-size:12px;color:var(--muted);background:var(--surface3);padding:8px 12px;border-radius:var(--rsm);width:100%">Вариант будет уточнён менеджером при подтверждении заказа</div>`;
   } else {
     document.getElementById('pm-sizes').innerHTML = szArr
       .map((s, i) => {
@@ -438,16 +452,16 @@ function chQty(d) {
 }
 function updAddBtn() {
   const btn = document.getElementById('pm-add');
-  // Если товар на заказ и размер = "Уточнить размер" (заглушка) — кнопка активна
+  // Если товар на заказ и размер = "Уточнить вариант" (заглушка) — кнопка активна
   const ready = !!curSize;
   btn.disabled = !ready;
-  btn.textContent = ready ? S.btn_add : S.btn_add_size || 'Выберите размер';
+  btn.textContent = ready ? S.btn_add : S.btn_add_size || 'Выберите вариант';
 }
 
 /* ════ CART ════ */
 function addToCart() {
   if (!curSize || !curP) return;
-  const sizeNote = curSize === 'Уточнить размер'; // флаг для пометки в заказе
+  const sizeNote = curSize === 'Уточнить вариант'; // флаг для пометки в заказе
   const key = curP.id + '|' + curSize;
   const ex = cart.find((x) => x.key === key);
   if (ex) {
@@ -459,7 +473,7 @@ function addToCart() {
       backendId: curP.backendId,
       variantId: curP.variants.find((v) => v.label === curSize).id,
       name: curP.name,
-      team: curP.team,
+      brand: curP.brand,
       emoji: curP.emoji,
       photo: curP.photo,
       size: curSize,
@@ -472,9 +486,9 @@ function addToCart() {
       price_secondary_orig: curP.price_secondary_orig,
       discount_percent: curP.discount_percent,
       has_discount: curP.has_discount,
-      year: curP.year,
+      collection: curP.collection,
       color: curP.color,
-      number: curP.number,
+      sku: curP.sku,
       avail: curP.avail,
       preorder: isPreorder(curP),
       cat: curP.cat,
@@ -512,9 +526,9 @@ function renderCart() {
         ? `<img class="ci-img" src="${esc(driveThumb(it.photo, 80))}" alt="" onerror="this.style.display='none'">`
         : `<div class="ci-emoji">${it.emoji}</div>`;
       const sub = [
-        it.sizeNote ? `⚠️ Размер: уточнить у менеджера` : `${esc(S.label_size)}: ${esc(it.size)}`,
+        it.sizeNote ? `⚠️ Вариант: уточнить у менеджера` : `${esc(S.label_size)}: ${esc(it.size)}`,
         it.color ? `${esc(S.label_color)}: ${esc(it.color)}` : '',
-        it.number ? `#${esc(it.number)}` : '',
+        it.sku ? `Артикул: ${esc(it.sku)}` : '',
       ]
         .filter(Boolean)
         .join(' · ');

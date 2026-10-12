@@ -8,3 +8,4 @@ dist/
 coverage/
 *.sqlite*
 .cloudflare-deploy*.json*
+test-artifacts/

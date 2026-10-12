@@ -60,12 +60,65 @@ try {
       body: `window.Telegram={WebApp:{initData:${JSON.stringify(initData(111))},ready(){},expand(){},showConfirm(message,callback){callback(true)}}};`,
     }),
   );
+  const shotDir = process.env.BROWSER_SCREENSHOT_DIR;
+  if (shotDir) await mkdir(shotDir, { recursive: true });
+  for (const theme of ['fashion', 'home', 'beauty']) {
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await page.goto(origin + '/templates/' + theme);
+      await page.locator('.card-name').first().waitFor();
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll('.card-img img')].every(
+          (img) => img.complete && img.naturalWidth > 0,
+        ),
+      );
+      assert.equal(await page.locator('.card').count(), 6);
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), theme);
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      if (shotDir)
+        await page.screenshot({
+          path: shotDir + `/template-${theme}-${width}.png`,
+          fullPage: true,
+        });
+      await page.locator('.card').first().click();
+      await page.locator('#pm-attrs').filter({ hasText: 'Артикул' }).waitFor();
+      assert.ok((await page.locator('#pm-attrs .pm-attr').count()) >= 3);
+      assert.equal(
+        await page.locator('#pm-name').evaluate((el) => getComputedStyle(el).color),
+        await page.evaluate(() => getComputedStyle(document.body).color),
+      );
+      await page.locator('.size-btn').first().click();
+      await page.getByRole('button', { name: 'В корзину', exact: true }).click();
+      await page.locator('.cart-btn').click();
+      assert.equal(
+        await page
+          .getByRole('button', { name: 'Заказы отключены в демо', exact: true })
+          .isDisabled(),
+        true,
+      );
+      if (shotDir && width === 390)
+        await page.screenshot({ path: shotDir + `/template-${theme}-cart.png` });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(origin + '/platform');
   await page.locator('#platform-key').fill(PLATFORM);
   await page.getByRole('button', { name: 'Подключиться', exact: true }).click();
   await page.getByRole('button', { name: 'Настроить Telegram-бота' }).waitFor();
   await page.getByRole('button', { name: 'Настроить Telegram-бота' }).click();
   await page.locator('#notice').filter({ hasText: 'Бот настроен' }).waitFor();
+  await page.locator('#new-template').selectOption('fashion');
+  assert.equal(await page.locator('#seed-products').isChecked(), true);
+  assert.equal(await page.locator('#template-preview').getAttribute('href'), '/templates/fashion');
+  await page.locator('#new-name').fill('Browser template');
+  await page.locator('#new-slug').fill('browser-template');
+  await page.locator('#new-currency').selectOption('EUR');
+  await page.getByRole('button', { name: 'Создать демо', exact: true }).click();
+  await page.getByRole('heading', { name: 'Browser template', exact: true }).waitFor();
+  const seeded = (await req('/api/stores/browser-template')).body;
+  assert.equal(seeded.store.settings.theme, 'fashion');
+  assert.equal(seeded.products.length, 6);
+  assert.ok(seeded.products.every((p) => p.prices.EUR > 0));
   await page.locator('#new-name').fill('Browser factory');
   await page.locator('#new-slug').fill('browser-factory');
   await page.getByRole('button', { name: 'Создать демо', exact: true }).click();
@@ -78,12 +131,20 @@ try {
   await editor.locator('#name').fill('Товар оператора');
   await editor.locator('#category').fill('Демо');
   await editor.locator('#price-BYN').fill('25');
+  await editor
+    .locator('summary')
+    .filter({ hasText: 'Дополнительные валюты и характеристики' })
+    .click();
+  await editor.locator('#brand').fill('Studio');
+  await editor.locator('#sku').fill('ST-001');
+  await editor.locator('#attributes').fill('Материал: хлопок\nУход: стирка при 30°C');
   await editor.locator('#photo-upload').setInputFiles(imageFile);
   await editor.locator('#notice').filter({ hasText: 'Фотографии загружены' }).waitFor();
   await editor.getByRole('button', { name: 'Сохранить товар', exact: true }).click();
   await editor.getByRole('heading', { name: 'Товар оператора' }).waitFor();
   await editor.getByRole('button', { name: 'Настройки', exact: true }).click();
   await editor.locator('#hero-title').fill('Подготовлено оператором');
+  await editor.locator('#theme').selectOption('home');
   await editor.locator('#logo-upload').setInputFiles(imageFile);
   await editor.locator('#notice').filter({ hasText: 'Логотип загружен' }).waitFor();
   await editor.getByRole('button', { name: 'Сохранить настройки' }).click();
@@ -98,6 +159,12 @@ try {
   page.off('dialog', copyDialogs);
   const cloned = (await req('/api/stores/browser-clone')).body;
   assert.equal(cloned.products[0].name, 'Товар оператора');
+  assert.equal(cloned.store.settings.theme, 'home');
+  assert.equal(cloned.products[0].sku, 'ST-001');
+  assert.deepEqual(cloned.products[0].attributes, [
+    { label: 'Материал', value: 'хлопок' },
+    { label: 'Уход', value: 'стирка при 30°C' },
+  ]);
   assert.ok(cloned.store.settings.logo.startsWith('/media/' + cloned.store.id + '/'));
   const cloneCard = page.locator('section').filter({ hasText: 'Browser clone' });
   page.once('dialog', (dialog) => dialog.accept('browser-clone'));
@@ -186,7 +253,6 @@ try {
     (await db.prepare('SELECT COUNT(*) n FROM orders WHERE store_id=?').bind(shop.id).first()).n,
     1,
   );
-  const shotDir = process.env.BROWSER_SCREENSHOT_DIR;
   if (shotDir) {
     await mkdir(shotDir, { recursive: true });
     await page.screenshot({ path: shotDir + '/checkout-mobile.png' });

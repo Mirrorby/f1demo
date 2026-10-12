@@ -145,7 +145,7 @@ function editProduct(index) {
    )
    .join(
      '',
-   )}${field('team', 'Бренд или команда', p.team)}${field('color', 'Цвет', p.color)}${field('year', 'Год', p.year)}${field('number', 'Номер или серия', p.number)}</details>
+   )}${field('brand', 'Бренд', p.brand ?? p.team)}${field('color', 'Цвет', p.color)}${field('collection', 'Коллекция', p.collection ?? p.year)}${field('sku', 'Артикул', p.sku ?? p.number)}<label for="attributes">Характеристики (до 12, по одной на строке)</label><textarea id="attributes" placeholder="Материал: хлопок&#10;Объём: 100 мл">${esc((p.attributes || []).map((a) => a.label + ': ' + a.value).join('\n'))}</textarea></details>
  ${field('discount', 'Скидка, %', p.discountPercent || 0, 'number')}<label for="availability">Наличие</label><select id="availability">${[
    ['available', 'В наличии'],
    ['preorder', 'На заказ'],
@@ -168,7 +168,19 @@ function editProduct(index) {
 }
 function renderSettings() {
   const s = store.settings;
-  main.innerHTML = `<h2>Настройки</h2><form id="settings-form"><div class="card">${field('store-title', 'Название магазина', store.name, 'text', true)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp">${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}<label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
+  main.innerHTML = `<h2>Настройки</h2><form id="settings-form"><div class="card">${field('store-title', 'Название магазина', store.name, 'text', true)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea><label for="theme">Шаблон витрины</label><select id="theme">${[
+    ['minimal', 'Универсальный'],
+    ['fashion', 'Одежда и аксессуары'],
+    ['home', 'Дом и декор'],
+    ['beauty', 'Косметика и уход'],
+  ]
+    .map(
+      ([k, label]) =>
+        `<option value="${k}" ${k === (s.theme || 'minimal') ? 'selected' : ''}>${label}</option>`,
+    )
+    .join(
+      '',
+    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp">${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}<label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
     ['btn_cart', 'Кнопка корзины'],
     ['btn_add', 'Добавить в корзину'],
     ['label_size', 'Название вариантов'],
@@ -344,9 +356,21 @@ document.addEventListener('submit', async (event) => {
         name: val('name'),
         category: val('category'),
         description: val('description'),
-        team: val('team'),
-        year: val('year'),
-        number: val('number'),
+        brand: val('brand'),
+        collection: val('collection'),
+        sku: val('sku'),
+        attributes: val('attributes')
+          .split('\n')
+          .filter((line) => line.trim())
+          .map((line) => {
+            const separator = line.indexOf(':');
+            if (separator < 1 || !line.slice(separator + 1).trim())
+              throw new Error('Характеристики: используйте формат «Название: значение»');
+            return {
+              label: line.slice(0, separator).trim(),
+              value: line.slice(separator + 1).trim(),
+            };
+          }),
         color: val('color'),
         availability: val('availability'),
         discountPercent: Number(val('discount')),
@@ -374,6 +398,7 @@ document.addEventListener('submit', async (event) => {
         ...store.settings,
         heroTitle: val('hero-title'),
         description: val('store-description'),
+        theme: val('theme'),
         accentColor: val('accent'),
         logo: val('logo'),
         whatsapp: val('whatsapp'),

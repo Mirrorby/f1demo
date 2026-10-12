@@ -266,3 +266,13 @@ summary {
 [hidden] {
   display: none !important;
 }
+
+.seed-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.seed-choice input {
+  width: auto;
+  margin: 0;
+}

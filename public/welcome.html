@@ -1,38 +1,121 @@
 <!doctype html>
 <html lang="ru">
-  <meta charset="utf-8" /><meta
-    name="viewport"
-    content="width=device-width,initial-scale=1"
-  /><title>Каталоги</title
-  ><style>
-    body {
-      font: 16px system-ui;
-      background: #0a0a0a;
-      color: #eee;
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-    }
-    main {
-      max-width: 480px;
-      padding: 32px;
-    }
-    h1 {
-      font-size: 36px;
-      letter-spacing: -1px;
-    }
-    p {
-      color: #aaa;
-      line-height: 1.6;
-    }
-    a {
-      color: #fff;
-    }
-  </style>
-  <main>
-    <h1>Ваш магазин.<br />Управление в Telegram.</h1>
-    <p>Откройте персональную ссылку магазина, которую вам прислал разработчик.</p>
-    <p>Владельцам: административная панель доступна через кнопку в Telegram-боте.</p>
-  </main>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Магазин с вашим характером</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font: 16px system-ui;
+        background: #f7f6f2;
+        color: #26332c;
+        margin: 0;
+      }
+      main {
+        max-width: 1120px;
+        margin: auto;
+        padding: 72px 24px 32px;
+      }
+      .eyebrow {
+        font-size: 12px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+      }
+      h1 {
+        font-size: clamp(36px, 6vw, 64px);
+        letter-spacing: -0.05em;
+        line-height: 1.05;
+        margin: 28px 0;
+        font-weight: 500;
+      }
+      p {
+        color: #5e6a62;
+        line-height: 1.7;
+        max-width: 640px;
+      }
+      .templates {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 24px;
+        margin: 40px 0;
+      }
+      a {
+        color: inherit;
+      }
+      .template {
+        text-decoration: none;
+        border: 1px solid #dddcd5;
+        background: #fff;
+        border-radius: 18px;
+        overflow: hidden;
+      }
+      .template img {
+        width: 100%;
+        height: 260px;
+        object-fit: cover;
+      }
+      .template h2 {
+        font-size: 20px;
+        margin: 20px 20px 8px;
+        font-weight: 500;
+      }
+      .template p {
+        font-size: 14px;
+        margin: 0 20px 24px;
+      }
+      .links {
+        border-top: 1px solid #dddcd5;
+        padding-top: 24px;
+        font-size: 14px;
+      }
+      @media (max-width: 700px) {
+        main {
+          padding-top: 40px;
+        }
+        .templates {
+          grid-template-columns: 1fr;
+        }
+        .template img {
+          height: 240px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Каталоги · Telegram</div>
+      <h1>Ваш магазин.<br />Ваш характер.</h1>
+      <p>
+        Три оформления для разных товаров. Посмотрите примеры витрин, выберите близкий вам стиль и
+        наполните магазин своим каталогом.
+      </p>
+      <div class="templates">
+        <a class="template" href="/templates/fashion"
+          ><img src="/template-assets/fashion-shirt.svg" alt="Иллюстрация одежды" />
+          <h2>Одежда и аксессуары ↗</h2>
+          <p>Чистые линии и лаконичные карточки.</p></a
+        >
+        <a class="template" href="/templates/home"
+          ><img src="/template-assets/home-vase.svg" alt="Иллюстрация керамической вазы" />
+          <h2>Дом и декор ↗</h2>
+          <p>Тёплые оттенки и уютные детали.</p></a
+        >
+        <a class="template" href="/templates/beauty"
+          ><img src="/template-assets/beauty-bottle.svg" alt="Иллюстрация косметики" />
+          <h2>Косметика и уход ↗</h2>
+          <p>Мягкие формы и спокойные цвета.</p></a
+        >
+      </div>
+      <div class="links">
+        <p>
+          Покупателям: откройте персональную ссылку магазина. Владельцам: управление доступно через
+          кнопку в Telegram-боте.
+        </p>
+        <a href="/platform">Панель фабрики →</a>
+      </div>
+    </main>
+  </body>
 </html>

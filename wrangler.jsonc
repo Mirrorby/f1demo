@@ -10,6 +10,7 @@
     "run_worker_first": [
       "/api/*",
       "/demo/*",
+      "/templates/*",
       "/shop/*",
       "/media/*",
       "/admin",

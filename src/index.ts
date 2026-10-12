@@ -21,6 +21,8 @@ import {
 } from './factory';
 import { HttpError, object, requireThat, text, jsonBody, limitedBytes, int } from './validation';
 import type { OrderRow, ProductRow, StoreRow } from './types';
+import { findTemplate, templateList, templateProducts, templateSettings } from './templates';
+import { settings, product } from './validation';
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -75,6 +77,34 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     path = url.pathname,
     method = request.method;
   if (path === '/api/health' && method === 'GET') return json({ ok: true });
+  if (path === '/api/templates' && method === 'GET') return json(templateList());
+  const previewApi = path.match(/^\/api\/templates\/([a-z]+)$/);
+  if (previewApi && method === 'GET') {
+    const t = findTemplate(previewApi[1]);
+    requireThat(t, 'Шаблон не найден', 404);
+    const id = '00000000-0000-0000-0000-000000000000';
+    const cfg = settings(templateSettings(t));
+    return json({
+      store: {
+        id,
+        slug: t.id,
+        name: t.name,
+        status: 'demo',
+        version: 1,
+        acceptingOrders: false,
+        settings: cfg,
+      },
+      products: templateProducts(t, cfg.currencies).map((p, i) => {
+        const normalized = product(p, cfg, id);
+        return {
+          ...normalized.data,
+          variants: normalized.variants,
+          id: 'preview-' + i,
+          version: 1,
+        };
+      }),
+    });
+  }
   if (path === '/api/telegram/webhook' && method === 'POST') {
     await webhook(request, env, await jsonBody(request, 64000));
     return json({ ok: true });
@@ -277,6 +307,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path === '/admin' || path === '/admin/') assetPath = '/admin.html';
   if (path === '/platform' || path === '/platform/') assetPath = '/platform.html';
   if (path === '/platform/editor') assetPath = '/platform-editor.html';
+  const preview = path.match(/^\/templates\/([a-z]+)\/?$/);
+  if (preview) {
+    requireThat(findTemplate(preview[1]), 'Шаблон не найден', 404);
+    assetPath = '/storefront.html';
+  }
   const storefront = path.match(/^\/(demo|shop)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {
     const s = await storeBySlug(env, storefront[2]);

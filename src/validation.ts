@@ -34,6 +34,7 @@ export function strings(v: unknown, max = 20, length = 100): string[] {
 export function imageUrl(v: unknown, storeId?: string): string {
   const s = text(v, 1000);
   if (!s) return '';
+  if (/^\/template-assets\/[a-z0-9-]+\.svg$/.test(s)) return s;
   if (s.startsWith('/media/')) {
     requireThat(
       !s.includes('..') &&
@@ -89,7 +90,9 @@ export function settings(input: unknown, storeId?: string): Settings {
     methods.length > 0 && new Set(methods).size === methods.length,
     'Укажите способы доставки',
   );
-  const accent = text(d.accentColor, 7) || '#e10600';
+  const theme = text(d.theme) || 'minimal';
+  requireThat(['minimal', 'fashion', 'home', 'beauty'].includes(theme), 'Неизвестный шаблон');
+  const accent = text(d.accentColor, 7) || '#354f46';
   requireThat(/^#[0-9a-f]{6}$/i.test(accent), 'Недопустимый цвет');
   const tg = text(d.telegram, 64).replace(/^@/, '');
   const ig = text(d.instagram, 64).replace(/^@/, '');
@@ -103,6 +106,7 @@ export function settings(input: unknown, storeId?: string): Settings {
     texts[k] = text(v, 500);
   }
   return {
+    theme: theme as Settings['theme'],
     description: text(d.description, 2000),
     accentColor: accent,
     logo: imageUrl(d.logo, storeId),
@@ -162,6 +166,16 @@ export function product(
       stock: v.stock === null || v.stock === undefined ? null : int(v.stock, 0, 1000000),
     };
   });
+  const attrs = d.attributes ?? [];
+  requireThat(Array.isArray(attrs) && attrs.length <= 12, 'Максимум 12 характеристик');
+  const attributes = attrs.map((x) => {
+    const a = object(x);
+    return { label: text(a.label, 80, true), value: text(a.value, 300, true) };
+  });
+  requireThat(
+    new Set(attributes.map((a) => a.label)).size === attributes.length,
+    'Повторяющаяся характеристика',
+  );
   requireThat(
     new Set(variants.map((v) => v.id)).size === variants.length &&
       new Set(variants.map((v) => v.label)).size === variants.length,
@@ -176,9 +190,10 @@ export function product(
       discountPercent: d.discountPercent === undefined ? 0 : int(d.discountPercent, 0, 99),
       availability: availability as ProductData['availability'],
       photos,
-      team: text(d.team, 100),
-      year: text(d.year, 30),
-      number: text(d.number, 30),
+      brand: text(d.brand ?? d.team, 100),
+      collection: text(d.collection ?? d.year, 100),
+      sku: text(d.sku ?? d.number, 80),
+      attributes,
       color: text(d.color, 100),
     },
     variants,

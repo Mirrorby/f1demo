@@ -1,5 +1,6 @@
 import type { Product, ProductRow, StoreRow, Settings, Variant } from './types';
 import { HttpError, object, product, requireThat, settings, text, int } from './validation';
+import { findTemplate, templateProducts, templateSettings } from './templates';
 export const stmt = (env: Env, sql: string, ...values: (string | number | null)[]) =>
   env.DB.prepare(sql).bind(...values);
 export async function storeBySlug(env: Env, slug: string): Promise<StoreRow> {
@@ -80,11 +81,23 @@ export async function createStore(env: Env, input: unknown, origin: string, targ
   requireThat(d.status === undefined || d.status === 'demo', 'Новый магазин создаётся как демо');
   const name = text(d.name, 200, true),
     id = targetId ?? crypto.randomUUID();
+  const templateId = text(d.templateId);
+  const template = templateId ? findTemplate(templateId) : undefined;
+  requireThat(!templateId || template, 'Неизвестный шаблон');
+  requireThat(
+    d.seedProducts === undefined || typeof d.seedProducts === 'boolean',
+    'Недопустимый выбор примерных товаров',
+  );
+  requireThat(!d.seedProducts || template, 'Выберите шаблон для примерных товаров');
+  const defaults: Partial<Settings> = template ? templateSettings(template) : {};
+  const supplied = object(d.settings ?? {});
   const cfg = settings(
     {
-      ...object(d.settings ?? {}),
-      description: d.description ?? object(d.settings ?? {}).description,
-      accentColor: d.accentColor ?? object(d.settings ?? {}).accentColor,
+      ...defaults,
+      ...supplied,
+      texts: { ...defaults.texts, ...object(supplied.texts ?? {}) },
+      description: d.description ?? supplied.description ?? defaults.description,
+      accentColor: d.accentColor ?? supplied.accentColor ?? defaults.accentColor,
     },
     id,
   );
@@ -99,7 +112,8 @@ export async function createStore(env: Env, input: unknown, origin: string, targ
   requireThat(/^[a-z0-9][a-z0-9-]{0,79}$/.test(slug), 'Slug: латиница, цифры и дефис');
   if (await stmt(env, 'SELECT id FROM stores WHERE slug=?', slug).first())
     slug = slug.slice(0, 65) + '-' + crypto.randomUUID().slice(0, 8);
-  const raw = d.products ?? [];
+  const raw =
+    d.products ?? (d.seedProducts && template ? templateProducts(template, cfg.currencies) : []);
   requireThat(Array.isArray(raw) && raw.length <= (targetId ? 500 : 200), 'Слишком много товаров');
   const normalized = raw.map((p) => ({ id: crypto.randomUUID(), ...product(p, cfg, id) }));
   // A JSON table insert keeps the number of D1 statements below Free's per-invocation limit.
