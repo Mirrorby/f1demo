@@ -189,9 +189,74 @@ try {
   await activeShop.getByRole('button', { name: 'Возобновить заказы', exact: true }).click();
   await activeShop.getByRole('button', { name: 'Приостановить заказы', exact: true }).waitFor();
   assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+  const stockFixture = await req(
+    '/api/platform/stores/' + shop.id + '/products',
+    'POST',
+    {
+      name: 'Остатки по вариантам',
+      prices: { BYN: 1000, RUB: 30000 },
+      variants: [
+        { label: 'Чёрная', stock: 5 },
+        { label: 'Белая', stock: 0 },
+        { label: 'Стандарт', stock: null },
+        { label: '<img src=x onerror="window.injectedStock=1"> — длинный вариант', stock: 1000000 },
+      ],
+    },
+    { Authorization: 'Bearer ' + PLATFORM },
+  );
+  assert.equal(stockFixture.status, 201);
   await page.goto(origin + '/admin?store=' + shop.id);
   await page.getByRole('heading', { name: 'Всё под рукой' }).waitFor();
-  await page.getByRole('button', { name: 'Добавить товар', exact: true }).click();
+  await page.getByRole('button', { name: 'Товары', exact: true }).click();
+  const stockCard = page.locator('.product').filter({ hasText: 'Остатки по вариантам' });
+  await stockCard.waitFor();
+  const stockItems = await stockCard.locator('[role=listitem]').allTextContents();
+  assert.ok(stockItems.some((text) => text.includes('Чёрная') && text.includes('5 шт.')));
+  assert.ok(stockItems.some((text) => text.includes('Белая') && text.includes('0 шт.')));
+  assert.ok(stockItems.some((text) => text.includes('Стандарт') && text.includes('Без лимита')));
+  assert.ok(stockItems.some((text) => text.includes('<img') && text.includes('1000000 шт.')));
+  assert.equal(await page.evaluate(() => window.injectedStock), undefined);
+  const themeColors = {
+    dark: {
+      '--tg-theme-bg-color': '#17212b',
+      '--tg-theme-secondary-bg-color': '#0e1621',
+      '--tg-theme-text-color': '#f5f5f5',
+      '--tg-theme-hint-color': '#a8b6c4',
+      '--tg-theme-button-color': '#2ea6ff',
+    },
+    light: {
+      '--tg-theme-bg-color': '#ffffff',
+      '--tg-theme-secondary-bg-color': '#f0f2f4',
+      '--tg-theme-text-color': '#202124',
+      '--tg-theme-hint-color': '#68717b',
+      '--tg-theme-button-color': '#2274c4',
+    },
+  };
+  for (const [theme, colors] of Object.entries(themeColors)) {
+    await page.evaluate((colors) => {
+      for (const [key, value] of Object.entries(colors))
+        document.documentElement.style.setProperty(key, value);
+    }, colors);
+    for (const width of [320, 390, 720]) {
+      await page.setViewportSize({ width, height: 844 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+      assert.ok(
+        await page.evaluate(() => {
+          const heading = document.querySelector('.page-heading').getBoundingClientRect();
+          const card = document.querySelector('.stack > .card').getBoundingClientRect();
+          return card.top - heading.bottom >= 16;
+        }),
+      );
+      if (shotDir)
+        await page.screenshot({
+          path: shotDir + `/admin-stock-${theme}-${width}.png`,
+          fullPage: true,
+        });
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Добавить', exact: true }).click();
+
   await page.locator('#name').fill('Новая кепка');
   await page.locator('#category').fill('Аксессуары');
   await page.locator('#price-BYN').fill('15.50');

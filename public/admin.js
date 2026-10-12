@@ -63,6 +63,14 @@ function money(p) {
     .map(([c, v]) => (v / 100).toLocaleString('ru-RU') + ' ' + c)
     .join(' / ');
 }
+function stockSummary(p) {
+  return `<span class="stock-summary" role="list" aria-label="Остатки по вариантам">${p.variants
+    .map(
+      (v) =>
+        `<span class="stock-item${v.stock === 0 ? ' stock-empty' : ''}" role="listitem"><span>${esc(v.label)}</span><strong>${v.stock === null ? 'Без лимита' : v.stock + ' шт.'}</strong></span>`,
+    )
+    .join('')}</span>`;
+}
 async function reload() {
   const id = store.id;
   const [next, ps] = await Promise.all([api(`stores/${id}`), api(`stores/${id}/products`)]);
@@ -87,7 +95,7 @@ async function show(next = tab) {
     } else if (tab === 'products') {
       await reload();
       if (seq !== generation) return;
-      main.innerHTML = `<div class="row between"><h2>Товары · ${products.length}</h2><button class="primary" data-action="add">Добавить</button></div><div class="stack">${products.map((p, i) => `<button class="card product" data-edit="${i}">${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : ''}<div class="info"><h3>${esc(p.name)}</h3><p>${esc(p.category)} · ${esc(money(p))}</p><span class="badge">${{ available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[p.availability]}</span></div><span>›</span></button>`).join('') || '<p>Добавьте первый товар.</p>'}</div>`;
+      main.innerHTML = `<div class="row between page-heading"><h2>Товары · ${products.length}</h2><button class="primary" data-action="add">Добавить</button></div><div class="stack">${products.map((p, i) => `<button class="card product" data-edit="${i}">${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : ''}<div class="info"><h3>${esc(p.name)}</h3><p>${esc(p.category)} · ${esc(money(p))}</p><span class="badge">${{ available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[p.availability]}</span>${stockSummary(p)}</div><span class="product-chevron" aria-hidden="true">›</span></button>`).join('') || '<p>Добавьте первый товар.</p>'}</div>`;
     } else if (tab === 'orders') {
       orders = await api(base() + `/orders?offset=${orderOffset}&status=${orderFilter}`);
       if (seq !== generation) return;
@@ -125,7 +133,7 @@ function editProduct(index) {
   edited = index === undefined ? null : products[index];
   photos = [...(edited?.photos || [])];
   const p = edited || {};
-  main.innerHTML = `<div class="row between"><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea>
+  main.innerHTML = `<div class="row between page-heading"><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea>
  ${store.settings.currencies.map((c) => field('price-' + c, 'Цена, ' + c, (p.prices?.[c] ?? 0) / 100, 'number', true)).join('')}
  <details><summary>Дополнительные валюты и характеристики</summary>${[
    'BYN',
@@ -190,7 +198,7 @@ function renderSettings() {
     .map(([k, label]) => field('text-' + k, label, s.texts[k] || ''))
     .join(
       '',
-    )}</details></div><button class="primary" type="submit">Сохранить настройки</button></form>`;
+    )}</details></div><div class="actions form-actions"><button class="primary" type="submit">Сохранить настройки</button></div></form>`;
 }
 function showOrder(o) {
   const c = o.customer;
@@ -207,7 +215,7 @@ function showOrder(o) {
     completed: [],
     cancelled: [],
   };
-  main.innerHTML = `<div class="row between"><h2>Заказ №${o.number}</h2><button data-tab="orders">Назад</button></div><div class="card"><span class="badge">${statusNames[o.status]}</span><h3 style="margin-top:16px">${esc(c.name)}</h3><p>${esc(c.phone)}</p><p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city, c.region, c.index].filter(Boolean).join(', '))}</p>${c.comment ? `<p>${esc(c.comment)}</p>` : ''}<ul class="order-lines">${o.items.map((i) => `<li>${esc(i.name)} · ${esc(i.variant)}<br>${i.quantity} × ${(i.unitMinor / 100).toLocaleString('ru-RU')} ${o.currency}</li>`).join('')}</ul><h3>Итого: ${(o.totalMinor / 100).toLocaleString('ru-RU')} ${o.currency}</h3><div class="actions">${buttons[o.status].map(([s, label]) => `<button data-status="${s}" data-order-id="${o.id}" class="${s === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div></div>`;
+  main.innerHTML = `<div class="row between page-heading"><h2>Заказ №${o.number}</h2><button data-tab="orders">Назад</button></div><div class="card"><span class="badge">${statusNames[o.status]}</span><h3 style="margin-top:16px">${esc(c.name)}</h3><p>${esc(c.phone)}</p><p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city, c.region, c.index].filter(Boolean).join(', '))}</p>${c.comment ? `<p>${esc(c.comment)}</p>` : ''}<ul class="order-lines">${o.items.map((i) => `<li>${esc(i.name)} · ${esc(i.variant)}<br>${i.quantity} × ${(i.unitMinor / 100).toLocaleString('ru-RU')} ${o.currency}</li>`).join('')}</ul><h3>Итого: ${(o.totalMinor / 100).toLocaleString('ru-RU')} ${o.currency}</h3><div class="actions">${buttons[o.status].map(([s, label]) => `<button data-status="${s}" data-order-id="${o.id}" class="${s === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div></div>`;
 }
 async function uploadImage(file) {
   if (

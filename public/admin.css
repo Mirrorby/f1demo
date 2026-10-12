@@ -4,7 +4,7 @@
   --card: var(--tg-theme-secondary-bg-color, #1b1d22);
   --text: var(--tg-theme-text-color, #f3f4f7);
   --muted: var(--tg-theme-hint-color, #9ca3af);
-  --accent: var(--tg-theme-button-color, #e10600);
+  --accent: var(--tg-theme-button-color, #467b67);
   --button-text: var(--tg-theme-button-text-color, #fff);
 }
 * {
@@ -34,6 +34,11 @@ h1 {
   font-size: 25px;
   margin: 4px 0;
   letter-spacing: -0.6px;
+  overflow-wrap: anywhere;
+}
+header > div {
+  min-width: 0;
+  flex: 1;
 }
 h2 {
   font-size: 20px;
@@ -118,6 +123,12 @@ label {
   margin-bottom: 12px;
   border: 1px solid #8882;
 }
+.card > :first-child {
+  margin-top: 0;
+}
+.card > :last-child {
+  margin-bottom: 0;
+}
 .row {
   display: flex;
   gap: 10px;
@@ -129,9 +140,23 @@ label {
 .between {
   justify-content: space-between;
 }
+.page-heading {
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.page-heading h2 {
+  margin: 0;
+}
+.page-heading button {
+  flex-shrink: 0;
+}
 .stack {
   display: grid;
   gap: 10px;
+}
+.stack > .card {
+  margin-bottom: 0;
 }
 .stats {
   display: grid;
@@ -146,6 +171,7 @@ label {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  margin-top: 16px;
 }
 .product {
   display: flex;
@@ -160,9 +186,42 @@ label {
   height: 60px;
   object-fit: cover;
   border-radius: 10px;
+  flex-shrink: 0;
 }
 .product .info {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.product-chevron {
+  flex-shrink: 0;
+}
+.stock-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.stock-item {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  max-width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #8883;
+  border-radius: 8px;
+  color: var(--muted);
+}
+.stock-item strong {
+  color: var(--text);
+  white-space: nowrap;
+}
+.stock-empty {
+  border-color: #ef646480;
+  background: #ef646412;
 }
 .product p {
   margin: 4px 0;
@@ -201,9 +260,12 @@ nav button.active {
 }
 .variant {
   display: grid;
-  grid-template-columns: 1fr 86px 44px;
+  grid-template-columns: minmax(0, 1fr) 86px 44px;
   gap: 8px;
   margin-bottom: 10px;
+}
+.variant > input {
+  min-width: 0;
 }
 .form-actions {
   margin-top: 22px;
@@ -218,10 +280,12 @@ nav button.active {
   padding: 5px;
 }
 .badge {
+  display: inline-flex;
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 6px;
   background: #8882;
+  margin-top: 4px;
 }
 .order-lines {
   padding: 0;
@@ -253,7 +317,7 @@ summary {
     padding-right: 14px;
   }
   .variant {
-    grid-template-columns: 1fr 74px 44px;
+    grid-template-columns: minmax(0, 1fr) 74px 44px;
   }
   .stats {
     gap: 8px;
