@@ -1,0 +1,268 @@
+:root {
+  color-scheme: light dark;
+  --bg: var(--tg-theme-bg-color, #101114);
+  --card: var(--tg-theme-secondary-bg-color, #1b1d22);
+  --text: var(--tg-theme-text-color, #f3f4f7);
+  --muted: var(--tg-theme-hint-color, #9ca3af);
+  --accent: var(--tg-theme-button-color, #e10600);
+  --button-text: var(--tg-theme-button-text-color, #fff);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px system-ui;
+}
+header,
+main,
+#notice {
+  max-width: 720px;
+  margin: auto;
+  padding: 20px;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding-top: calc(20px + env(safe-area-inset-top));
+}
+h1 {
+  font-size: 25px;
+  margin: 4px 0;
+  letter-spacing: -0.6px;
+}
+h2 {
+  font-size: 20px;
+  margin: 0 0 16px;
+}
+h3 {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+.eyebrow,
+p,
+.muted {
+  color: var(--muted);
+}
+.eyebrow {
+  font-size: 12px;
+}
+p {
+  line-height: 1.5;
+}
+main {
+  padding-bottom: calc(110px + env(safe-area-inset-bottom));
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  border-radius: 10px;
+}
+button {
+  min-height: 44px;
+  padding: 10px 14px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid #8884;
+  cursor: pointer;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.primary {
+  background: var(--accent);
+  color: var(--button-text);
+  border: 0;
+}
+.danger {
+  color: #ff6464;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 12px;
+  border: 1px solid #8885;
+  background: var(--bg);
+  color: var(--text);
+}
+input[type='color'] {
+  padding: 5px;
+}
+input[type='checkbox'] {
+  width: auto;
+  min-height: 0;
+}
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 16px 0 7px;
+}
+.card {
+  background: var(--card);
+  border-radius: 15px;
+  padding: 18px;
+  margin-bottom: 12px;
+  border: 1px solid #8882;
+}
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.row > * {
+  min-width: 0;
+}
+.between {
+  justify-content: space-between;
+}
+.stack {
+  display: grid;
+  gap: 10px;
+}
+.stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.stat {
+  font-size: 30px;
+  font-weight: 700;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.product {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+}
+.product img,
+.thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.product .info {
+  flex: 1;
+}
+.product p {
+  margin: 4px 0;
+  font-size: 13px;
+}
+#notice {
+  padding: 12px 20px;
+  color: var(--text);
+  background: #d6932020;
+}
+nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 6px calc(10px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid #8883;
+  background: var(--bg);
+  z-index: 5;
+}
+nav button {
+  font-size: 11px;
+  min-width: 0;
+  max-width: 144px;
+  flex: 1;
+  background: transparent;
+  border: 0;
+  padding: 12px 3px;
+  color: var(--muted);
+}
+nav button.active {
+  color: var(--accent);
+  font-weight: 700;
+}
+.variant {
+  display: grid;
+  grid-template-columns: 1fr 86px 44px;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.form-actions {
+  margin-top: 22px;
+}
+.photo-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.photo-row button {
+  position: relative;
+  padding: 5px;
+}
+.badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #8882;
+}
+.order-lines {
+  padding: 0;
+  list-style: none;
+}
+.order-lines li {
+  padding: 8px 0;
+  border-bottom: 1px solid #8882;
+}
+a {
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+details {
+  margin-top: 16px;
+}
+summary {
+  color: var(--muted);
+  cursor: pointer;
+}
+#store-picker {
+  max-width: 155px;
+  font-size: 13px;
+}
+@media (max-width: 380px) {
+  header,
+  main {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .variant {
+    grid-template-columns: 1fr 74px 44px;
+  }
+  .stats {
+    gap: 8px;
+  }
+  nav button {
+    font-size: 10px;
+  }
+}
+
+[hidden] {
+  display: none !important;
+}
