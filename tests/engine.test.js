@@ -1,5 +1,6 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { request as httpRequest } from 'node:http';
 import {
   start,
   stop,
@@ -326,12 +327,29 @@ test('notification failures preserve the order and cron retries the durable outb
 });
 
 test('uploads enforce size and product edits reject foreign variant IDs', async () => {
-  const big = await mf.dispatchFetch(`http://localhost/api/admin/stores/${shop.id}/images`, {
-    method: 'POST',
-    headers: { Authorization: 'tma ' + initData(111), 'Content-Type': 'image/png' },
-    body: Buffer.alloc(3 * 1024 * 1024 + 1),
+  // Send only headers: an early 413 must not race a large Undici upload.
+  const endpoint = new URL(`/api/admin/stores/${shop.id}/images`, await mf.ready);
+  const status = await new Promise((resolve, reject) => {
+    const upload = httpRequest(
+      endpoint,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: 'tma ' + initData(111),
+          'Content-Type': 'image/png',
+          'Content-Length': String(3 * 1024 * 1024 + 1),
+        },
+      },
+      (response) => {
+        response.resume();
+        resolve(response.statusCode);
+        upload.destroy();
+      },
+    );
+    upload.on('error', reject);
+    upload.end();
   });
-  assert.equal(big.status, 413);
+  assert.equal(status, 413);
   const p = (await admin(111, `stores/${shop.id}/products`)).body.find(
     (p) => p.name === 'No-size item',
   );
@@ -369,4 +387,24 @@ test('database currency guards reject races that bypass an earlier API read', as
       .run(),
     /CATALOG_CHANGED/,
   );
+});
+
+test('browser factory routes require the platform key and do not expose secrets', async () => {
+  assert.equal((await req('/api/platform/config')).status, 401);
+  assert.equal((await req('/api/platform/stores')).status, 401);
+  assert.equal((await req('/api/platform/telegram/setup', 'POST', {})).status, 401);
+  const config = await platform('config', 'GET');
+  assert.equal(config.status, 200);
+  assert.equal(config.body.botUsername, 'catalog_test_bot');
+  assert.equal(config.body.TELEGRAM_BOT_TOKEN, undefined);
+  const shops = await platform('stores', 'GET');
+  assert.ok(shops.body.find((s) => s.id === shop.id).ownerLinked);
+  assert.ok(!JSON.stringify(shops.body).includes('owner_id'));
+  const setup = await platform('telegram/setup', 'POST', {});
+  assert.equal(setup.status, 200, JSON.stringify(setup));
+  assert.equal(setup.body.webhookUrl, 'https://store.example/api/telegram/webhook');
+  const calls = notifications.filter((n) => n.path.endsWith('/setWebhook'));
+  assert.ok(calls.length);
+  assert.equal(calls.at(-1).payload.secret_token, WEBHOOK);
+  assert.equal((await req('/platform')).status, 200);
 });

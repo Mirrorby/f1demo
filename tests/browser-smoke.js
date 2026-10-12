@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import { createServer } from 'node:http';
 import { mkdir } from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import { start, stop, mf, db, shop, demo, initData, req } from './harness.js';
+import { start, stop, mf, db, shop, demo, initData, req, PLATFORM } from './harness.js';
 let browser, server;
 try {
   await start();
@@ -45,6 +45,21 @@ try {
       body: `window.Telegram={WebApp:{initData:${JSON.stringify(initData(111))},ready(){},expand(){},showConfirm(message,callback){callback(true)}}};`,
     }),
   );
+  await page.goto(origin + '/platform');
+  await page.locator('#platform-key').fill(PLATFORM);
+  await page.getByRole('button', { name: 'Подключиться', exact: true }).click();
+  await page.getByRole('button', { name: 'Настроить Telegram-бота' }).waitFor();
+  await page.getByRole('button', { name: 'Настроить Telegram-бота' }).click();
+  await page.locator('#notice').filter({ hasText: 'Бот настроен' }).waitFor();
+  await page.locator('#new-name').fill('Browser factory');
+  await page.locator('#new-slug').fill('browser-factory');
+  await page.getByRole('button', { name: 'Создать демо', exact: true }).click();
+  await page.getByRole('heading', { name: 'Browser factory', exact: true }).waitFor();
+  const factory = page.locator('section').filter({ hasText: 'Browser factory' });
+  await factory.locator('input').fill('555');
+  await factory.getByRole('button', { name: 'Создать приглашение' }).click();
+  await factory.locator('a[href^="https://t.me/"]').waitFor();
+  assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
   await page.goto(origin + '/admin?store=' + shop.id);
   await page.getByRole('heading', { name: 'Всё под рукой' }).waitFor();
   await page.getByRole('button', { name: 'Добавить товар', exact: true }).click();

@@ -10,7 +10,7 @@ import {
   updateSettings,
 } from './catalog';
 import { placeOrder, changeStatus, orderView } from './orders';
-import { flushNotifications, inviteOwner, origin, webhook } from './telegram';
+import { flushNotifications, inviteOwner, origin, webhook, setupTelegram } from './telegram';
 import { HttpError, object, requireThat, text, jsonBody, limitedBytes, int } from './validation';
 import type { OrderRow, ProductRow, StoreRow } from './types';
 function json(data: unknown, status = 200) {
@@ -63,6 +63,17 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
   if (path.startsWith('/api/platform/')) {
     await platformAuth(request, env);
+    if (path === '/api/platform/telegram/setup' && method === 'POST')
+      return json(await setupTelegram(env));
+    if (path === '/api/platform/config' && method === 'GET')
+      return json({ publicOrigin: origin(env), botUsername: env.BOT_USERNAME });
+    if (path === '/api/platform/stores' && method === 'GET') {
+      const stores = await stmt(
+        env,
+        'SELECT * FROM stores ORDER BY created_at DESC,id LIMIT 200',
+      ).all<StoreRow>();
+      return json(stores.results.map((s) => ({ ...publicStore(s), ownerLinked: !!s.owner_id })));
+    }
     if (path === '/api/platform/stores' && method === 'POST')
       return json(await createStore(env, await jsonBody(request), origin(env)), 201);
     const match = path.match(
@@ -213,6 +224,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   let assetPath = path;
   if (path === '/') assetPath = '/welcome.html';
   if (path === '/admin' || path === '/admin/') assetPath = '/admin.html';
+  if (path === '/platform' || path === '/platform/') assetPath = '/platform.html';
   const storefront = path.match(/^\/(demo|shop)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {
     const s = await storeBySlug(env, storefront[2]);
@@ -229,6 +241,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const secured = new Response(response.body, response);
   secured.headers.set('X-Content-Type-Options', 'nosniff');
   secured.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (path === '/platform' || path === '/platform/' || path === '/platform.html')
+    secured.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
   return secured;
 }
 export default {

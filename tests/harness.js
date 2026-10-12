@@ -94,10 +94,18 @@ export async function start() {
       },
       outboundService: async (request) => {
         notifications.push({ path: new URL(request.url).pathname, payload: await request.json() });
-        return new Response(JSON.stringify({ ok: !telegramFails, result: { message_id: 1 } }), {
-          status: telegramFails ? 503 : 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({
+            ok: !telegramFails,
+            result: new URL(request.url).pathname.endsWith('/getMe')
+              ? { id: 123456, username: 'catalog_test_bot' }
+              : { message_id: 1 },
+          }),
+          {
+            status: telegramFails ? 503 : 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
       },
       assets: {
         directory: 'public',

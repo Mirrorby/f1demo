@@ -11,7 +11,7 @@ export async function telegram(env: Env, method: string, payload: unknown) {
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(8000),
   });
-  const data = (await result.json()) as { ok: boolean };
+  const data = (await result.json()) as { ok: boolean; result?: unknown };
   requireThat(result.ok && data.ok, 'Не удалось выполнить запрос Telegram', 502);
   return data;
 }
@@ -213,4 +213,33 @@ export async function flushNotifications(env: Env, onlyOrder?: string) {
       console.warn(JSON.stringify({ event: 'telegram_notification_retry', orderId: o.id }));
     }
   }
+}
+
+export async function setupTelegram(env: Env) {
+  const base = origin(env);
+  requireThat(base.startsWith('https://'), 'Настройте HTTPS PUBLIC_ORIGIN', 503);
+  requireThat(/^[a-z0-9_]{5,32}$/i.test(env.BOT_USERNAME), 'Настройте BOT_USERNAME', 503);
+  requireThat(env.TELEGRAM_WEBHOOK_SECRET, 'Настройте TELEGRAM_WEBHOOK_SECRET', 503);
+  const identity = object((await telegram(env, 'getMe', {})).result);
+  requireThat(
+    String(identity.username).toLowerCase() === String(env.BOT_USERNAME).toLowerCase(),
+    'BOT_USERNAME не совпадает с ботом, которому принадлежит токен',
+    409,
+  );
+  await telegram(env, 'setWebhook', {
+    url: base + '/api/telegram/webhook',
+    secret_token: env.TELEGRAM_WEBHOOK_SECRET,
+    allowed_updates: ['message', 'callback_query'],
+  });
+  await telegram(env, 'setMyCommands', {
+    commands: [
+      { command: 'start', description: 'Подключить магазин' },
+      { command: 'admin', description: 'Управлять магазином' },
+      { command: 'shop', description: 'Мой сайт' },
+    ],
+  });
+  await telegram(env, 'setChatMenuButton', {
+    menu_button: { type: 'web_app', text: 'Мой магазин', web_app: { url: base + '/admin' } },
+  });
+  return { ok: true, botUsername: env.BOT_USERNAME, webhookUrl: base + '/api/telegram/webhook' };
 }
