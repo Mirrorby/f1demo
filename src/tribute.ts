@@ -457,8 +457,12 @@ export async function flushPaymentNotifications(env: Env) {
           chat_id: n.owner_id,
           text:
             (n.kind === 'paid'
-              ? (lang === 'ru' ? '✅ Оплата подтверждена' : '✅ Payment confirmed')
-              : (lang === 'ru' ? '↩️ Зарегистрирован возврат' : '↩️ Refund reported')) +
+              ? lang === 'ru'
+                ? '✅ Оплата подтверждена'
+                : '✅ Payment confirmed'
+              : lang === 'ru'
+                ? '↩️ Зарегистрирован возврат'
+                : '↩️ Refund reported') +
             '\n' +
             n.title +
             '\n' +

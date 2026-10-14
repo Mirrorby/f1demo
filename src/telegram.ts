@@ -68,41 +68,67 @@ async function claim(env: Env, token: string, user: string) {
 }
 async function menu(env: Env, user: string, lang: 'ru' | 'en', greeting = true) {
   const t = copy[lang];
-  const stores = await stmt(env, 'SELECT * FROM stores WHERE owner_id=? ORDER BY created_at LIMIT 20', user).all<StoreRow>();
+  const stores = await stmt(
+    env,
+    'SELECT * FROM stores WHERE owner_id=? ORDER BY created_at LIMIT 20',
+    user,
+  ).all<StoreRow>();
   if (greeting) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
-      text: (stores.results.length ? t.returning : t.welcome + t.noStore + '\n\n' + t.telegramId + user),
+      text: stores.results.length
+        ? t.returning
+        : t.welcome + t.noStore + '\n\n' + t.telegramId + user,
       reply_markup: {
         inline_keyboard: [
           [{ text: t.dashboard, web_app: { url: origin(env) + '/admin' } }],
-          [{ text: t.payments, callback_data: 'menu:pay' }, { text: t.helpButton, callback_data: 'menu:help' }],
-          [{ text: t.language, callback_data: 'menu:language' }]
-        ]
-      }
+          [
+            { text: t.payments, callback_data: 'menu:pay' },
+            { text: t.helpButton, callback_data: 'menu:help' },
+          ],
+          [{ text: t.language, callback_data: 'menu:language' }],
+        ],
+      },
     });
   }
   for (const store of stores.results) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
-      text: store.name + '\n' + origin(env) + `/${store.status === 'demo' ? 'demo' : 'shop'}/${store.slug}`,
-      reply_markup: { inline_keyboard: [
-        [{ text: t.store, web_app: { url: origin(env) + `/admin?store=${store.id}` } }],
-        [{ text: t.payments, callback_data: 'menu:pay' }]
-      ]}
+      text:
+        store.name +
+        '\n' +
+        origin(env) +
+        `/${store.status === 'demo' ? 'demo' : 'shop'}/${store.slug}`,
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: t.store, web_app: { url: origin(env) + `/admin?store=${store.id}` } }],
+          [{ text: t.payments, callback_data: 'menu:pay' }],
+        ],
+      },
     });
   }
 }
 async function help(env: Env, user: string, lang: 'ru' | 'en') {
   await telegram(env, 'sendMessage', {
-    chat_id: user, text: copy[lang].help,
-    reply_markup: { inline_keyboard: [[{ text: copy[lang].dashboard, web_app: { url: origin(env) + '/admin' } }]] }
+    chat_id: user,
+    text: copy[lang].help,
+    reply_markup: {
+      inline_keyboard: [[{ text: copy[lang].dashboard, web_app: { url: origin(env) + '/admin' } }]],
+    },
   });
 }
 async function languageMenu(env: Env, user: string, lang: 'ru' | 'en') {
   await telegram(env, 'sendMessage', {
-    chat_id: user, text: copy[lang].chooseLanguage,
-    reply_markup: { inline_keyboard: [[{ text: '🇷🇺 Русский', callback_data: 'lang:ru' }, { text: '🇬🇧 English', callback_data: 'lang:en' }]] }
+    chat_id: user,
+    text: copy[lang].chooseLanguage,
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: '🇷🇺 Русский', callback_data: 'lang:ru' },
+          { text: '🇬🇧 English', callback_data: 'lang:en' },
+        ],
+      ],
+    },
   });
 }
 export async function webhook(request: Request, env: Env, input: unknown) {
@@ -131,7 +157,10 @@ export async function webhook(request: Request, env: Env, input: unknown) {
     if (data.startsWith('lang:') && ['lang:ru', 'lang:en'].includes(data)) {
       const lang = data.slice(5) as 'ru' | 'en';
       await setLanguage(env, user, lang);
-      await telegram(env, 'answerCallbackQuery', { callback_query_id: text(q.id, 200, true), text: copy[lang].languageSaved });
+      await telegram(env, 'answerCallbackQuery', {
+        callback_query_id: text(q.id, 200, true),
+        text: copy[lang].languageSaved,
+      });
       await menu(env, user, lang);
       return;
     }
@@ -199,8 +228,14 @@ export async function webhook(request: Request, env: Env, input: unknown) {
       await paymentMenu(env, user, lang);
       return;
     }
-    if (/^\/(help)(\s|$|@)/.test(msg)) { await help(env, user, lang); return; }
-    if (/^\/(language)(\s|$|@)/.test(msg)) { await languageMenu(env, user, lang); return; }
+    if (/^\/(help)(\s|$|@)/.test(msg)) {
+      await help(env, user, lang);
+      return;
+    }
+    if (/^\/(language)(\s|$|@)/.test(msg)) {
+      await languageMenu(env, user, lang);
+      return;
+    }
     if (/^\/(start|admin|shop)(\s|$|@)/.test(msg)) await menu(env, user, lang);
   }
 }
@@ -268,7 +303,8 @@ export async function setupTelegramProfile(env: Env) {
       ['setMyName', 'name', profile.name],
       ['setMyShortDescription', 'short_description', profile.short_description],
       ['setMyDescription', 'description', profile.description],
-    ] as const) await telegram(env, method, { language_code: language, [field]: value });
+    ] as const)
+      await telegram(env, method, { language_code: language, [field]: value });
   }
 }
 export async function setupTelegramCommands(env: Env) {

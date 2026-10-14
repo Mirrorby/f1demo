@@ -219,8 +219,12 @@ export async function flushDigitalNotifications(env: Env) {
           chat_id: p.owner_id,
           text:
             (p.kind === 'paid'
-              ? (lang === 'ru' ? '✅ Оплата подтверждена' : '✅ Payment confirmed')
-              : (lang === 'ru' ? '↩️ Зарегистрирован возврат' : '↩️ Refund reported')) +
+              ? lang === 'ru'
+                ? '✅ Оплата подтверждена'
+                : '✅ Payment confirmed'
+              : lang === 'ru'
+                ? '↩️ Зарегистрирован возврат'
+                : '↩️ Refund reported') +
             '\n' +
             p.title +
             '\n' +

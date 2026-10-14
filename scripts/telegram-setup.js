@@ -32,7 +32,10 @@ try {
   for (const language of ['', 'ru', 'en']) {
     const profile = botProfile[language === 'ru' ? 'ru' : 'en'];
     await call('setMyName', { language_code: language, name: profile.name });
-    await call('setMyShortDescription', { language_code: language, short_description: profile.short_description });
+    await call('setMyShortDescription', {
+      language_code: language,
+      short_description: profile.short_description,
+    });
     await call('setMyDescription', { language_code: language, description: profile.description });
   }
   await call('setChatMenuButton', {
