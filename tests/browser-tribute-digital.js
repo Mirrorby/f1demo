@@ -82,7 +82,7 @@ try {
   );
   const origin = 'http://127.0.0.1:' + server.address().port;
   await mini.goto(origin + '/admin');
-  await mini.getByRole('heading', { name: 'Подключить магазин', exact: true }).waitFor();
+  await mini.getByRole('heading', { name: 'Начнём с вашего магазина', exact: true }).waitFor();
   assert.equal(await mini.getByRole('button', { name: 'Товары', exact: true }).isDisabled(), true);
   await mini.getByRole('button', { name: 'Ещё', exact: true }).click();
   await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
