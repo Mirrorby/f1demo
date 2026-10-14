@@ -37,7 +37,7 @@ try {
   const link = page.getByRole('link', { name: 'Открыть товар Tribute ↗', exact: true });
   await link.waitFor();
   assert.equal(await link.getAttribute('href'), 'https://t.me/tribute/app?startapp=pH0x');
-  await page.getByText('Товар на заказ:', { exact: false }).waitFor();
+  await page.getByText('Товар на заказ: выполните заказ', { exact: false }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Создать счёт', exact: true }).count(), 0);
   const event = {
     name: 'new_digital_product',
