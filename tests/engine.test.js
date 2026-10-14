@@ -389,6 +389,33 @@ test('database currency guards reject races that bypass an earlier API read', as
   );
 });
 
+test('Delokay welcomes users in their Telegram language, supports manual choice and help', async () => {
+  const headers = { 'X-Telegram-Bot-Api-Secret-Token': WEBHOOK };
+  const message = (id, txt, lang) => ({
+    message: { chat: { id, type: 'private' }, from: { id, language_code: lang }, text: txt }
+  });
+  const callback = (id, data, lang) => ({
+    callback_query: { id: 'callback-' + id + '-' + data, from: { id, language_code: lang }, message: { chat: { id, type: 'private' } }, data }
+  });
+  let before = notifications.length;
+  assert.equal((await req('/api/telegram/webhook', 'POST', message(777, '/start', 'en'), headers)).status, 200);
+  let sent = notifications.slice(before).filter(n => n.path.endsWith('/sendMessage'));
+  assert.ok(sent.some(n => n.payload.text.includes('Welcome to Delokay')));
+  before = notifications.length;
+  assert.equal((await req('/api/telegram/webhook', 'POST', message(777, '/help', 'en'), headers)).status, 200);
+  sent = notifications.slice(before).filter(n => n.path.endsWith('/sendMessage'));
+  assert.ok(sent.some(n => n.payload.text.includes('Delokay help')));
+  assert.equal((await req('/api/telegram/webhook', 'POST', callback(777, 'lang:ru', 'en'), headers)).status, 200);
+  before = notifications.length;
+  assert.equal((await req('/api/telegram/webhook', 'POST', message(777, '/start', 'en'), headers)).status, 200);
+  sent = notifications.slice(before).filter(n => n.path.endsWith('/sendMessage'));
+  assert.ok(sent.some(n => n.payload.text.includes('Привет! Добро пожаловать в Delokay')));
+  before = notifications.length;
+  assert.equal((await req('/api/telegram/webhook', 'POST', message(778, '/start', 'ru'), headers)).status, 200);
+  sent = notifications.slice(before).filter(n => n.path.endsWith('/sendMessage'));
+  assert.ok(sent.some(n => n.payload.text.includes('Привет!')));
+});
+
 test('browser factory routes require the platform key and do not expose secrets', async () => {
   assert.equal((await req('/api/platform/config')).status, 401);
   assert.equal((await req('/api/platform/stores')).status, 401);
@@ -417,6 +444,10 @@ test('browser factory routes require the platform key and do not expose secrets'
         n.payload.commands.find((c) => c.command === 'pay').description === 'Payments',
     ),
   );
+  const profiles = notifications.filter((n) => n.path.endsWith('/setMyDescription'));
+  assert.equal(profiles.length, 3);
+  assert.ok(profiles.some((n) => n.payload.language_code === 'ru' && n.payload.description.includes('Меньше рутины')));
+  assert.ok(profiles.some((n) => n.payload.language_code === 'en' && n.payload.description.includes('Less busywork')));
   const calls = notifications.filter((n) => n.path.endsWith('/setWebhook'));
   assert.ok(calls.length);
   assert.equal(calls.at(-1).payload.secret_token, WEBHOOK);
