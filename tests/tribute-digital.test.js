@@ -1,3 +1,4 @@
+import { mf } from './harness.js';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
@@ -132,4 +133,19 @@ test('personal payment history excludes other payers and signed sale price survi
   assert.equal(history.length, 3);
   assert.ok(history.some((n) => n.payload.text.includes('Оплачено')));
   assert.ok(history.every((n) => !n.payload.text.includes('80.00')));
+});
+
+test('private bridge verifies signatures, ignores non-payment probes and is unavailable over public HTTP', async () => {
+  const { TEST_BRIDGE } = await mf.getBindings();
+  const e = event(9020);
+  const body = JSON.stringify(e);
+  const signature = createHmac('sha256', TRIBUTE).update(body).digest('hex');
+  assert.equal(await TEST_BRIDGE.verifySignature(body, signature), true);
+  assert.equal(await TEST_BRIDGE.verifySignature(body, 'b'.repeat(64)), false);
+  assert.equal(
+    (await TEST_BRIDGE.receiveEvent(JSON.stringify({ name: 'integration_probe', payload: {} })))
+      .status,
+    'ignored',
+  );
+  assert.equal((await req('/receiveEvent', 'POST', e)).status, 404);
 });

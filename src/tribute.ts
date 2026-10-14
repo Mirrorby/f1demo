@@ -240,21 +240,12 @@ export async function createInvoice(env: Env, s: StoreRow, input: unknown) {
 export async function tributeWebhook(request: Request, env: Env) {
   requireThat(env.TRIBUTE_API_KEY, 'Настройте TRIBUTE_API_KEY', 503);
   const raw = new TextDecoder().decode(await limitedBytes(request, 64000));
-  const signature = request.headers.get('trbt-signature') ?? '';
-  requireThat(/^[a-f0-9]{64}$/i.test(signature), 'Недопустимая подпись Tribute', 401);
-  const key = await crypto.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(env.TRIBUTE_API_KEY),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign'],
-  );
-  const signed = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(raw));
-  const expected = Array.from(new Uint8Array(signed), (v) => v.toString(16).padStart(2, '0')).join(
-    '',
-  );
   requireThat(
-    await equalSecret(signature.toLowerCase(), expected),
+    await verifyTributeSignature(
+      raw,
+      request.headers.get('trbt-signature') ?? '',
+      env.TRIBUTE_API_KEY,
+    ),
     'Недопустимая подпись Tribute',
     401,
   );
@@ -483,4 +474,22 @@ export async function flushPaymentNotifications(env: Env) {
       console.warn(JSON.stringify({ event: 'payment_notification_retry' }));
     }
   }
+}
+
+export async function verifyTributeSignature(body: string, signature: string, apiKey: string) {
+  if (
+    !apiKey ||
+    !/^[a-f0-9]{64}$/i.test(signature) ||
+    new TextEncoder().encode(body).length > 64000
+  )
+    return false;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(apiKey),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['verify'],
+  );
+  const bytes = new Uint8Array(signature.match(/.{2}/g)!.map((part) => parseInt(part, 16)));
+  return crypto.subtle.verify('HMAC', key, bytes, new TextEncoder().encode(body));
 }

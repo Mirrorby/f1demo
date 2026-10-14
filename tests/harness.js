@@ -78,6 +78,18 @@ export async function start(overrides = {}) {
   const extraBindings = Object.hasOwn(overrides, 'TRIBUTE_PRODUCT_URL') ? overrides : {};
   const result = await build({
     entryPoints: ['src/index.ts'],
+    external: ['cloudflare:workers'],
+    plugins: [
+      {
+        name: 'platform-text',
+        setup(b) {
+          b.onLoad({ filter: /public\/platform\.js$/ }, async (args) => ({
+            contents: 'export default ' + JSON.stringify(await readFile(args.path, 'utf8')),
+            loader: 'js',
+          }));
+        },
+      },
+    ],
     bundle: true,
     format: 'esm',
     platform: 'browser',
@@ -92,6 +104,7 @@ export async function start(overrides = {}) {
       compatibilityFlags: ['nodejs_compat'],
       cronTriggers: ['*/10 * * * *'],
       d1Databases: { DB: 'engine' },
+      serviceBindings: { TEST_BRIDGE: { name: 'engine', entrypoint: 'CatalogTributeBridge' } },
       r2Buckets: ['IMAGES'],
       bindings: {
         TRIBUTE_API_KEY: TRIBUTE,

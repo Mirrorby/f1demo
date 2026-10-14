@@ -1,8 +1,12 @@
+import { WorkerEntrypoint } from 'cloudflare:workers';
+import platformScript from '../public/platform.js';
+import { digitalWebhook } from './tribute-digital';
 import {
   createInvoice,
   listInvoices,
   tributeConfig,
   tributeWebhook,
+  verifyTributeSignature,
   reconcileInvoice,
   flushPaymentNotifications,
 } from './tribute';
@@ -89,6 +93,14 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     ctx.waitUntil(flushPaymentNotifications(env));
     return json(result);
   }
+  if (path === '/platform.js' && (method === 'GET' || method === 'HEAD'))
+    return new Response(method === 'HEAD' ? null : platformScript, {
+      headers: {
+        'Content-Type': 'application/javascript; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
   if (path === '/api/health' && method === 'GET') return json({ ok: true });
   if (path === '/api/templates' && method === 'GET') return json(templateList());
   const previewApi = path.match(/^\/api\/templates\/([a-z]+)$/);
@@ -389,3 +401,49 @@ export default {
     await stmt(env, 'DELETE FROM owner_invites WHERE expires_at<unixepoch()-86400').run();
   },
 } satisfies ExportedHandler<Env>;
+
+// Callable only through a configured Cloudflare service binding.
+// The Leela entrypoint verifies Tribute's signature before calling this method.
+export class CatalogTributeBridge extends WorkerEntrypoint<Env> {
+  async verifySignature(body: string, signature: string) {
+    return verifyTributeSignature(body, signature, this.env.TRIBUTE_API_KEY);
+  }
+  async inspect() {
+    return tributeConfig(this.env);
+  }
+  async gatewayProbe() {
+    const body = JSON.stringify({ name: 'integration_probe', payload: {} });
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(this.env.TRIBUTE_API_KEY),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const signed = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
+    const signature = Array.from(new Uint8Array(signed), (v) =>
+      v.toString(16).padStart(2, '0'),
+    ).join('');
+    const r = await this.env.LEELA_PAYMENTS.fetch(
+      new Request('https://internal/tribute/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'trbt-signature': signature },
+        body,
+      }),
+    );
+    return { status: r.status, result: await r.json() };
+  }
+  async receiveEvent(body: string) {
+    requireThat(
+      typeof body === 'string' && new TextEncoder().encode(body).length <= 64000,
+      'Некорректное уведомление',
+    );
+    const event = object(JSON.parse(body));
+    const name = text(event.name, 100, true);
+    if (!['new_digital_product', 'digital_product_refunded'].includes(name))
+      return { status: 'ignored' };
+    const result = await digitalWebhook(this.env, name, event.payload);
+    this.ctx.waitUntil(flushPaymentNotifications(this.env));
+    return result;
+  }
+}

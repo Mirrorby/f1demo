@@ -5,7 +5,7 @@
 Текущая ссылка: https://web.tribute.tg/p/H0e. Она сохранена в TRIBUTE_PRODUCT_URL. TRIBUTE_SHOP_ID для этого режима не требуется.
 
 1. Добавьте TRIBUTE_API_KEY как Secret в Worker catalog-factory (и Build secrets, если используете Cloudflare Builds).
-2. В настройках API/webhook Tribute задайте https://catalog-factory.nikita-karpof.workers.dev/api/tribute/webhook. Если в аккаунте уже работают другие продукты (например, Лила), не заменяйте их единственный webhook вслепую: используйте отдельные настройки проекта либо сначала обеспечьте маршрутизацию уведомлений обоих продуктов.
+2. Для общего аккаунта с Лилой сохраните текущий webhook Лилы. Worker leela-worker проверяет подпись одного из ключей этого аккаунта и обрабатывает свои товары. Остальные покупки передаются через приватный service binding CATALOG_PAYMENTS в CatalogTributeBridge на catalog-factory. Публичный /api/tribute/webhook остаётся дополнительным входом для отдельного аккаунта. Общий webhook менять не требуется.
 3. Примените миграции D1 и разверните код. В /platform проверьте имя, цену, статус товара и acceptCards. Для международных карт этот флаг должен быть включён.
 4. Клиент открывает /pay. Бот показывает актуальное название и цену из API Tribute и кнопку с точной ссылкой H0e. H0e — публичный код ссылки, а не числовой product_id: сопоставление выполняется через API, ID не угадывается.
 5. new_digital_product обрабатывается после проверки HMAC. Сохраняются purchase_id, product_id, сумма, валюта и telegram_user_id. Повторная доставка не создаёт вторую покупку или второе уведомление. digital_product_refunded сохраняет возврат; поздний paid его не отменяет.
@@ -76,3 +76,7 @@ shop_order_refunded регистрируется как refund_reported: это 
 - https://wiki.tribute.tg/for-shops/api/methods
 - https://wiki.tribute.tg/for-shops/api/webhooks
 - https://wiki.tribute.tg/for-shops/api/models
+
+## Общий webhook с Лилой
+
+В каталоге есть обратный binding LEELA_PAYMENTS для безопасной проверки подписанного integration_probe. Проба ничего не покупает, не создаёт чеки и не выдаёт доступ. Существующие и новые ключи аккаунта принимаются только после проверки HMAC. Ошибка доставки в каталог возвращается Tribute как ошибка, чтобы сервис повторил уведомление. Оплаты Лилы не обращаются к каталогу, если подпись проверяется её прежним ключом.
