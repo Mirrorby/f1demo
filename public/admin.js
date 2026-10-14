@@ -144,7 +144,7 @@ function drawProductRows() {
       .map(
         ({ p, i }) => `<button class="card product product-row" data-edit="${i}">
     ${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : '<span class="product-placeholder" aria-hidden="true">▦</span>'}
-    <span class="info"><strong class="product-title" data-no-i18n>${esc(p.name)}</strong>
+    <span class="info"><h3 class="product-title" data-no-i18n>${esc(p.name)}</h3>
     <span class="product-meta" data-no-i18n>${esc(p.category)} · ${esc(money(p))}</span>
     <span class="badge availability-${esc(p.availability)}">${{ available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[p.availability]}</span>
     ${stockSummary(p)}</span><span class="product-chevron" aria-hidden="true">›</span></button>`,
@@ -182,7 +182,7 @@ function renderOrdersList() {
         .map(
           (o, i) => `<button class="card product order-row" data-order="${i}">
       <span class="order-symbol">▤</span><span class="info">
-      <strong class="product-title">№${o.number} · <span data-no-i18n>${esc(o.customer.name)}</span></strong>
+      <h3 class="product-title">№${o.number} · <span data-no-i18n>${esc(o.customer.name)}</span></h3>
       <span class="product-meta">${(o.totalMinor / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU')} ${esc(o.currency)} · ${new Date(o.createdAt * 1000).toLocaleDateString(window.DelokayI18n?.locale() || 'ru-RU')}</span>
       <span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></span>
       <span class="product-chevron">›</span></button>`,
