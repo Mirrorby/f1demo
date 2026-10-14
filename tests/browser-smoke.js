@@ -142,6 +142,7 @@ try {
   await editor.locator('#notice').filter({ hasText: 'Фотографии загружены' }).waitFor();
   await editor.getByRole('button', { name: 'Сохранить товар', exact: true }).click();
   await editor.getByRole('heading', { name: 'Товар оператора' }).waitFor();
+  await editor.getByRole('button', { name: 'Ещё', exact: true }).click();
   await editor.getByRole('button', { name: 'Настройки', exact: true }).click();
   await editor.locator('#hero-title').fill('Подготовлено оператором');
   await editor.locator('#theme').selectOption('home');
@@ -291,6 +292,7 @@ try {
   const uploadedPhoto = data.products.find((p) => p.name === 'Новая кепка').photos[0];
   assert.ok(uploadedPhoto.endsWith('.png'));
   assert.equal((await req(uploadedPhoto)).headers.get('Content-Type'), 'image/png');
+  await page.getByRole('button', { name: 'Ещё', exact: true }).click();
   await page.getByRole('button', { name: 'Настройки', exact: true }).click();
   await page.locator('#store-title').fill('Тестовый магазин');
   await page.locator('#logo-upload').setInputFiles(imageFile);
