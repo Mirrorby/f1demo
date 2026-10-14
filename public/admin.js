@@ -1,17 +1,27 @@
 'use strict';
 const tg = window.Telegram?.WebApp;
 const platformMode = document.body.dataset.mode === 'platform';
+if (document.body.classList.contains('delokay-app')) {
+  const applyTheme = () => {
+    document.body.dataset.theme =
+      tg?.colorScheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  };
+  applyTheme();
+  tg?.onEvent?.('themeChanged', applyTheme);
+}
 let platformKey = '';
 function emptyStore() {
-  document.getElementById('store-name').textContent = 'Магазин не подключён';
-  main.innerHTML =
-    '<div class="card"><h2>Подключить магазин</h2><p>Получите персональную ссылку приглашения от разработчика и откройте её в Telegram.</p><p>Оформить заказ на создание сайта можно в разделе «Оплата».</p><button class="primary" data-tab="payments">Перейти к оплате</button></div>';
+  document.getElementById('store-name').textContent = 'Ваши инструменты';
+  main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">ДОБРО ПОЖАЛОВАТЬ В DELOKAY</span><h2>Начнём с вашего магазина</h2><p>Создайте онлайн-каталог, добавляйте товары и принимайте заказы прямо в Telegram.</p><div class="actions"><button class="primary" data-tab="payments">Начать с каталога →</button></div></section>
+    <div class="section-label">Ваши инструменты</div>
+    <section class="card"><div class="tool-row"><div class="empty-visual">▦</div><div class="tool-copy"><h3>Каталоги</h3><p>Первый инструмент Delokay</p></div><span class="badge">Доступен</span></div></section>
+    <p class="section-caption">После оформления заказа мы отправим вам приглашение для подключения магазина.</p>`;
 }
 function paymentButton(url, label) {
   return `<button class="primary" data-payment-url="${esc(url)}">${esc(label)}</button>`;
 }
 async function showPayments(seq) {
-  main.innerHTML = '<h2>Оплата услуг</h2><p>Загружаем данные Tribute…</p>';
+  main.innerHTML = '<h2>Оплата услуг</h2><div class="card"><p>Загружаем данные Tribute…</p></div>';
   const [config, purchases] = await Promise.all([api('payments/config'), api('payments')]);
   if (seq !== generation) return;
   const canOrder = config.configured && (config.orderLinkAvailable || config.active);
@@ -22,16 +32,24 @@ async function showPayments(seq) {
     review: 'Нужна сверка',
     creating: 'Создаётся',
   };
-  main.innerHTML = `<h2>Оплата услуг</h2><p>Создание и настройка сайта-каталога.</p>
-    ${
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Оплата услуг</h2><p class="section-caption">Оплачивайте услуги и следите за статусом покупок в одном месте.</p></div></div><div class="card payment-intro"><h3>Создание и настройка сайта-каталога.</h3>
+    </div>${
       config.mode === 'digital'
-        ? `<div class="card"><h3>${esc(config.name || 'Создание сайта')}</h3>${config.configured ? `<p>${(config.amountMinor / 100).toFixed(2)} ${esc(String(config.currency).toUpperCase())}</p>` : ''}
+        ? `<div class="card payment-offer"><h3>${esc(config.name || 'Создание сайта')}</h3>${config.configured ? `<p>${(config.amountMinor / 100).toFixed(2)} ${esc(String(config.currency).toUpperCase())}</p>` : ''}
     ${config.fulfillmentRequired ? '<p>Товар на заказ. Продавец отправит результат через Tribute после выполнения заказа и модерации.</p>' : ''}
     ${canOrder && config.paymentUrl ? paymentButton(config.paymentUrl, config.fulfillmentRequired ? 'Заказать через Tribute' : 'Оплатить через Tribute') : '<p>Товар пока недоступен для оформления заказа.</p>'}</div>`
         : ''
     }
-    <h3>Мои покупки и счета</h3>${purchases.map((p) => `<div class="card"><h3>${esc(p.title)}</h3><p>${(p.amountMinor / 100).toFixed(2)} ${esc(p.currency.toUpperCase())}</p><p>${esc(labels[p.status] || p.status)}</p>${p.paymentUrl && p.status === 'pending' ? paymentButton(p.paymentUrl, 'Оплатить через Tribute') : ''}</div>`).join('') || '<p>Покупок и счетов пока нет.</p>'}
+    <h3 class="section-label">Мои покупки и счета</h3>${purchases.map((p) => `<div class="card payment-item"><h3 data-no-i18n>${esc(p.title)}</h3><p>${(p.amountMinor / 100).toFixed(2)} ${esc(p.currency.toUpperCase())}</p><span class="badge payment-badge">${esc(labels[p.status] || p.status)}</span>${p.paymentUrl && p.status === 'pending' ? paymentButton(p.paymentUrl, 'Оплатить через Tribute') : ''}</div>`).join('') || '<div class="card empty-panel"><p>Покупок и счетов пока нет.</p></div>'}
     <button data-tab="payments">Обновить оплату</button>`;
+}
+function moreScreen() {
+  main.innerHTML = `<div class="section-label">Ваши инструменты</div><div class="more-list">
+    ${store ? '<button class="more-link" data-tab="site" aria-label="Мой сайт"><span class="more-icon mint">↗</span><span class="more-copy"><strong>Мой сайт</strong><small>Ссылка на вашу витрину и её статус</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${store ? '<button class="more-link" data-tab="settings" aria-label="Настройки"><span class="more-icon">⚙</span><span class="more-copy"><strong>Настройки</strong><small>Оформление магазина, контакты и доставка</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${!platformMode ? '<button class="more-link" data-tab="payments" aria-label="Оплата"><span class="more-icon mint">▣</span><span class="more-copy"><strong>Оплата</strong><small>Услуги Delokay, история покупок и Tribute</small></span><span class="more-chevron">›</span></button>' : ''}
+    </div>
+    <div class="section-label">Delokay</div><div class="hint-strip">Меньше рутины. Больше дела. ✨<br>Новые инструменты будут появляться здесь по мере запуска.</div>`;
 }
 function storeState() {
   return store.status === 'demo'
@@ -50,7 +68,9 @@ let stores = [],
   photos = [],
   orderOffset = 0,
   orderFilter = '',
-  generation = 0;
+  generation = 0,
+  productQuery = '',
+  productCategory = '';
 const esc = (v) =>
   String(v ?? '').replace(
     /[&<>"']/g,
@@ -91,7 +111,7 @@ const siteUrl = () =>
 function money(p) {
   return Object.entries(p.prices)
     .filter(([c]) => store.settings.currencies.includes(c))
-    .map(([c, v]) => (v / 100).toLocaleString('ru-RU') + ' ' + c)
+    .map(([c, v]) => (v / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU') + ' ' + c)
     .join(' / ');
 }
 function stockSummary(p) {
@@ -102,6 +122,80 @@ function stockSummary(p) {
     )
     .join('')}</span>`;
 }
+
+function drawProductRows() {
+  const target = document.getElementById('product-results');
+  if (!target) return;
+  const query = productQuery.trim().toLocaleLowerCase();
+  const visible = products
+    .map((p, i) => ({ p, i }))
+    .filter(
+      ({ p }) =>
+        (!productCategory || p.category === productCategory) &&
+        (!query ||
+          [p.name, p.category, p.brand, p.sku].some((x) =>
+            String(x || '')
+              .toLocaleLowerCase()
+              .includes(query),
+          )),
+    );
+  target.innerHTML =
+    visible
+      .map(
+        ({ p, i }) => `<button class="card product product-row" data-edit="${i}">
+    ${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : '<span class="product-placeholder" aria-hidden="true">▦</span>'}
+    <span class="info"><h3 class="product-title" data-no-i18n>${esc(p.name)}</h3>
+    <span class="product-meta" data-no-i18n>${esc(p.category)} · ${esc(money(p))}</span>
+    <span class="badge availability-${esc(p.availability)}">${{ available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[p.availability]}</span>
+    ${stockSummary(p)}</span><span class="product-chevron" aria-hidden="true">›</span></button>`,
+      )
+      .join('') ||
+    `<div class="card empty-panel"><div class="empty-visual">⌕</div><h3>${products.length ? 'Ничего не найдено' : 'Пока нет товаров'}</h3>
+    <p>${products.length ? 'Попробуйте другой запрос или категорию.' : 'Ваш каталог начнётся с первого товара. Добавьте фото, цену и описание.'}</p>
+    ${products.length ? '<button data-action="clear-search">Очистить поиск</button>' : '<button class="primary" data-action="add">Добавить товар</button>'}</div>`;
+}
+function renderProductsList() {
+  const categories = [...new Set(products.map((p) => p.category))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Товары · ${products.length}</h2>
+    <p class="section-caption">Управление магазином</p></div><button class="primary" data-action="add">Добавить</button></div>
+    <div class="product-toolbar"><label class="visually-hidden" for="product-search">Поиск товаров</label>
+      <input id="product-search" type="search" autocomplete="off" placeholder="Найти товар…" value="${esc(productQuery)}">
+      <label class="visually-hidden" for="product-category">Все категории товаров</label>
+      <select id="product-category" aria-label="Все категории товаров"><option value="">Все категории</option>
+      ${categories.map((c) => `<option value="${esc(c)}" ${c === productCategory ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+    <div id="product-results" class="stack"></div>`;
+  drawProductRows();
+}
+function renderOrdersList() {
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Заказы</h2><p class="section-caption">Заказы клиентов</p></div></div>
+    <div class="order-filter-row"><label for="order-filter">Статус заказов</label>
+      <select id="order-filter"><option value="">Все</option>
+      ${Object.entries(statusNames)
+        .map(
+          ([k, v]) => `<option value="${k}" ${k === orderFilter ? 'selected' : ''}>${v}</option>`,
+        )
+        .join('')}</select></div>
+    <div class="stack">${
+      orders
+        .map(
+          (o, i) => `<button class="card product order-row" data-order="${i}">
+      <span class="order-symbol">▤</span><span class="info">
+      <h3 class="product-title">№${o.number} · <span data-no-i18n>${esc(o.customer.name)}</span></h3>
+      <span class="product-meta">${(o.totalMinor / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU')} ${esc(o.currency)} · ${new Date(o.createdAt * 1000).toLocaleDateString(window.DelokayI18n?.locale() || 'ru-RU')}</span>
+      <span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></span>
+      <span class="product-chevron">›</span></button>`,
+        )
+        .join('') ||
+      `<div class="card empty-panel"><div class="empty-visual">▤</div>
+      <h3>${orderFilter ? 'Нет заказов по выбранному статусу' : 'Заказов пока нет.'}</h3>
+      <p>${orderFilter ? 'Попробуйте выбрать другой статус.' : 'Новые заказы появятся здесь и в Telegram.'}</p></div>`
+    }</div>
+    <div class="actions pagination"><button data-page="prev" ${orderOffset === 0 ? 'disabled' : ''}>Назад</button>
+    <button data-page="next" ${orders.length < 50 ? 'disabled' : ''}>Далее</button></div>`;
+}
+
 async function reload() {
   const id = store.id;
   const [next, ps] = await Promise.all([api(`stores/${id}`), api(`stores/${id}/products`)]);
@@ -114,38 +208,54 @@ async function show(next = tab) {
   tab = next;
   edited = null;
   notice('');
+  const selectedNav = ['settings', 'site', 'payments'].includes(tab) ? 'more' : tab;
   document
-    .querySelectorAll('[data-tab]')
-    .forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+    .querySelectorAll('#nav [data-tab]')
+    .forEach((b) => b.classList.toggle('active', b.dataset.tab === selectedNav));
   const seq = ++generation;
   try {
     if (tab === 'payments' && !platformMode) {
       await showPayments(seq);
+    } else if (tab === 'more') {
+      moreScreen();
     } else if (!store) {
       emptyStore();
     } else if (tab === 'home') {
       await reload();
       if (seq !== generation) return;
-      main.innerHTML = `<div class="stats"><div class="card"><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div><div class="card"><div class="stat">${store.stats.newOrderCount}</div><p>Новых заказов</p></div></div><div class="card"><h2>Всё под рукой</h2><p>Каталог и настройки обновляются на сайте сразу после сохранения.</p><div class="actions"><button class="primary" data-action="add">Добавить товар</button><button data-tab="orders">Посмотреть заказы</button></div></div><div class="card"><h3>${storeState()}</h3><p>${store.status === 'demo' ? 'Заказы отключены. После продажи разработчик активирует магазин.' : 'Новые заказы появятся в Telegram и в разделе «Заказы».'}</p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть мой сайт</a></div>`;
+      main.innerHTML = `<section class="card hero-card">
+      <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
+      <h2>Всё под рукой</h2>
+      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>
+      <div class="actions"><button class="primary" data-action="add">Добавить товар</button></div>
+    </section>
+    <div class="section-label">Обзор магазина</div>
+    <div class="stats">
+      <div class="card"><div class="stat-symbol">▦</div><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div>
+      <div class="card"><div class="stat-symbol mint">▤</div><div class="stat">${store.stats.newOrderCount}</div><p>Новых заказов</p></div>
+    </div>
+    <div class="section-label">Быстрые действия</div>
+    <div class="quick-grid">
+      <button class="quick-action" data-tab="products"><span class="quick-icon">▦</span><span>Все товары →</span></button>
+      <button class="quick-action" data-tab="orders"><span class="quick-icon mint">▤</span><span>Посмотреть заказы →</span></button>
+    </div>
+    <div class="section-label">Ваш сайт</div>
+    <div class="card"><div class="status-row"><span class="status-indicator"></span><div><h3>${storeState()}</h3><p class="muted">${store.status === 'demo' ? 'Заказы отключены в демонстрационном режиме.' : 'Новые заказы появятся здесь и в Telegram.'}</p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть витрину ↗</a></div></div></div>`;
     } else if (tab === 'products') {
       await reload();
       if (seq !== generation) return;
-      main.innerHTML = `<div class="row between page-heading"><h2>Товары · ${products.length}</h2><button class="primary" data-action="add">Добавить</button></div><div class="stack">${products.map((p, i) => `<button class="card product" data-edit="${i}">${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : ''}<div class="info"><h3>${esc(p.name)}</h3><p>${esc(p.category)} · ${esc(money(p))}</p><span class="badge">${{ available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[p.availability]}</span>${stockSummary(p)}</div><span class="product-chevron" aria-hidden="true">›</span></button>`).join('') || '<p>Добавьте первый товар.</p>'}</div>`;
+      renderProductsList();
     } else if (tab === 'orders') {
       orders = await api(base() + `/orders?offset=${orderOffset}&status=${orderFilter}`);
       if (seq !== generation) return;
-      main.innerHTML = `<h2>Заказы</h2><select id="order-filter" aria-label="Статус заказов"><option value="">Все</option>${Object.entries(
-        statusNames,
-      )
-        .map(
-          ([k, v]) => `<option value="${k}" ${k === orderFilter ? 'selected' : ''}>${v}</option>`,
-        )
-        .join(
-          '',
-        )}</select><div style="margin-top:16px">${orders.map((o, i) => `<button class="card product" data-order="${i}"><div class="info"><h3>№${o.number} · ${esc(o.customer.name)}</h3><p>${esc(statusNames[o.status])} · ${(o.totalMinor / 100).toLocaleString('ru-RU')} ${o.currency}</p><p>${new Date(o.createdAt * 1000).toLocaleString('ru-RU')}</p></div><span>›</span></button>`).join('') || '<p>Заказов пока нет.</p>'}</div><div class="actions"><button data-page="prev" ${orderOffset === 0 ? 'disabled' : ''}>Назад</button><button data-page="next" ${orders.length < 50 ? 'disabled' : ''}>Далее</button></div>`;
+      renderOrdersList();
     } else if (tab === 'settings') renderSettings();
     else if (tab === 'site')
-      main.innerHTML = `<h2>Мой сайт</h2><div class="card"><h3>${esc(store.name)}</h3><p>${storeState()}</p><p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">${esc(siteUrl())}</a></p><button class="primary" data-action="copy">Скопировать ссылку</button></div>`;
+      main.innerHTML = `<div class="row between page-heading"><div><h2>Мой сайт</h2><p class="section-caption">Ссылка на витрину</p></div></div>
+        <div class="card site-overview"><div class="row between"><h3 data-no-i18n>${esc(store.name)}</h3><span class="badge">${storeState()}</span></div>
+        <p class="section-caption">${store.status === 'demo' ? 'Заказы отключены в демонстрационном режиме.' : 'Магазин готов делиться с клиентами.'}</p>
+        <div class="site-link" data-no-i18n>${esc(siteUrl())}</div>
+        <div class="actions"><button class="primary" data-action="copy">Скопировать ссылку</button><a class="site-open-link" href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть витрину ↗</a></div></div>`;
   } catch (e) {
     if (seq !== generation) return;
     notice(e.message);
@@ -172,7 +282,7 @@ function editProduct(index) {
   edited = index === undefined ? null : products[index];
   photos = [...(edited?.photos || [])];
   const p = edited || {};
-  main.innerHTML = `<div class="row between page-heading"><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea>
+  main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
  ${store.settings.currencies.map((c) => field('price-' + c, 'Цена, ' + c, (p.prices?.[c] ?? 0) / 100, 'number', true)).join('')}
  <details><summary>Дополнительные валюты и характеристики</summary>${[
    'BYN',
@@ -215,7 +325,7 @@ function editProduct(index) {
 }
 function renderSettings() {
   const s = store.settings;
-  main.innerHTML = `<h2>Настройки</h2><form id="settings-form"><div class="card">${field('store-title', 'Название магазина', store.name, 'text', true)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea><label for="theme">Шаблон витрины</label><select id="theme">${[
+  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
     ['minimal', 'Универсальный'],
     ['fashion', 'Одежда и аксессуары'],
     ['home', 'Дом и декор'],
@@ -227,7 +337,7 @@ function renderSettings() {
     )
     .join(
       '',
-    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp">${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}<label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
+    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"></div><div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
     ['btn_cart', 'Кнопка корзины'],
     ['btn_add', 'Добавить в корзину'],
     ['label_size', 'Название вариантов'],
@@ -254,7 +364,19 @@ function showOrder(o) {
     completed: [],
     cancelled: [],
   };
-  main.innerHTML = `<div class="row between page-heading"><h2>Заказ №${o.number}</h2><button data-tab="orders">Назад</button></div><div class="card"><span class="badge">${statusNames[o.status]}</span><h3 style="margin-top:16px">${esc(c.name)}</h3><p>${esc(c.phone)}</p><p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city, c.region, c.index].filter(Boolean).join(', '))}</p>${c.comment ? `<p>${esc(c.comment)}</p>` : ''}<ul class="order-lines">${o.items.map((i) => `<li>${esc(i.name)} · ${esc(i.variant)}<br>${i.quantity} × ${(i.unitMinor / 100).toLocaleString('ru-RU')} ${o.currency}</li>`).join('')}</ul><h3>Итого: ${(o.totalMinor / 100).toLocaleString('ru-RU')} ${o.currency}</h3><div class="actions">${buttons[o.status].map(([s, label]) => `<button data-status="${s}" data-order-id="${o.id}" class="${s === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div></div>`;
+  const locale = window.DelokayI18n?.locale() || 'ru-RU';
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Заказ №${o.number}</h2><p class="section-caption">Информация о заказе</p></div><button data-tab="orders">Назад</button></div>
+    <section class="card"><div class="row between"><h3>Статус заказов</h3><span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></div>
+      <div class="order-total">${(o.totalMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</div>
+      <p class="section-caption">${new Date(o.createdAt * 1000).toLocaleString(locale)}</p></section>
+    <section class="card"><h3 class="form-section-heading">Клиент</h3>
+      <div class="order-customer" data-no-i18n><strong>${esc(c.name)}</strong><p>${esc(c.phone)}</p>
+      <p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city, c.region, c.index].filter(Boolean).join(', '))}</p>
+      ${c.comment ? `<p>${esc(c.comment)}</p>` : ''}</div></section>
+    <section class="card"><h3 class="form-section-heading">Состав заказа</h3>
+      <ul class="order-lines">${o.items.map((i) => `<li><strong data-no-i18n>${esc(i.name)}</strong><span class="muted" data-no-i18n>${esc(i.variant)}</span><span>${i.quantity} × ${(i.unitMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</span></li>`).join('')}</ul>
+      <div class="row between order-summary"><strong>Итого</strong><strong>${(o.totalMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</strong></div></section>
+    ${buttons[o.status].length ? `<div class="actions order-actions">${buttons[o.status].map(([status, label]) => `<button data-status="${status}" data-order-id="${o.id}" class="${status === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div>` : ''}`;
 }
 async function uploadImage(file) {
   if (
@@ -335,6 +457,11 @@ document.addEventListener('click', async (event) => {
       return;
     }
     if (button.dataset.action === 'add') editProduct();
+    if (button.dataset.action === 'clear-search') {
+      productQuery = '';
+      productCategory = '';
+      renderProductsList();
+    }
     if (button.dataset.action === 'variant') {
       if (document.querySelectorAll('.variant').length >= 30)
         throw new Error('Максимум 30 вариантов');
@@ -359,6 +486,12 @@ document.addEventListener('click', async (event) => {
     notice(e.message);
   }
 });
+document.addEventListener('input', (event) => {
+  if (event.target.id === 'product-search') {
+    productQuery = event.target.value;
+    drawProductRows();
+  }
+});
 document.addEventListener('change', async (event) => {
   const el = event.target;
   try {
@@ -367,6 +500,10 @@ document.addEventListener('change', async (event) => {
       generation++;
       orderOffset = 0;
       await show('home');
+    }
+    if (el.id === 'product-category') {
+      productCategory = el.value;
+      drawProductRows();
     }
     if (el.id === 'order-filter') {
       orderFilter = el.value;
@@ -538,7 +675,7 @@ document.addEventListener('submit', async (event) => {
     if (!stores.length) {
       document.getElementById('store-name').textContent = 'Мой кабинет';
       document.querySelectorAll('#nav [data-tab]').forEach((button) => {
-        button.disabled = !['home', 'payments'].includes(button.dataset.tab);
+        button.disabled = !['home', 'more'].includes(button.dataset.tab);
       });
       await show(tab);
       return;

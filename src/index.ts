@@ -1,9 +1,16 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import platformScript from '../public/platform.js';
 import adminScript from '../public/admin.js';
+import adminI18nScript from '../public/admin-i18n.js';
+import adminStyle from '../public/admin.css';
 import adminPage from '../public/admin.html';
 import platformPage from '../public/platform.html';
 import platformEditorPage from '../public/platform-editor.html';
+const brandedPanel = (html: string) =>
+  html
+    .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
+    .replace('</head>', `<style id="delokay-theme-inline">${adminStyle}</style></head>`)
+    .replace('</body>', `<script id="delokay-language-inline">${adminI18nScript}</script></body>`);
 import { digitalWebhook } from './tribute-digital';
 import {
   createInvoice,
@@ -108,20 +115,36 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         'X-Content-Type-Options': 'nosniff',
       },
     });
+  if (['/admin-i18n.js', '/admin.css'].includes(path) && (method === 'GET' || method === 'HEAD'))
+    return new Response(
+      method === 'HEAD' ? null : path.endsWith('.css') ? adminStyle : adminI18nScript,
+      {
+        headers: {
+          'Content-Type': path.endsWith('.css')
+            ? 'text/css; charset=utf-8'
+            : 'application/javascript; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'X-Content-Type-Options': 'nosniff',
+        },
+      },
+    );
   if (
     ['/admin', '/admin/', '/admin.html', '/admin.js', '/admin/app.js'].includes(path) &&
     (method === 'GET' || method === 'HEAD')
   )
-    return new Response(method === 'HEAD' ? null : path.endsWith('.js') ? adminScript : adminPage, {
-      headers: {
-        'Content-Type': path.endsWith('.js')
-          ? 'application/javascript; charset=utf-8'
-          : 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'X-Content-Type-Options': 'nosniff',
-        'Referrer-Policy': 'strict-origin-when-cross-origin',
+    return new Response(
+      method === 'HEAD' ? null : path.endsWith('.js') ? adminScript : brandedPanel(adminPage),
+      {
+        headers: {
+          'Content-Type': path.endsWith('.js')
+            ? 'application/javascript; charset=utf-8'
+            : 'text/html; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+        },
       },
-    });
+    );
   if (
     [
       '/platform',
@@ -133,15 +156,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     (method === 'GET' || method === 'HEAD')
   ) {
     const editor = path === '/platform/editor' || path === '/platform-editor.html';
-    return new Response(method === 'HEAD' ? null : editor ? platformEditorPage : platformPage, {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'X-Content-Type-Options': 'nosniff',
-        'Referrer-Policy': 'strict-origin-when-cross-origin',
-        'Content-Security-Policy': editor ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+    return new Response(
+      method === 'HEAD' ? null : editor ? brandedPanel(platformEditorPage) : platformPage,
+      {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Content-Security-Policy': editor ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+        },
       },
-    });
+    );
   }
   if (path === '/api/health' && method === 'GET') return json({ ok: true });
   if (path === '/api/templates' && method === 'GET') return json(templateList());

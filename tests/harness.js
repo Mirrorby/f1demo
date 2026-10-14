@@ -88,7 +88,10 @@ export async function start(overrides = {}) {
         name: 'platform-text',
         setup(b) {
           b.onLoad(
-            { filter: /public\/(platform\.(js|html)|platform-editor\.html|admin\.(js|html))$/ },
+            {
+              filter:
+                /public\/(platform\.(js|html)|platform-editor\.html|admin(-i18n)?\.(js|html|css))$/,
+            },
             async (args) => ({
               contents: 'export default ' + JSON.stringify(await readFile(args.path, 'utf8')),
               loader: 'js',

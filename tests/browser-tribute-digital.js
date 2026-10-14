@@ -82,8 +82,9 @@ try {
   );
   const origin = 'http://127.0.0.1:' + server.address().port;
   await mini.goto(origin + '/admin');
-  await mini.getByRole('heading', { name: 'Подключить магазин', exact: true }).waitFor();
+  await mini.getByRole('heading', { name: 'Начнём с вашего магазина', exact: true }).waitFor();
   assert.equal(await mini.getByRole('button', { name: 'Товары', exact: true }).isDisabled(), true);
+  await mini.getByRole('button', { name: 'Ещё', exact: true }).click();
   await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
   await mini.getByRole('heading', { name: 'Мои покупки и счета', exact: true }).waitFor();
   await mini.getByText('Покупка подтверждена', { exact: true }).waitFor();
@@ -96,6 +97,7 @@ try {
   owner = 111;
   await mini.goto(origin + '/admin?store=' + shop.id);
   await mini.getByText('Всё под рукой', { exact: true }).waitFor();
+  await mini.getByRole('button', { name: 'Ещё', exact: true }).click();
   await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
   await mini.getByText('Покупок и счетов пока нет.', { exact: true }).waitFor();
   owner = 777;
@@ -116,6 +118,7 @@ try {
     });
   });
   await mini.goto(origin + '/admin');
+  await mini.getByRole('button', { name: 'Ещё', exact: true }).click();
   await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
   await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
   const paymentReload = mini.waitForResponse((response) =>
@@ -125,6 +128,15 @@ try {
   await paymentReload;
   await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
   assert.equal(await mini.getByText('Не удалось подключиться.', { exact: false }).count(), 0);
+  await mini.evaluate(() => window.DelokayI18n.set('en'));
+  await mini.getByRole('button', { name: 'Home', exact: true }).waitFor();
+  await mini.getByRole('button', { name: 'More', exact: true }).click();
+  await mini.getByRole('button', { name: 'Payments', exact: true }).click();
+  await mini.getByRole('heading', { name: 'Service payments', exact: true }).waitFor();
+  await mini.locator('#locale-switch').click();
+  await mini.getByRole('heading', { name: 'Оплата услуг', exact: true }).waitFor();
+  await mini.reload();
+  await mini.getByRole('button', { name: 'Главная', exact: true }).waitFor();
   assert.equal(legacyScripts, 0);
   assert.deepEqual(errors, []);
   console.log(

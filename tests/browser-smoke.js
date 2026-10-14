@@ -142,6 +142,7 @@ try {
   await editor.locator('#notice').filter({ hasText: 'Фотографии загружены' }).waitFor();
   await editor.getByRole('button', { name: 'Сохранить товар', exact: true }).click();
   await editor.getByRole('heading', { name: 'Товар оператора' }).waitFor();
+  await editor.getByRole('button', { name: 'Ещё', exact: true }).click();
   await editor.getByRole('button', { name: 'Настройки', exact: true }).click();
   await editor.locator('#hero-title').fill('Подготовлено оператором');
   await editor.locator('#theme').selectOption('home');
@@ -225,6 +226,12 @@ try {
   await page.goto(origin + '/admin?store=' + shop.id);
   await page.getByRole('heading', { name: 'Всё под рукой' }).waitFor();
   await page.getByRole('button', { name: 'Товары', exact: true }).click();
+  await page.locator('#product-search').fill('not-found-in-the-catalog');
+  await page.getByRole('heading', { name: 'Ничего не найдено', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Очистить поиск', exact: true }).click();
+  await page.locator('#product-search').fill('Остатки');
+  assert.equal(await page.locator('.product-row').count(), 1);
+  await page.locator('#product-search').fill('');
   const stockCard = page.locator('.product').filter({ hasText: 'Остатки по вариантам' });
   await stockCard.waitFor();
   const stockItems = await stockCard.locator('[role=listitem]').allTextContents();
@@ -291,6 +298,7 @@ try {
   const uploadedPhoto = data.products.find((p) => p.name === 'Новая кепка').photos[0];
   assert.ok(uploadedPhoto.endsWith('.png'));
   assert.equal((await req(uploadedPhoto)).headers.get('Content-Type'), 'image/png');
+  await page.getByRole('button', { name: 'Ещё', exact: true }).click();
   await page.getByRole('button', { name: 'Настройки', exact: true }).click();
   await page.locator('#store-title').fill('Тестовый магазин');
   await page.locator('#logo-upload').setInputFiles(imageFile);
