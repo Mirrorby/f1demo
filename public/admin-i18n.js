@@ -199,18 +199,18 @@
   };
   const reverse = Object.fromEntries(Object.entries(en).reverse().map(([ru, english]) => [english, ru]));
   const patterns = [
-    [/^Товары · (\\d+)$/, (_, n) => 'Products · ' + n],
-    [/^Products · (\\d+)$/, (_, n) => 'Товары · ' + n],
-    [/^Заказ №(\\d+)$/, (_, n) => 'Order #' + n],
-    [/^Order #(\\d+)$/, (_, n) => 'Заказ №' + n],
+    [/^Товары · (\d+)$/, (_, n) => 'Products · ' + n],
+    [/^Products · (\d+)$/, (_, n) => 'Товары · ' + n],
+    [/^Заказ №(\d+)$/, (_, n) => 'Order #' + n],
+    [/^Order #(\d+)$/, (_, n) => 'Заказ №' + n],
     [/^Цена, ([A-Z]{3})$/, (_, c) => 'Price, ' + c],
     [/^Price, ([A-Z]{3})$/, (_, c) => 'Цена, ' + c],
-    [/^(\\d+) шт\\.$/, (_, n) => n + ' pcs'],
-    [/^(\\d+) pcs$/, (_, n) => n + ' шт.'],
+    [/^(\d+) шт\.$/, (_, n) => n + ' pcs'],
+    [/^(\d+) pcs$/, (_, n) => n + ' шт.'],
     [/^Итого: (.*)$/, (_, n) => 'Total: ' + n],
     [/^Total: (.*)$/, (_, n) => 'Итого: ' + n],
-    [/^Фото (\\d+)$/, (_, n) => 'Photo ' + n],
-    [/^Photo (\\d+)$/, (_, n) => 'Фото ' + n],
+    [/^Фото (\d+)$/, (_, n) => 'Photo ' + n],
+    [/^Photo (\d+)$/, (_, n) => 'Фото ' + n],
   ];
   const keys = ['aria-label','placeholder','title'];
   const app = document.body.classList.contains('delokay-app');
@@ -232,7 +232,7 @@
   });
   function translateValue(input, destination) {
     const value = String(input ?? '');
-    const match = value.match(/^(\\s*)(.*?)(\\s*)$/s);
+    const match = value.match(/^(\s*)(.*?)(\s*)$/s);
     if (!match || !match[2]) return value;
     let core = match[2];
     const direct = destination === 'en' ? en : reverse;
