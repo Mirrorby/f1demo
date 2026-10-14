@@ -45,9 +45,9 @@ async function showPayments(seq) {
 }
 function moreScreen() {
   main.innerHTML = `<div class="section-label">Ваши инструменты</div><div class="more-list">
-    ${store ? '<button class="more-link" data-tab="site"><span class="more-icon mint">↗</span><span class="more-copy"><strong>Мой сайт</strong><small>Ссылка на вашу витрину и её статус</small></span><span class="more-chevron">›</span></button>' : ''}
-    ${store ? '<button class="more-link" data-tab="settings"><span class="more-icon">⚙</span><span class="more-copy"><strong>Настройки</strong><small>Оформление магазина, контакты и доставка</small></span><span class="more-chevron">›</span></button>' : ''}
-    ${!platformMode ? '<button class="more-link" data-tab="payments"><span class="more-icon mint">▣</span><span class="more-copy"><strong>Оплата</strong><small>Услуги Delokay, история покупок и Tribute</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${store ? '<button class="more-link" data-tab="site" aria-label="Мой сайт"><span class="more-icon mint">↗</span><span class="more-copy"><strong>Мой сайт</strong><small>Ссылка на вашу витрину и её статус</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${store ? '<button class="more-link" data-tab="settings" aria-label="Настройки"><span class="more-icon">⚙</span><span class="more-copy"><strong>Настройки</strong><small>Оформление магазина, контакты и доставка</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${!platformMode ? '<button class="more-link" data-tab="payments" aria-label="Оплата"><span class="more-icon mint">▣</span><span class="more-copy"><strong>Оплата</strong><small>Услуги Delokay, история покупок и Tribute</small></span><span class="more-chevron">›</span></button>' : ''}
     </div>
     <div class="section-label">Delokay</div><div class="hint-strip">Меньше рутины. Больше дела. ✨<br>Новые инструменты будут появляться здесь по мере запуска.</div>`;
 }
@@ -151,7 +151,7 @@ async function show(next = tab) {
       <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
       <h2>Всё под рукой</h2>
       <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>
-      <div class="actions"><button class="primary" data-action="add">Добавить товар →</button></div>
+      <div class="actions"><button class="primary" data-action="add">Добавить товар</button></div>
     </section>
     <div class="section-label">Обзор магазина</div>
     <div class="stats">
