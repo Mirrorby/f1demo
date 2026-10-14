@@ -38,6 +38,19 @@ export async function digitalProduct(env: Env) {
   }
   requireThat(false, 'Товар по этой ссылке не найден в вашем аккаунте Tribute', 503);
 }
+export function productOrderLinkAvailable(product: Record<string, unknown>) {
+  // Custom orders are fulfilled and moderated individually. The live API can
+  // return "new" for their card, even though its documented enum omits it.
+  // Opening Tribute lets the provider decide whether checkout is available;
+  // this does not confirm approval, payment, fulfillment or seller payout.
+  return product.status === 'approved' || (product.type === 'custom' && product.status === 'new');
+}
+export function productPaymentUrl(product: Record<string, unknown>, env: Env) {
+  const url = digitalUrl(env);
+  return product.type === 'custom'
+    ? 'https://t.me/tribute/app?startapp=p' + url.split('/').at(-1)
+    : url;
+}
 type Purchase = {
   purchase_id: string;
   owner_id: string;
@@ -144,7 +157,7 @@ export async function digitalMenu(env: Env, user: string, language: string) {
             : 'Refund reported'),
     });
   }
-  if (product.status !== 'approved') {
+  if (!productOrderLinkAvailable(product)) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
       text: ru
@@ -178,7 +191,7 @@ export async function digitalMenu(env: Env, user: string, language: string) {
                 : ru
                   ? 'Оплатить через Tribute'
                   : 'Pay with Tribute',
-            url: digitalUrl(env),
+            url: productPaymentUrl(product, env),
           },
         ],
       ],

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { start, stop, mf, req, PLATFORM, TRIBUTE, mockProduct } from './harness.js';
 let browser, server;
 try {
-  mockProduct({ type: 'custom' });
+  mockProduct({ type: 'custom', status: 'new' });
   await start({ TRIBUTE_SHOP_ID: '', TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0x' });
   server = createServer(async (request, response) => {
     try {
@@ -36,7 +36,7 @@ try {
   await page.getByRole('button', { name: 'Подключиться', exact: true }).click();
   const link = page.getByRole('link', { name: 'Открыть товар Tribute ↗', exact: true });
   await link.waitFor();
-  assert.equal(await link.getAttribute('href'), 'https://web.tribute.tg/p/H0x');
+  assert.equal(await link.getAttribute('href'), 'https://t.me/tribute/app?startapp=pH0x');
   await page.getByText('Товар на заказ:', { exact: false }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Создать счёт', exact: true }).count(), 0);
   const event = {

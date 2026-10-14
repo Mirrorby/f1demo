@@ -89,7 +89,7 @@ function digitalPaymentPanel() {
   const purchases = invoices.filter((p) => p.type === 'digital');
   return `<section class="card"><h2>Оплата через Tribute</h2>
     <p>${escapeText(paymentConfig.name || 'Товар для оплаты услуг')}</p>
-    <p>${paymentConfig.configured ? (paymentConfig.active ? 'Товар доступен для оплаты' : 'Товар пока не одобрен Tribute') : 'Добавьте TRIBUTE_API_KEY для проверки товара и подтверждения оплат.'}</p>
+    <p>${paymentConfig.configured ? (paymentConfig.active ? 'Товар доступен для оплаты' : paymentConfig.orderLinkAvailable ? 'Товар на заказ: доступность оформления и оплаты проверяется на странице Tribute.' : 'Товар пока не одобрен Tribute') : 'Добавьте TRIBUTE_API_KEY для проверки товара и подтверждения оплат.'}</p>
     ${paymentConfig.configured ? `<p>Оплата картами: ${paymentConfig.cardsEnabled ? 'включена' : 'не включена в настройках товара'}</p>` : ''}
     <p><a href="${escapeText(paymentConfig.paymentUrl)}" target="_blank" rel="noopener">Открыть товар Tribute ↗</a></p>
     <p>Клиент открывает товар командой /pay. Покупки учитываются по его Telegram ID при получении подтверждения Tribute.</p>

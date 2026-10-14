@@ -161,12 +161,15 @@ test('private bridge verifies signatures, ignores non-payment probes and is unav
 });
 
 test('custom product resolves without a digital filter and explains manual fulfillment', async () => {
-  mockProduct({ type: 'custom' });
+  mockProduct({ type: 'custom', status: 'new' });
   try {
     const config = await platform('payments/config');
     assert.equal(config.status, 200);
     assert.equal(config.body.productType, 'custom');
     assert.equal(config.body.fulfillmentRequired, true);
+    assert.equal(config.body.active, false);
+    assert.equal(config.body.orderLinkAvailable, true);
+    assert.equal(config.body.paymentUrl, 'https://t.me/tribute/app?startapp=pH0x');
     const offset = notifications.length;
     await req(
       '/api/telegram/webhook',
@@ -185,7 +188,7 @@ test('custom product resolves without a digital filter and explains manual fulfi
     assert.equal(menu.payload.reply_markup.inline_keyboard[0][0].text, 'Заказать через Tribute');
     assert.equal(
       menu.payload.reply_markup.inline_keyboard[0][0].url,
-      'https://web.tribute.tg/p/H0x',
+      'https://t.me/tribute/app?startapp=pH0x',
     );
     assert.equal((await send(event(9100))).body.status, 'ok');
     assert.equal((await send(event(9101, {}, 'custom_order_created'))).body.status, 'ignored');
