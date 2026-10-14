@@ -84,6 +84,7 @@ try {
   await mini.goto(origin + '/admin');
   await mini.getByRole('heading', { name: 'Подключить магазин', exact: true }).waitFor();
   assert.equal(await mini.getByRole('button', { name: 'Товары', exact: true }).isDisabled(), true);
+  await mini.getByRole('button', { name: 'Ещё', exact: true }).click();
   await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
   await mini.getByRole('heading', { name: 'Мои покупки и счета', exact: true }).waitFor();
   await mini.getByText('Покупка подтверждена', { exact: true }).waitFor();
@@ -96,6 +97,7 @@ try {
   owner = 111;
   await mini.goto(origin + '/admin?store=' + shop.id);
   await mini.getByText('Всё под рукой', { exact: true }).waitFor();
+  await mini.getByRole('button', { name: 'Ещё', exact: true }).click();
   await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
   await mini.getByText('Покупок и счетов пока нет.', { exact: true }).waitFor();
   owner = 777;
@@ -116,6 +118,7 @@ try {
     });
   });
   await mini.goto(origin + '/admin');
+  await mini.getByRole('button', { name: 'Ещё', exact: true }).click();
   await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
   await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
   const paymentReload = mini.waitForResponse((response) =>
