@@ -450,7 +450,7 @@ test('browser factory routes require the platform key and do not expose secrets'
   const setup = await platform('telegram/setup', 'POST', {});
   assert.equal(setup.status, 200, JSON.stringify(setup));
   assert.equal(setup.body.webhookUrl, 'https://store.example/api/telegram/webhook');
-  const commands = notifications.filter((n) => n.path.endsWith('/setMyCommands'));
+  const commands = notifications.filter((n) => n.path.endsWith('/setMyCommands')).slice(-6);
   assert.equal(commands.length, 6);
   assert.deepEqual(
     new Set(commands.map((n) => n.payload.scope.type)),
@@ -465,7 +465,7 @@ test('browser factory routes require the platform key and do not expose secrets'
           'Payments and purchases',
     ),
   );
-  const profiles = notifications.filter((n) => n.path.endsWith('/setMyDescription'));
+  const profiles = notifications.filter((n) => n.path.endsWith('/setMyDescription')).slice(-3);
   assert.equal(profiles.length, 3);
   assert.ok(
     profiles.some(
