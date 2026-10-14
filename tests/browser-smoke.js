@@ -226,6 +226,12 @@ try {
   await page.goto(origin + '/admin?store=' + shop.id);
   await page.getByRole('heading', { name: 'Всё под рукой' }).waitFor();
   await page.getByRole('button', { name: 'Товары', exact: true }).click();
+  await page.locator('#product-search').fill('not-found-in-the-catalog');
+  await page.getByRole('heading', { name: 'Ничего не найдено', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Очистить поиск', exact: true }).click();
+  await page.locator('#product-search').fill('Остатки');
+  assert.equal(await page.locator('.product-row').count(), 1);
+  await page.locator('#product-search').fill('');
   const stockCard = page.locator('.product').filter({ hasText: 'Остатки по вариантам' });
   await stockCard.waitFor();
   const stockItems = await stockCard.locator('[role=listitem]').allTextContents();
