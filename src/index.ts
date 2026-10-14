@@ -6,6 +6,11 @@ import adminStyle from '../public/admin.css';
 import adminPage from '../public/admin.html';
 import platformPage from '../public/platform.html';
 import platformEditorPage from '../public/platform-editor.html';
+const brandedPanel = (html: string) =>
+  html
+    .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
+    .replace('</head>', `<style id="delokay-theme-inline">${adminStyle}</style></head>`)
+    .replace('</body>', `<script id="delokay-language-inline">${adminI18nScript}</script></body>`);
 import { digitalWebhook } from './tribute-digital';
 import {
   createInvoice,
@@ -122,7 +127,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     ['/admin', '/admin/', '/admin.html', '/admin.js', '/admin/app.js'].includes(path) &&
     (method === 'GET' || method === 'HEAD')
   )
-    return new Response(method === 'HEAD' ? null : path.endsWith('.js') ? adminScript : adminPage, {
+    return new Response(method === 'HEAD' ? null : path.endsWith('.js') ? adminScript : brandedPanel(adminPage), {
       headers: {
         'Content-Type': path.endsWith('.js')
           ? 'application/javascript; charset=utf-8'
@@ -143,7 +148,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     (method === 'GET' || method === 'HEAD')
   ) {
     const editor = path === '/platform/editor' || path === '/platform-editor.html';
-    return new Response(method === 'HEAD' ? null : editor ? platformEditorPage : platformPage, {
+    return new Response(method === 'HEAD' ? null : editor ? brandedPanel(platformEditorPage) : platformPage, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache',
