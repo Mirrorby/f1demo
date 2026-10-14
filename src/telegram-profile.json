@@ -1,0 +1,17 @@
+{
+  "default": {
+    "name": "Delokay",
+    "short_description": "Simple business tools. Create catalogs and manage orders in Telegram.",
+    "description": "Less busywork. More business. ✨\n\nDelokay helps you run your business with simple digital tools.\n\n🛍 Create online product catalogs\n📦 Manage products and orders\n🌐 Share your store with customers\n⚡ Work right in Telegram\n\nOpen the dashboard to get started."
+  },
+  "ru": {
+    "name": "Delokay",
+    "short_description": "Простые инструменты для бизнеса. Каталоги и заказы в Telegram.",
+    "description": "Меньше рутины. Больше дела. ✨\n\nDelokay помогает управлять бизнесом с помощью простых цифровых инструментов.\n\n🛍 Создавайте онлайн-каталоги\n📦 Управляйте товарами и заказами\n🌐 Делитесь магазином с клиентами\n⚡ Работайте прямо в Telegram\n\nОткройте панель управления, чтобы начать."
+  },
+  "en": {
+    "name": "Delokay",
+    "short_description": "Simple business tools. Create catalogs and manage orders in Telegram.",
+    "description": "Less busywork. More business. ✨\n\nDelokay helps you run your business with simple digital tools.\n\n🛍 Create online product catalogs\n📦 Manage products and orders\n🌐 Share your store with customers\n⚡ Work right in Telegram\n\nOpen the dashboard to get started."
+  }
+}
