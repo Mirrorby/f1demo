@@ -17,7 +17,7 @@ export async function setLanguage(env: Env, user: string, language: BotLanguage)
 }
 export async function notificationLanguage(env: Env, user: string): Promise<BotLanguage> {
   const row = await stmt(env, 'SELECT language FROM telegram_preferences WHERE user_id=?', user).first<{language: BotLanguage}>();
-  return row?.language === 'ru' ? 'ru' : 'en';
+  return row?.language === 'en' ? 'en' : 'ru';
 }
 export const copy = {
   ru: {
