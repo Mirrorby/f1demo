@@ -127,28 +127,44 @@ function drawProductRows() {
   const target = document.getElementById('product-results');
   if (!target) return;
   const query = productQuery.trim().toLocaleLowerCase();
-  const visible = products.map((p,i)=>({p,i})).filter(({p})=>
-    (!productCategory || p.category===productCategory) &&
-    (!query || [p.name,p.category,p.brand,p.sku].some(x=>String(x||'').toLocaleLowerCase().includes(query))));
-  target.innerHTML = visible.map(({p,i}) => `<button class="card product product-row" data-edit="${i}">
+  const visible = products
+    .map((p, i) => ({ p, i }))
+    .filter(
+      ({ p }) =>
+        (!productCategory || p.category === productCategory) &&
+        (!query ||
+          [p.name, p.category, p.brand, p.sku].some((x) =>
+            String(x || '')
+              .toLocaleLowerCase()
+              .includes(query),
+          )),
+    );
+  target.innerHTML =
+    visible
+      .map(
+        ({ p, i }) => `<button class="card product product-row" data-edit="${i}">
     ${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : '<span class="product-placeholder" aria-hidden="true">▦</span>'}
     <span class="info"><strong class="product-title" data-no-i18n>${esc(p.name)}</strong>
     <span class="product-meta" data-no-i18n>${esc(p.category)} · ${esc(money(p))}</span>
-    <span class="badge availability-${esc(p.availability)}">${{available:'В наличии',preorder:'На заказ',unavailable:'Нет в наличии'}[p.availability]}</span>
-    ${stockSummary(p)}</span><span class="product-chevron" aria-hidden="true">›</span></button>`).join('') ||
-    `<div class="card empty-panel"><div class="empty-visual">⌕</div><h3>${products.length?'Ничего не найдено':'Пока нет товаров'}</h3>
-    <p>${products.length?'Попробуйте другой запрос или категорию.':'Ваш каталог начнётся с первого товара. Добавьте фото, цену и описание.'}</p>
-    ${products.length?'<button data-action="clear-search">Очистить поиск</button>':'<button class="primary" data-action="add">Добавить товар</button>'}</div>`;
+    <span class="badge availability-${esc(p.availability)}">${{ available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[p.availability]}</span>
+    ${stockSummary(p)}</span><span class="product-chevron" aria-hidden="true">›</span></button>`,
+      )
+      .join('') ||
+    `<div class="card empty-panel"><div class="empty-visual">⌕</div><h3>${products.length ? 'Ничего не найдено' : 'Пока нет товаров'}</h3>
+    <p>${products.length ? 'Попробуйте другой запрос или категорию.' : 'Ваш каталог начнётся с первого товара. Добавьте фото, цену и описание.'}</p>
+    ${products.length ? '<button data-action="clear-search">Очистить поиск</button>' : '<button class="primary" data-action="add">Добавить товар</button>'}</div>`;
 }
 function renderProductsList() {
-  const categories = [...new Set(products.map(p=>p.category))].sort((a,b)=>a.localeCompare(b));
+  const categories = [...new Set(products.map((p) => p.category))].sort((a, b) =>
+    a.localeCompare(b),
+  );
   main.innerHTML = `<div class="row between page-heading"><div><h2>Товары · ${products.length}</h2>
     <p class="section-caption">Управление магазином</p></div><button class="primary" data-action="add">Добавить</button></div>
     <div class="product-toolbar"><label class="visually-hidden" for="product-search">Поиск товаров</label>
       <input id="product-search" type="search" autocomplete="off" placeholder="Найти товар…" value="${esc(productQuery)}">
       <label class="visually-hidden" for="product-category">Все категории товаров</label>
       <select id="product-category" aria-label="Все категории товаров"><option value="">Все категории</option>
-      ${categories.map(c=>`<option value="${esc(c)}" ${c===productCategory?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+      ${categories.map((c) => `<option value="${esc(c)}" ${c === productCategory ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
     <div id="product-results" class="stack"></div>`;
   drawProductRows();
 }
@@ -156,17 +172,28 @@ function renderOrdersList() {
   main.innerHTML = `<div class="row between page-heading"><div><h2>Заказы</h2><p class="section-caption">Заказы клиентов</p></div></div>
     <div class="order-filter-row"><label for="order-filter">Статус заказов</label>
       <select id="order-filter"><option value="">Все</option>
-      ${Object.entries(statusNames).map(([k,v])=>`<option value="${k}" ${k===orderFilter?'selected':''}>${v}</option>`).join('')}</select></div>
-    <div class="stack">${orders.map((o,i) => `<button class="card product order-row" data-order="${i}">
+      ${Object.entries(statusNames)
+        .map(
+          ([k, v]) => `<option value="${k}" ${k === orderFilter ? 'selected' : ''}>${v}</option>`,
+        )
+        .join('')}</select></div>
+    <div class="stack">${
+      orders
+        .map(
+          (o, i) => `<button class="card product order-row" data-order="${i}">
       <span class="order-symbol">▤</span><span class="info">
       <strong class="product-title">№${o.number} · <span data-no-i18n>${esc(o.customer.name)}</span></strong>
-      <span class="product-meta">${(o.totalMinor/100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU')} ${esc(o.currency)} · ${new Date(o.createdAt*1000).toLocaleDateString(window.DelokayI18n?.locale() || 'ru-RU')}</span>
+      <span class="product-meta">${(o.totalMinor / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU')} ${esc(o.currency)} · ${new Date(o.createdAt * 1000).toLocaleDateString(window.DelokayI18n?.locale() || 'ru-RU')}</span>
       <span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></span>
-      <span class="product-chevron">›</span></button>`).join('') || `<div class="card empty-panel"><div class="empty-visual">▤</div>
-      <h3>${orderFilter?'Нет заказов по выбранному статусу':'Заказов пока нет.'}</h3>
-      <p>${orderFilter?'Попробуйте выбрать другой статус.':'Новые заказы появятся здесь и в Telegram.'}</p></div>`}</div>
-    <div class="actions pagination"><button data-page="prev" ${orderOffset===0?'disabled':''}>Назад</button>
-    <button data-page="next" ${orders.length<50?'disabled':''}>Далее</button></div>`;
+      <span class="product-chevron">›</span></button>`,
+        )
+        .join('') ||
+      `<div class="card empty-panel"><div class="empty-visual">▤</div>
+      <h3>${orderFilter ? 'Нет заказов по выбранному статусу' : 'Заказов пока нет.'}</h3>
+      <p>${orderFilter ? 'Попробуйте выбрать другой статус.' : 'Новые заказы появятся здесь и в Telegram.'}</p></div>`
+    }</div>
+    <div class="actions pagination"><button data-page="prev" ${orderOffset === 0 ? 'disabled' : ''}>Назад</button>
+    <button data-page="next" ${orders.length < 50 ? 'disabled' : ''}>Далее</button></div>`;
 }
 
 async function reload() {
@@ -321,24 +348,31 @@ function renderSettings() {
 function showOrder(o) {
   const c = o.customer;
   const buttons = {
-    new: [['processing','Принять'],['completed','Выполнен'],['cancelled','Отменить']],
-    processing: [['completed','Выполнен'],['cancelled','Отменить']],
+    new: [
+      ['processing', 'Принять'],
+      ['completed', 'Выполнен'],
+      ['cancelled', 'Отменить'],
+    ],
+    processing: [
+      ['completed', 'Выполнен'],
+      ['cancelled', 'Отменить'],
+    ],
     completed: [],
     cancelled: [],
   };
   const locale = window.DelokayI18n?.locale() || 'ru-RU';
   main.innerHTML = `<div class="row between page-heading"><div><h2>Заказ №${o.number}</h2><p class="section-caption">Информация о заказе</p></div><button data-tab="orders">Назад</button></div>
     <section class="card"><div class="row between"><h3>Статус заказов</h3><span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></div>
-      <div class="order-total">${(o.totalMinor/100).toLocaleString(locale)} ${esc(o.currency)}</div>
-      <p class="section-caption">${new Date(o.createdAt*1000).toLocaleString(locale)}</p></section>
+      <div class="order-total">${(o.totalMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</div>
+      <p class="section-caption">${new Date(o.createdAt * 1000).toLocaleString(locale)}</p></section>
     <section class="card"><h3 class="form-section-heading">Клиент</h3>
       <div class="order-customer" data-no-i18n><strong>${esc(c.name)}</strong><p>${esc(c.phone)}</p>
-      <p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city,c.region,c.index].filter(Boolean).join(', '))}</p>
+      <p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city, c.region, c.index].filter(Boolean).join(', '))}</p>
       ${c.comment ? `<p>${esc(c.comment)}</p>` : ''}</div></section>
     <section class="card"><h3 class="form-section-heading">Состав заказа</h3>
-      <ul class="order-lines">${o.items.map((i)=>`<li><strong data-no-i18n>${esc(i.name)}</strong><span class="muted" data-no-i18n>${esc(i.variant)}</span><span>${i.quantity} × ${(i.unitMinor/100).toLocaleString(locale)} ${esc(o.currency)}</span></li>`).join('')}</ul>
-      <div class="row between order-summary"><strong>Итого</strong><strong>${(o.totalMinor/100).toLocaleString(locale)} ${esc(o.currency)}</strong></div></section>
-    ${buttons[o.status].length ? `<div class="actions order-actions">${buttons[o.status].map(([status,label])=>`<button data-status="${status}" data-order-id="${o.id}" class="${status==='cancelled'?'danger':'primary'}">${label}</button>`).join('')}</div>` : ''}`;
+      <ul class="order-lines">${o.items.map((i) => `<li><strong data-no-i18n>${esc(i.name)}</strong><span class="muted" data-no-i18n>${esc(i.variant)}</span><span>${i.quantity} × ${(i.unitMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</span></li>`).join('')}</ul>
+      <div class="row between order-summary"><strong>Итого</strong><strong>${(o.totalMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</strong></div></section>
+    ${buttons[o.status].length ? `<div class="actions order-actions">${buttons[o.status].map(([status, label]) => `<button data-status="${status}" data-order-id="${o.id}" class="${status === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div>` : ''}`;
 }
 async function uploadImage(file) {
   if (
