@@ -26,7 +26,7 @@
     'Первый инструмент Delokay': "Delokay's first tool",
     'Доступен': 'Available',
     'После оформления заказа мы отправим вам приглашение для подключения магазина.': "After you place an order, we'll send you a link to connect your store.",
-    'Оплата услуг': 'Payments',
+    'Оплата услуг': 'Service payments',
     'Загружаем данные Tribute…': 'Loading Tribute details…',
     'Покупка подтверждена': 'Purchase confirmed',
     'Возврат зарегистрирован': 'Refund reported',
@@ -63,7 +63,7 @@
     'Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.': 'Products, orders, and your website in one workspace. Changes appear on your storefront as soon as you save.',
     'Добавить товар': 'Add product',
     'Обзор магазина': 'Store overview',
-    'Товаров': 'Products',
+    'Товаров': 'Catalog items',
     'Новых заказов': 'New orders',
     'Быстрые действия': 'Quick actions',
     'Все товары →': 'All products →',
@@ -197,7 +197,7 @@
     'Включены продажи': 'Accepting orders',
     'Редактировать магазин': 'Edit store',
   };
-  const reverse = Object.fromEntries(Object.entries(en).map(([ru, english]) => [english, ru]));
+  const reverse = Object.fromEntries(Object.entries(en).reverse().map(([ru, english]) => [english, ru]));
   const patterns = [
     [/^Товары · (\\d+)$/, (_, n) => 'Products · ' + n],
     [/^Products · (\\d+)$/, (_, n) => 'Товары · ' + n],
