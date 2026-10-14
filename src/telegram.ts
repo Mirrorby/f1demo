@@ -1,5 +1,7 @@
 import { paymentMenu } from './tribute';
 import botCommands from './telegram-commands.json';
+import botProfile from './telegram-profile.json';
+import { copy, userLanguage, setLanguage, notificationLanguage } from './telegram-i18n';
 import { digest, equalSecret } from './auth';
 import { stmt, ownedStore, storeMutationGuard } from './catalog';
 import { changeStatus } from './orders';
@@ -64,39 +66,44 @@ async function claim(env: Env, token: string, user: string) {
   await stmt(env, 'UPDATE owner_invites SET used_at=unixepoch() WHERE token_hash=?', hash).run();
   return result;
 }
-async function menu(env: Env, user: string) {
-  const stores = await stmt(
-    env,
-    'SELECT * FROM stores WHERE owner_id=? ORDER BY created_at LIMIT 20',
-    user,
-  ).all<StoreRow>();
-  if (!stores.results.length) {
+async function menu(env: Env, user: string, lang: 'ru' | 'en', greeting = true) {
+  const t = copy[lang];
+  const stores = await stmt(env, 'SELECT * FROM stores WHERE owner_id=? ORDER BY created_at LIMIT 20', user).all<StoreRow>();
+  if (greeting) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
-      text:
-        'Ваш Telegram ID: ' +
-        user +
-        '\nПопросите разработчика прислать персональную ссылку подключения магазина.',
+      text: (stores.results.length ? t.returning : t.welcome + t.noStore + '\n\n' + t.telegramId + user),
       reply_markup: {
         inline_keyboard: [
-          [{ text: 'Оплата / Payments', web_app: { url: origin(env) + '/admin?tab=payments' } }],
-        ],
-      },
+          [{ text: t.dashboard, web_app: { url: origin(env) + '/admin' } }],
+          [{ text: t.payments, callback_data: 'menu:pay' }, { text: t.helpButton, callback_data: 'menu:help' }],
+          [{ text: t.language, callback_data: 'menu:language' }]
+        ]
+      }
     });
-    return;
   }
-  for (const s of stores.results) {
+  for (const store of stores.results) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
-      text: s.name + '\n' + origin(env) + `/${s.status === 'demo' ? 'demo' : 'shop'}/${s.slug}`,
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: 'Управлять магазином', web_app: { url: origin(env) + `/admin?store=${s.id}` } }],
-          [{ text: 'Оплата / Payments', url: `https://t.me/${env.BOT_USERNAME}?start=payments` }],
-        ],
-      },
+      text: store.name + '\n' + origin(env) + `/${store.status === 'demo' ? 'demo' : 'shop'}/${store.slug}`,
+      reply_markup: { inline_keyboard: [
+        [{ text: t.store, web_app: { url: origin(env) + `/admin?store=${store.id}` } }],
+        [{ text: t.payments, callback_data: 'menu:pay' }]
+      ]}
     });
   }
+}
+async function help(env: Env, user: string, lang: 'ru' | 'en') {
+  await telegram(env, 'sendMessage', {
+    chat_id: user, text: copy[lang].help,
+    reply_markup: { inline_keyboard: [[{ text: copy[lang].dashboard, web_app: { url: origin(env) + '/admin' } }]] }
+  });
+}
+async function languageMenu(env: Env, user: string, lang: 'ru' | 'en') {
+  await telegram(env, 'sendMessage', {
+    chat_id: user, text: copy[lang].chooseLanguage,
+    reply_markup: { inline_keyboard: [[{ text: '🇷🇺 Русский', callback_data: 'lang:ru' }, { text: '🇬🇧 English', callback_data: 'lang:en' }]] }
+  });
 }
 export async function webhook(request: Request, env: Env, input: unknown) {
   requireThat(
@@ -119,10 +126,27 @@ export async function webhook(request: Request, env: Env, input: unknown) {
       'Действие доступно в личном чате',
       403,
     );
-    const data = text(q.data, 64),
-      parts = data.split(':');
+    const data = text(q.data, 64);
+    const user = String(from.id);
+    if (data.startsWith('lang:') && ['lang:ru', 'lang:en'].includes(data)) {
+      const lang = data.slice(5) as 'ru' | 'en';
+      await setLanguage(env, user, lang);
+      await telegram(env, 'answerCallbackQuery', { callback_query_id: text(q.id, 200, true), text: copy[lang].languageSaved });
+      await menu(env, user, lang);
+      return;
+    }
+    if (['menu:pay', 'menu:help', 'menu:language'].includes(data)) {
+      const lang = await userLanguage(env, user, from.language_code);
+      await telegram(env, 'answerCallbackQuery', { callback_query_id: text(q.id, 200, true) });
+      if (data === 'menu:pay') await paymentMenu(env, user, lang);
+      if (data === 'menu:help') await help(env, user, lang);
+      if (data === 'menu:language') await languageMenu(env, user, lang);
+      return;
+    }
+    const parts = data.split(':');
     requireThat(parts.length === 2 && ['a', 'c', 'x'].includes(parts[0]), 'Неизвестная команда');
-    let answer = 'Статус сохранён';
+    const lang = await userLanguage(env, user, from.language_code);
+    let answer: string = copy[lang].statusSaved;
     try {
       const order = await stmt(env, 'SELECT * FROM orders WHERE id=?', parts[1]).first<OrderRow>();
       requireThat(order, 'Заказ не найден', 404);
@@ -155,26 +179,29 @@ export async function webhook(request: Request, env: Env, input: unknown) {
     const user = String(from.id);
     requireThat(/^[1-9]\d{0,15}$/.test(user), 'Недопустимый пользователь');
     const msg = text(m.text, 4096);
+    const lang = await userLanguage(env, user, from.language_code);
     if (msg.startsWith('/start claim_')) {
       try {
         const s = await claim(env, msg.slice('/start claim_'.length), user);
         await telegram(env, 'sendMessage', {
           chat_id: user,
-          text: 'Магазин «' + s.name + '» подключён. Теперь вы можете управлять им в Telegram.',
+          text: copy[lang].connected + s.name + copy[lang].connectedEnd,
         });
       } catch (e) {
         await telegram(env, 'sendMessage', {
           chat_id: user,
-          text: e instanceof Error ? e.message : 'Не удалось подключить магазин',
+          text: copy[lang].claimError,
         });
         return;
       }
     }
     if (/^\/(pay)(\s|$|@)/.test(msg) || msg === '/start payments') {
-      await paymentMenu(env, user, text(from.language_code, 20));
+      await paymentMenu(env, user, lang);
       return;
     }
-    if (/^\/(start|admin|shop)(\s|$|@)/.test(msg)) await menu(env, user);
+    if (/^\/(help)(\s|$|@)/.test(msg)) { await help(env, user, lang); return; }
+    if (/^\/(language)(\s|$|@)/.test(msg)) { await languageMenu(env, user, lang); return; }
+    if (/^\/(start|admin|shop)(\s|$|@)/.test(msg)) await menu(env, user, lang);
   }
 }
 export async function flushNotifications(env: Env, onlyOrder?: string) {
@@ -192,24 +219,26 @@ export async function flushNotifications(env: Env, onlyOrder?: string) {
     ).first<{ attempts: number }>();
     if (!lease) continue;
     try {
+      const lang = await notificationLanguage(env, o.owner_id);
+      const t = copy[lang];
       const c = JSON.parse(o.customer) as Customer,
         items = JSON.parse(o.items) as OrderItem[];
-      const body = `${o.store_name}\nНовый заказ №${o.number}\n${c.name}\nТелефон: ${c.phone}\n${c.deliveryMethod}: ${c.address}\n${c.city} ${c.region} ${c.index}\n${items.map((i) => `${i.name} (${i.variant}) — ${i.quantity} шт.`).join('\n')}\nИтого: ${(o.total_minor / 100).toFixed(2)} ${o.currency}${c.comment ? '\n' + c.comment : ''}`;
+      const body = `${o.store_name}\n${t.newOrder}${o.number}\n${c.name}\n${t.phone}${c.phone}\n${c.deliveryMethod}: ${c.address}\n${c.city} ${c.region} ${c.index}\n${items.map((i) => `${i.name} (${i.variant}) × ${i.quantity}`).join('\n')}\n${t.total}${(o.total_minor / 100).toFixed(2)} ${o.currency}${c.comment ? '\n' + c.comment : ''}`;
       await telegram(env, 'sendMessage', {
         chat_id: o.owner_id,
         text: body.slice(0, 4000),
         reply_markup: {
           inline_keyboard: [
             [
-              { text: 'Принять', callback_data: 'a:' + o.id },
-              { text: 'Выполнен', callback_data: 'c:' + o.id },
+              { text: t.accept, callback_data: 'a:' + o.id },
+              { text: t.complete, callback_data: 'c:' + o.id },
             ],
             [
               {
-                text: 'Открыть заказ',
+                text: t.openOrder,
                 web_app: { url: origin(env) + `/admin?store=${o.store_id}&order=${o.id}` },
               },
-              { text: 'Отменить', callback_data: 'x:' + o.id },
+              { text: t.cancel, callback_data: 'x:' + o.id },
             ],
           ],
         },
@@ -232,6 +261,16 @@ export async function flushNotifications(env: Env, onlyOrder?: string) {
   }
 }
 
+export async function setupTelegramProfile(env: Env) {
+  for (const language of ['', 'ru', 'en']) {
+    const profile = botProfile[language === 'ru' ? 'ru' : 'en'];
+    for (const [method, field, value] of [
+      ['setMyName', 'name', profile.name],
+      ['setMyShortDescription', 'short_description', profile.short_description],
+      ['setMyDescription', 'description', profile.description],
+    ] as const) await telegram(env, method, { language_code: language, [field]: value });
+  }
+}
 export async function setupTelegramCommands(env: Env) {
   for (const type of ['default', 'all_private_chats'])
     for (const language of ['', 'ru', 'en'])
@@ -258,8 +297,9 @@ export async function setupTelegram(env: Env) {
     allowed_updates: ['message', 'callback_query'],
   });
   await setupTelegramCommands(env);
+  await setupTelegramProfile(env);
   await telegram(env, 'setChatMenuButton', {
-    menu_button: { type: 'web_app', text: 'Мой магазин', web_app: { url: base + '/admin' } },
+    menu_button: { type: 'web_app', text: 'Delokay', web_app: { url: base + '/admin' } },
   });
   return { ok: true, botUsername: env.BOT_USERNAME, webhookUrl: base + '/api/telegram/webhook' };
 }
