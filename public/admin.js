@@ -68,7 +68,9 @@ let stores = [],
   photos = [],
   orderOffset = 0,
   orderFilter = '',
-  generation = 0;
+  generation = 0,
+  productQuery = '',
+  productCategory = '';
 const esc = (v) =>
   String(v ?? '').replace(
     /[&<>"']/g,
@@ -109,7 +111,7 @@ const siteUrl = () =>
 function money(p) {
   return Object.entries(p.prices)
     .filter(([c]) => store.settings.currencies.includes(c))
-    .map(([c, v]) => (v / 100).toLocaleString('ru-RU') + ' ' + c)
+    .map(([c, v]) => (v / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU') + ' ' + c)
     .join(' / ');
 }
 function stockSummary(p) {
@@ -120,6 +122,53 @@ function stockSummary(p) {
     )
     .join('')}</span>`;
 }
+
+function drawProductRows() {
+  const target = document.getElementById('product-results');
+  if (!target) return;
+  const query = productQuery.trim().toLocaleLowerCase();
+  const visible = products.map((p,i)=>({p,i})).filter(({p})=>
+    (!productCategory || p.category===productCategory) &&
+    (!query || [p.name,p.category,p.brand,p.sku].some(x=>String(x||'').toLocaleLowerCase().includes(query))));
+  target.innerHTML = visible.map(({p,i}) => `<button class="card product product-row" data-edit="${i}">
+    ${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : '<span class="product-placeholder" aria-hidden="true">▦</span>'}
+    <span class="info"><strong class="product-title" data-no-i18n>${esc(p.name)}</strong>
+    <span class="product-meta" data-no-i18n>${esc(p.category)} · ${esc(money(p))}</span>
+    <span class="badge availability-${esc(p.availability)}">${{available:'В наличии',preorder:'На заказ',unavailable:'Нет в наличии'}[p.availability]}</span>
+    ${stockSummary(p)}</span><span class="product-chevron" aria-hidden="true">›</span></button>`).join('') ||
+    `<div class="card empty-panel"><div class="empty-visual">⌕</div><h3>${products.length?'Ничего не найдено':'Пока нет товаров'}</h3>
+    <p>${products.length?'Попробуйте другой запрос или категорию.':'Ваш каталог начнётся с первого товара. Добавьте фото, цену и описание.'}</p>
+    ${products.length?'<button data-action="clear-search">Очистить поиск</button>':'<button class="primary" data-action="add">Добавить товар</button>'}</div>`;
+}
+function renderProductsList() {
+  const categories = [...new Set(products.map(p=>p.category))].sort((a,b)=>a.localeCompare(b));
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Товары · ${products.length}</h2>
+    <p class="section-caption">Управление магазином</p></div><button class="primary" data-action="add">Добавить</button></div>
+    <div class="product-toolbar"><label class="visually-hidden" for="product-search">Поиск товаров</label>
+      <input id="product-search" type="search" autocomplete="off" placeholder="Найти товар…" value="${esc(productQuery)}">
+      <label class="visually-hidden" for="product-category">Все категории товаров</label>
+      <select id="product-category" aria-label="Все категории товаров"><option value="">Все категории</option>
+      ${categories.map(c=>`<option value="${esc(c)}" ${c===productCategory?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div id="product-results" class="stack"></div>`;
+  drawProductRows();
+}
+function renderOrdersList() {
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Заказы</h2><p class="section-caption">Заказы клиентов</p></div></div>
+    <div class="order-filter-row"><label for="order-filter">Статус заказов</label>
+      <select id="order-filter"><option value="">Все</option>
+      ${Object.entries(statusNames).map(([k,v])=>`<option value="${k}" ${k===orderFilter?'selected':''}>${v}</option>`).join('')}</select></div>
+    <div class="stack">${orders.map((o,i) => `<button class="card product order-row" data-order="${i}">
+      <span class="order-symbol">▤</span><span class="info">
+      <strong class="product-title">№${o.number} · <span data-no-i18n>${esc(o.customer.name)}</span></strong>
+      <span class="product-meta">${(o.totalMinor/100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU')} ${esc(o.currency)} · ${new Date(o.createdAt*1000).toLocaleDateString(window.DelokayI18n?.locale() || 'ru-RU')}</span>
+      <span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></span>
+      <span class="product-chevron">›</span></button>`).join('') || `<div class="card empty-panel"><div class="empty-visual">▤</div>
+      <h3>${orderFilter?'Нет заказов по выбранному статусу':'Заказов пока нет.'}</h3>
+      <p>${orderFilter?'Попробуйте выбрать другой статус.':'Новые заказы появятся здесь и в Telegram.'}</p></div>`}</div>
+    <div class="actions pagination"><button data-page="prev" ${orderOffset===0?'disabled':''}>Назад</button>
+    <button data-page="next" ${orders.length<50?'disabled':''}>Далее</button></div>`;
+}
+
 async function reload() {
   const id = store.id;
   const [next, ps] = await Promise.all([api(`stores/${id}`), api(`stores/${id}/products`)]);
@@ -168,19 +217,11 @@ async function show(next = tab) {
     } else if (tab === 'products') {
       await reload();
       if (seq !== generation) return;
-      main.innerHTML = `<div class="row between page-heading"><h2>Товары · ${products.length}</h2><button class="primary" data-action="add">Добавить</button></div><div class="stack">${products.map((p, i) => `<button class="card product" data-edit="${i}">${p.photos[0] ? `<img src="${esc(p.photos[0])}" alt="" loading="lazy">` : ''}<div class="info"><h3>${esc(p.name)}</h3><p>${esc(p.category)} · ${esc(money(p))}</p><span class="badge">${{ available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[p.availability]}</span>${stockSummary(p)}</div><span class="product-chevron" aria-hidden="true">›</span></button>`).join('') || '<p>Добавьте первый товар.</p>'}</div>`;
+      renderProductsList();
     } else if (tab === 'orders') {
       orders = await api(base() + `/orders?offset=${orderOffset}&status=${orderFilter}`);
       if (seq !== generation) return;
-      main.innerHTML = `<h2>Заказы</h2><select id="order-filter" aria-label="Статус заказов"><option value="">Все</option>${Object.entries(
-        statusNames,
-      )
-        .map(
-          ([k, v]) => `<option value="${k}" ${k === orderFilter ? 'selected' : ''}>${v}</option>`,
-        )
-        .join(
-          '',
-        )}</select><div style="margin-top:16px">${orders.map((o, i) => `<button class="card product" data-order="${i}"><div class="info"><h3>№${o.number} · ${esc(o.customer.name)}</h3><p>${esc(statusNames[o.status])} · ${(o.totalMinor / 100).toLocaleString('ru-RU')} ${o.currency}</p><p>${new Date(o.createdAt * 1000).toLocaleString('ru-RU')}</p></div><span>›</span></button>`).join('') || '<p>Заказов пока нет.</p>'}</div><div class="actions"><button data-page="prev" ${orderOffset === 0 ? 'disabled' : ''}>Назад</button><button data-page="next" ${orders.length < 50 ? 'disabled' : ''}>Далее</button></div>`;
+      renderOrdersList();
     } else if (tab === 'settings') renderSettings();
     else if (tab === 'site')
       main.innerHTML = `<h2>Мой сайт</h2><div class="card"><h3>${esc(store.name)}</h3><p>${storeState()}</p><p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">${esc(siteUrl())}</a></p><button class="primary" data-action="copy">Скопировать ссылку</button></div>`;
@@ -373,6 +414,11 @@ document.addEventListener('click', async (event) => {
       return;
     }
     if (button.dataset.action === 'add') editProduct();
+    if (button.dataset.action === 'clear-search') {
+      productQuery = '';
+      productCategory = '';
+      renderProductsList();
+    }
     if (button.dataset.action === 'variant') {
       if (document.querySelectorAll('.variant').length >= 30)
         throw new Error('Максимум 30 вариантов');
@@ -397,6 +443,12 @@ document.addEventListener('click', async (event) => {
     notice(e.message);
   }
 });
+document.addEventListener('input', (event) => {
+  if (event.target.id === 'product-search') {
+    productQuery = event.target.value;
+    drawProductRows();
+  }
+});
 document.addEventListener('change', async (event) => {
   const el = event.target;
   try {
@@ -405,6 +457,10 @@ document.addEventListener('change', async (event) => {
       generation++;
       orderOffset = 0;
       await show('home');
+    }
+    if (el.id === 'product-category') {
+      productCategory = el.value;
+      drawProductRows();
     }
     if (el.id === 'order-filter') {
       orderFilter = el.value;
