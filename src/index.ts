@@ -1,6 +1,8 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import platformScript from '../public/platform.js';
 import adminScript from '../public/admin.js';
+import adminI18nScript from '../public/admin-i18n.js';
+import adminStyle from '../public/admin.css';
 import adminPage from '../public/admin.html';
 import platformPage from '../public/platform.html';
 import platformEditorPage from '../public/platform-editor.html';
@@ -104,6 +106,14 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     return new Response(method === 'HEAD' ? null : platformScript, {
       headers: {
         'Content-Type': 'application/javascript; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  if (['/admin-i18n.js', '/admin.css'].includes(path) && (method === 'GET' || method === 'HEAD'))
+    return new Response(method === 'HEAD' ? null : path.endsWith('.css') ? adminStyle : adminI18nScript, {
+      headers: {
+        'Content-Type': path.endsWith('.css') ? 'text/css; charset=utf-8' : 'application/javascript; charset=utf-8',
         'Cache-Control': 'no-cache',
         'X-Content-Type-Options': 'nosniff',
       },
