@@ -31,6 +31,15 @@ try {
     args: ['--no-sandbox', '--disable-dev-shm-usage'],
   });
   const page = await browser.newPage();
+  let legacyScripts = 0;
+  const staleAsset = (route) => {
+    legacyScripts++;
+    return route.fulfill({
+      contentType: 'application/javascript',
+      body: 'window.__legacyAsset=true;',
+    });
+  };
+  await page.route(/\/(admin|platform)\.js(?:\?|$)/, staleAsset);
   await page.goto('http://127.0.0.1:' + server.address().port + '/platform');
   await page.locator('#platform-key').fill(PLATFORM);
   await page.getByRole('button', { name: 'Подключиться', exact: true }).click();
@@ -61,6 +70,7 @@ try {
     .getByText('Online store setup · 100.00 EUR · Telegram ID: 333 · Оплачено', { exact: true })
     .waitFor();
   const mini = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await mini.route(/\/(admin|platform)\.js(?:\?|$)/, staleAsset);
   const errors = [];
   mini.on('pageerror', (e) => errors.push(e.message));
   let owner = 333;
@@ -93,6 +103,29 @@ try {
   await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
   assert.equal(await mini.locator('#store-name').innerText(), 'Мой кабинет');
   assert.equal(await mini.getByText('Покупка подтверждена', { exact: true }).count(), 0);
+  let releaseStores;
+  const pendingStores = new Promise((resolve) => {
+    releaseStores = resolve;
+  });
+  await mini.route('**/api/admin/stores', async (route) => {
+    await pendingStores;
+    await route.fulfill({
+      status: 503,
+      contentType: 'application/json',
+      body: JSON.stringify({ error: 'Stores temporarily unavailable' }),
+    });
+  });
+  await mini.goto(origin + '/admin');
+  await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
+  await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
+  const paymentReload = mini.waitForResponse((response) =>
+    response.url().endsWith('/api/admin/payments/config'),
+  );
+  releaseStores();
+  await paymentReload;
+  await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
+  assert.equal(await mini.getByText('Не удалось подключиться.', { exact: false }).count(), 0);
+  assert.equal(legacyScripts, 0);
   assert.deepEqual(errors, []);
   console.log(
     'Digital product browser check passed: exact H0x link, no Shop form, signed receipt visible in dashboard.',

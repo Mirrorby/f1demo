@@ -2,6 +2,8 @@ import { WorkerEntrypoint } from 'cloudflare:workers';
 import platformScript from '../public/platform.js';
 import adminScript from '../public/admin.js';
 import adminPage from '../public/admin.html';
+import platformPage from '../public/platform.html';
+import platformEditorPage from '../public/platform-editor.html';
 import { digitalWebhook } from './tribute-digital';
 import {
   createInvoice,
@@ -95,7 +97,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     ctx.waitUntil(flushPaymentNotifications(env));
     return json(result);
   }
-  if (path === '/platform.js' && (method === 'GET' || method === 'HEAD'))
+  if (
+    ['/platform.js', '/platform/app.js'].includes(path) &&
+    (method === 'GET' || method === 'HEAD')
+  )
     return new Response(method === 'HEAD' ? null : platformScript, {
       headers: {
         'Content-Type': 'application/javascript; charset=utf-8',
@@ -104,20 +109,40 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       },
     });
   if (
-    ['/admin', '/admin/', '/admin.html', '/admin.js'].includes(path) &&
+    ['/admin', '/admin/', '/admin.html', '/admin.js', '/admin/app.js'].includes(path) &&
     (method === 'GET' || method === 'HEAD')
   )
-    return new Response(method === 'HEAD' ? null : path === '/admin.js' ? adminScript : adminPage, {
+    return new Response(method === 'HEAD' ? null : path.endsWith('.js') ? adminScript : adminPage, {
       headers: {
-        'Content-Type':
-          path === '/admin.js'
-            ? 'application/javascript; charset=utf-8'
-            : 'text/html; charset=utf-8',
+        'Content-Type': path.endsWith('.js')
+          ? 'application/javascript; charset=utf-8'
+          : 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache',
         'X-Content-Type-Options': 'nosniff',
         'Referrer-Policy': 'strict-origin-when-cross-origin',
       },
     });
+  if (
+    [
+      '/platform',
+      '/platform/',
+      '/platform.html',
+      '/platform/editor',
+      '/platform-editor.html',
+    ].includes(path) &&
+    (method === 'GET' || method === 'HEAD')
+  ) {
+    const editor = path === '/platform/editor' || path === '/platform-editor.html';
+    return new Response(method === 'HEAD' ? null : editor ? platformEditorPage : platformPage, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Content-Security-Policy': editor ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+      },
+    });
+  }
   if (path === '/api/health' && method === 'GET') return json({ ok: true });
   if (path === '/api/templates' && method === 'GET') return json(templateList());
   const previewApi = path.match(/^\/api\/templates\/([a-z]+)$/);

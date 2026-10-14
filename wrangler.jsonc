@@ -5,7 +5,13 @@
   "rules": [
     {
       "type": "Text",
-      "globs": ["**/platform.js", "**/admin.js", "**/admin.html"],
+      "globs": [
+        "**/platform.js",
+        "**/admin.js",
+        "**/admin.html",
+        "**/platform.html",
+        "**/platform-editor.html",
+      ],
       "fallthrough": false,
     },
   ],

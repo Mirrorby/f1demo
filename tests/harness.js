@@ -87,10 +87,13 @@ export async function start(overrides = {}) {
       {
         name: 'platform-text',
         setup(b) {
-          b.onLoad({ filter: /public\/(platform\.js|admin\.(js|html))$/ }, async (args) => ({
-            contents: 'export default ' + JSON.stringify(await readFile(args.path, 'utf8')),
-            loader: 'js',
-          }));
+          b.onLoad(
+            { filter: /public\/(platform\.(js|html)|platform-editor\.html|admin\.(js|html))$/ },
+            async (args) => ({
+              contents: 'export default ' + JSON.stringify(await readFile(args.path, 'utf8')),
+              loader: 'js',
+            }),
+          );
         },
       },
     ],
@@ -188,7 +191,20 @@ export async function start(overrides = {}) {
       assets: {
         directory: 'public',
         binding: 'ASSETS',
-        run_worker_first: true,
+        run_worker_first: [
+          '/api/*',
+          '/demo/*',
+          '/templates/*',
+          '/shop/*',
+          '/media/*',
+          '/admin',
+          '/admin/*',
+          '/platform',
+          '/platform/*',
+          '/platform.html',
+          '/platform-editor.html',
+          '/',
+        ],
         routerConfig: { has_user_worker: true },
       },
     }),

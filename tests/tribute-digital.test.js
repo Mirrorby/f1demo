@@ -46,6 +46,16 @@ test('exact product URL resolves through the API without a Shop ID', async () =>
   assert.equal(r.body.paymentUrl, 'https://web.tribute.tg/p/H0x');
   assert.equal(r.body.cardsEnabled, true);
 });
+test('current interfaces load scripts through existing Worker routes with legacy asset-first configuration', async () => {
+  for (const path of ['/admin', '/platform/editor']) {
+    const r = await req(path);
+    assert.equal(r.status, 200);
+    assert.match(r.body, /\/admin\/app\.js\?v=/);
+  }
+  assert.match((await req('/platform')).body, /\/platform\/app\.js\?v=/);
+  assert.match((await req('/admin/app.js')).body, /function showPayments/);
+  assert.match((await req('/platform/app.js')).body, /function digitalPaymentPanel/);
+});
 test('/pay presents the product to a customer before store ownership is linked', async () => {
   const r = await req(
     '/api/telegram/webhook',

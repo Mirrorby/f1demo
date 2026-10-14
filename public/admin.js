@@ -556,6 +556,11 @@ document.addEventListener('submit', async (event) => {
     if (params.get('order'))
       showOrder(await api(base() + '/orders/' + encodeURIComponent(params.get('order'))));
   } catch (e) {
+    if (!store) document.getElementById('store-name').textContent = 'Мой кабинет';
+    if (tab === 'payments') {
+      await show('payments');
+      return;
+    }
     notice(e.message);
     main.innerHTML =
       '<p>Не удалось подключиться. Обновите страницу или откройте панель заново.</p>';
