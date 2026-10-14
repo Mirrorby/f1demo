@@ -31,11 +31,15 @@ export function deploymentConfig(source, values) {
     origin.hash
   )
     throw new Error('PUBLIC_ORIGIN must be an HTTPS origin, without a path or credentials.');
-  const tributeShop = values.TRIBUTE_SHOP_ID?.trim();
+  const tributeShop = values.TRIBUTE_SHOP_ID?.trim() || '';
+  const productUrl = values.TRIBUTE_PRODUCT_URL?.trim() ?? config.vars.TRIBUTE_PRODUCT_URL;
+  if (productUrl && !/^https:\/\/web\.tribute\.tg\/p\/[a-zA-Z0-9]+$/.test(productUrl))
+    throw new Error('Invalid TRIBUTE_PRODUCT_URL');
   if (
-    !tributeShop ||
-    !/^[1-9]\d{0,15}$/.test(tributeShop) ||
-    !Number.isSafeInteger(Number(tributeShop))
+    !productUrl &&
+    (!tributeShop ||
+      !/^[1-9]\d{0,15}$/.test(tributeShop) ||
+      !Number.isSafeInteger(Number(tributeShop)))
   )
     throw new Error('Set TRIBUTE_SHOP_ID to the active Tribute Shop ID in Build variables.');
   config.vars = {
@@ -43,6 +47,7 @@ export function deploymentConfig(source, values) {
     BOT_USERNAME: bot,
     PUBLIC_ORIGIN: origin.origin,
     TRIBUTE_SHOP_ID: tributeShop,
+    TRIBUTE_PRODUCT_URL: productUrl,
   };
   config.d1_databases[0].database_id = databaseId;
   const secrets = {};

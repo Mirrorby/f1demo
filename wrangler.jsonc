@@ -40,6 +40,7 @@
     "BOT_USERNAME": "",
     "PUBLIC_ORIGIN": "http://localhost:8787",
     "TRIBUTE_SHOP_ID": "",
+    "TRIBUTE_PRODUCT_URL": "https://web.tribute.tg/p/H0e",
   },
   "triggers": {
     "crons": ["*/10 * * * *"],

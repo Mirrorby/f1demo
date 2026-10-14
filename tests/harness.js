@@ -74,7 +74,8 @@ export function orderFor(p = catalog.products.find((p) => p.name === 'Bag'), qua
 }
 export const checkout = (data, key = crypto.randomUUID(), slug = shop.slug) =>
   req(`/api/stores/${slug}/orders`, 'POST', data, { 'Idempotency-Key': key });
-export async function start() {
+export async function start(overrides = {}) {
+  const extraBindings = Object.hasOwn(overrides, 'TRIBUTE_PRODUCT_URL') ? overrides : {};
   const result = await build({
     entryPoints: ['src/index.ts'],
     bundle: true,
@@ -100,12 +101,33 @@ export async function start() {
         TELEGRAM_WEBHOOK_SECRET: WEBHOOK,
         BOT_USERNAME: 'catalog_test_bot',
         PUBLIC_ORIGIN: 'https://store.example',
+        ...extraBindings,
       },
       outboundService: async (request) => {
         const url = new URL(request.url);
         if (url.hostname === 'tribute.tg') {
           let data;
-          if (url.pathname === '/api/v1/shop')
+          if (url.pathname.startsWith('/api/v1/products')) {
+            const product = {
+              id: 456,
+              type: 'digital',
+              name: 'Online store setup',
+              amount: 10000,
+              currency: 'EUR',
+              status: 'approved',
+              acceptCards: true,
+              webLink: 'https://web.tribute.tg/p/H0e',
+            };
+            data =
+              url.pathname === '/api/v1/products'
+                ? { rows: [product] }
+                : {
+                    ...product,
+                    webLink: url.pathname.endsWith('/456')
+                      ? product.webLink
+                      : 'https://web.tribute.tg/p/another',
+                  };
+          } else if (url.pathname === '/api/v1/shop')
             data = {
               id: 901,
               name: 'Catalog Factory',

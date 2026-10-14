@@ -84,7 +84,22 @@ window.addEventListener('message', (event) => {
     frame.contentWindow.postMessage({ type: 'catalog-platform-key', key: apiKey }, location.origin);
 });
 
+function digitalPaymentPanel() {
+  if (paymentConfig?.mode !== 'digital') return '';
+  const purchases = invoices.filter((p) => p.type === 'digital');
+  return `<section class="card"><h2>Оплата через Tribute</h2>
+    <p>${escapeText(paymentConfig.name || 'Товар для оплаты услуг')}</p>
+    <p>${paymentConfig.configured ? (paymentConfig.active ? 'Товар доступен для оплаты' : 'Товар пока не одобрен Tribute') : 'Добавьте TRIBUTE_API_KEY для проверки товара и подтверждения оплат.'}</p>
+    ${paymentConfig.configured ? `<p>Оплата картами: ${paymentConfig.cardsEnabled ? 'включена' : 'не включена в настройках товара'}</p>` : ''}
+    <p><a href="${escapeText(paymentConfig.paymentUrl)}" target="_blank" rel="noopener">Открыть товар Tribute ↗</a></p>
+    <p>Клиент открывает товар командой /pay. Покупки учитываются по его Telegram ID.</p>
+    ${purchases.map((p) => `<p>${escapeText(p.title)} · ${(p.amountMinor / 100).toFixed(2)} ${p.currency.toUpperCase()} · Telegram ID: ${escapeText(p.ownerId)} · ${p.status === 'paid' ? 'Оплачено' : 'Зарегистрирован возврат'}</p>`).join('') || '<p>Подтверждённых покупок пока нет.</p>'}
+  </section>`;
+}
+
 function invoicePanel(s, i) {
+  if (paymentConfig?.mode === 'digital')
+    return '<p>Оплата услуг доступна клиенту в боте командой /pay.</p>';
   const rows = invoices.filter((x) => x.storeId === s.id);
   const labels = {
     creating: 'Создаётся',
@@ -120,7 +135,7 @@ function invoicePanel(s, i) {
 
 function render() {
   document.getElementById('logout').hidden = false;
-  main.innerHTML = `<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
+  main.innerHTML = `${digitalPaymentPanel()}<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
  <form id="create-form" class="card"><h2>2. Создать магазин</h2><label for="new-template">Шаблон витрины</label><select id="new-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><p id="template-description"></p><a id="template-preview" href="/templates/minimal" target="_blank" rel="noopener">Открыть предпросмотр шаблона ↗</a><label class="seed-choice"><input id="seed-products" type="checkbox" disabled> Добавить примерные товары</label><p>Примерные цены, остатки и иллюстрации замените перед активацией магазина.</p><label for="new-name">Название</label><input id="new-name" required maxlength="200" placeholder="Мой магазин"><label for="new-slug">Slug для ссылки</label><input id="new-slug" required maxlength="80" pattern="[a-z0-9][a-z0-9-]*" placeholder="my-store"><label for="new-description">Описание</label><textarea id="new-description" maxlength="2000"></textarea><label for="new-currency">Основная валюта</label><select id="new-currency">${['BYN', 'RUB', 'KZT', 'USD', 'EUR'].map((c) => `<option>${c}</option>`).join('')}</select><label for="new-accent">Основной цвет</label><input id="new-accent" type="color" value="#354f46"><button class="primary" type="submit" style="margin-top:16px">Создать демо</button><details><summary>Создать из готового JSON</summary><p>Если поле заполнено, используется JSON вместо полей выше. Формат соответствует API фабрики.</p><textarea id="new-json" aria-label="JSON магазина" placeholder="Вставьте JSON магазина"></textarea></details></form>
  <div id="copy-status" role="status"></div><h2>3. Магазины</h2><div id="store-list">${stores.map((s, i) => `<section class="card" data-store-id="${s.id}"><h3>${escapeText(s.name)}</h3><p>${s.status === 'demo' ? 'Демонстрация' : s.acceptingOrders ? 'Активный магазин' : 'Приём заказов приостановлен'} · ${s.ownerLinked ? 'Владелец подключён' : 'Владелец не подключён'}</p><p><a href="/${s.status === 'demo' ? 'demo' : 'shop'}/${escapeText(s.slug)}" target="_blank" rel="noopener">Открыть сайт</a></p><label for="owner-${i}">${s.ownerLinked ? 'Telegram ID нового владельца' : 'Числовой Telegram ID владельца'}</label><input id="owner-${i}" inputmode="numeric" placeholder="ID, который показал бот после /start"><button data-invite="${i}" style="margin-top:12px">${s.ownerLinked ? 'Передать магазин' : 'Создать приглашение'}</button><div id="invite-${i}"></div><div class="actions" style="margin-top:16px"><button class="primary" data-edit="${i}">Редактировать магазин</button><button data-copy="${i}">Копировать магазин</button>${s.status === 'demo' ? `<button class="primary" data-activate="${i}" ${s.ownerLinked ? '' : 'disabled'}>Активировать магазин</button>` : ''}${s.status === 'active' ? `<button data-intake="${i}">${s.acceptingOrders ? 'Приостановить заказы' : 'Возобновить заказы'}</button>` : `<button class="danger" data-delete-demo="${i}">Удалить демо</button>`}<button data-export="${i}">Экспорт JSON</button></div>${invoicePanel(s, i)}</section>`).join('') || '<p>Создайте первый магазин.</p>'}</div><button data-action="refresh">Обновить список</button>`;
 }

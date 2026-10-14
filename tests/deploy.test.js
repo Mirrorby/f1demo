@@ -13,6 +13,7 @@ const values = {
   TELEGRAM_WEBHOOK_SECRET: 'test_webhook_key_with_32_characters_or_more',
   TRIBUTE_API_KEY: 'test-tribute-api-key',
   TRIBUTE_SHOP_ID: '901',
+  TRIBUTE_PRODUCT_URL: '',
 };
 test('cloud build transfers public config and uploads only required secrets', () => {
   const { config, secrets } = deploymentConfig(source, values);
@@ -30,10 +31,23 @@ test('cloud build transfers public config and uploads only required secrets', ()
   assert.ok(!JSON.stringify(config).includes(values.TRIBUTE_API_KEY));
 });
 test('cloud build rejects missing settings and invalid secret shape before deployment', () => {
-  for (const key of Object.keys(values))
+  for (const key of Object.keys(values).filter((key) => key !== 'TRIBUTE_PRODUCT_URL'))
     assert.throws(() => deploymentConfig(source, { ...values, [key]: '' }));
   assert.throws(() =>
     deploymentConfig(source, { ...values, PUBLIC_ORIGIN: 'http://localhost:8787' }),
   );
   assert.throws(() => deploymentConfig(source, { ...values, TELEGRAM_WEBHOOK_SECRET: 'bad/key' }));
+});
+
+test('digital product deployment needs no Shop ID and retains the exact checkout URL', () => {
+  const result = deploymentConfig(source, {
+    ...values,
+    TRIBUTE_SHOP_ID: '',
+    TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0e',
+  });
+  assert.equal(result.config.vars.TRIBUTE_PRODUCT_URL, 'https://web.tribute.tg/p/H0e');
+  assert.equal(result.config.vars.TRIBUTE_SHOP_ID, '');
+  assert.throws(() =>
+    deploymentConfig(source, { ...values, TRIBUTE_PRODUCT_URL: 'https://evil.example/p/H0e' }),
+  );
 });

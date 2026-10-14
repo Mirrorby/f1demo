@@ -1,3 +1,10 @@
+import {
+  digitalProduct,
+  digitalMenu,
+  digitalPurchases,
+  digitalWebhook,
+  flushDigitalNotifications,
+} from './tribute-digital';
 import { equalSecret, digest } from './auth';
 import { stmt } from './catalog';
 import { telegram, origin } from './telegram';
@@ -57,6 +64,28 @@ function view(i: Invoice) {
 }
 export async function tributeConfig(env: Env) {
   const webhookUrl = origin(env) + '/api/tribute/webhook';
+  if (env.TRIBUTE_PRODUCT_URL) {
+    if (!env.TRIBUTE_API_KEY)
+      return {
+        configured: false,
+        webhookUrl,
+        mode: 'digital',
+        paymentUrl: env.TRIBUTE_PRODUCT_URL,
+      };
+    const p = await digitalProduct(env);
+    return {
+      configured: true,
+      mode: 'digital',
+      webhookUrl,
+      paymentUrl: p.webLink,
+      productId: p.id,
+      name: p.name,
+      active: p.status === 'approved',
+      cardsEnabled: p.acceptCards === true,
+      amountMinor: p.amount,
+      currency: p.currency,
+    };
+  }
   if (!env.TRIBUTE_API_KEY || !env.TRIBUTE_SHOP_ID) return { configured: false, webhookUrl };
   configured(env);
   const s = object(await api(env, '/shop?shopId=' + env.TRIBUTE_SHOP_ID));
@@ -79,7 +108,7 @@ export async function listInvoices(env: Env, storeId?: string, owner?: string) {
     owner ?? null,
     owner ?? null,
   ).all<Invoice>();
-  return rows.results.map(view);
+  return [...rows.results.map(view), ...(!storeId ? await digitalPurchases(env, owner) : [])];
 }
 export async function createInvoice(env: Env, s: StoreRow, input: unknown) {
   configured(env);
@@ -209,7 +238,7 @@ export async function createInvoice(env: Env, s: StoreRow, input: unknown) {
   return view(created);
 }
 export async function tributeWebhook(request: Request, env: Env) {
-  configured(env);
+  requireThat(env.TRIBUTE_API_KEY, 'Настройте TRIBUTE_API_KEY', 503);
   const raw = new TextDecoder().decode(await limitedBytes(request, 64000));
   const signature = request.headers.get('trbt-signature') ?? '';
   requireThat(/^[a-f0-9]{64}$/i.test(signature), 'Недопустимая подпись Tribute', 401);
@@ -236,6 +265,8 @@ export async function tributeWebhook(request: Request, env: Env) {
     throw new HttpError(400, 'Некорректный webhook');
   }
   const name = text(event.name, 100, true);
+  if (env.TRIBUTE_PRODUCT_URL && ['new_digital_product', 'digital_product_refunded'].includes(name))
+    return digitalWebhook(env, name, event.payload);
   if (!['shop_order', 'shop_order_refunded'].includes(name)) return { status: 'ignored' };
   const p = object(event.payload);
   if (String(p.shopId) !== env.TRIBUTE_SHOP_ID) return { status: 'ignored' };
@@ -349,6 +380,10 @@ export async function reconcileInvoice(env: Env, id: string, input: unknown) {
   return view(updated);
 }
 export async function paymentMenu(env: Env, user: string, language: string) {
+  if (env.TRIBUTE_PRODUCT_URL) {
+    await digitalMenu(env, user, language);
+    return;
+  }
   const ru = language.startsWith('ru');
   const invoices = await listInvoices(env, undefined, user);
   if (!invoices.length) {
@@ -396,6 +431,7 @@ export async function paymentMenu(env: Env, user: string, language: string) {
   }
 }
 export async function flushPaymentNotifications(env: Env) {
+  await flushDigitalNotifications(env);
   if (!env.TELEGRAM_BOT_TOKEN) return;
   const pending = await stmt(
     env,
