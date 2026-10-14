@@ -146,4 +146,4 @@ npm run store -- export STORE_ID /tmp/store-export.json
 
 ## Оплата услуг через Tribute
 
-Товар https://web.tribute.tg/p/H0e подключён в подготовленном коде: команда `/pay`, учёт покупок и возвратов по Telegram ID. Для запуска нужны API-ключ и настройка webhook. Shop ID для этого товара не требуется. Инструкции и альтернативный режим персональных счетов: [docs/tribute.md](docs/tribute.md).
+Товар https://web.tribute.tg/p/H0x подключён в подготовленном коде: команда `/pay`, учёт покупок и возвратов по Telegram ID. Для запуска нужны API-ключ и настройка webhook. Shop ID для этого товара не требуется. Инструкции и альтернативный режим персональных счетов: [docs/tribute.md](docs/tribute.md).

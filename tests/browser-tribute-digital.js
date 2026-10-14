@@ -2,10 +2,11 @@ import { chromium } from '@playwright/test';
 import { createServer } from 'node:http';
 import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
-import { start, stop, mf, req, PLATFORM, TRIBUTE } from './harness.js';
+import { start, stop, mf, req, PLATFORM, TRIBUTE, mockProduct } from './harness.js';
 let browser, server;
 try {
-  await start({ TRIBUTE_SHOP_ID: '', TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0e' });
+  mockProduct({ type: 'custom' });
+  await start({ TRIBUTE_SHOP_ID: '', TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0x' });
   server = createServer(async (request, response) => {
     try {
       const chunks = [];
@@ -35,7 +36,8 @@ try {
   await page.getByRole('button', { name: 'Подключиться', exact: true }).click();
   const link = page.getByRole('link', { name: 'Открыть товар Tribute ↗', exact: true });
   await link.waitFor();
-  assert.equal(await link.getAttribute('href'), 'https://web.tribute.tg/p/H0e');
+  assert.equal(await link.getAttribute('href'), 'https://web.tribute.tg/p/H0x');
+  await page.getByText('Товар на заказ:', { exact: false }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Создать счёт', exact: true }).count(), 0);
   const event = {
     name: 'new_digital_product',
@@ -59,7 +61,7 @@ try {
     .getByText('Online store setup · 100.00 EUR · Telegram ID: 333 · Оплачено', { exact: true })
     .waitFor();
   console.log(
-    'Digital product browser check passed: exact H0e link, no Shop form, signed receipt visible in dashboard.',
+    'Digital product browser check passed: exact H0x link, no Shop form, signed receipt visible in dashboard.',
   );
 } finally {
   if (browser) await browser.close();

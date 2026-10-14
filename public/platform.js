@@ -92,7 +92,8 @@ function digitalPaymentPanel() {
     <p>${paymentConfig.configured ? (paymentConfig.active ? 'Товар доступен для оплаты' : 'Товар пока не одобрен Tribute') : 'Добавьте TRIBUTE_API_KEY для проверки товара и подтверждения оплат.'}</p>
     ${paymentConfig.configured ? `<p>Оплата картами: ${paymentConfig.cardsEnabled ? 'включена' : 'не включена в настройках товара'}</p>` : ''}
     <p><a href="${escapeText(paymentConfig.paymentUrl)}" target="_blank" rel="noopener">Открыть товар Tribute ↗</a></p>
-    <p>Клиент открывает товар командой /pay. Покупки учитываются по его Telegram ID.</p>
+    <p>Клиент открывает товар командой /pay. Покупки учитываются по его Telegram ID при получении подтверждения Tribute.</p>
+    ${paymentConfig.fulfillmentRequired ? '<p>Товар на заказ: выполните заказ и отправьте результат покупателю через @Tribute → «Ответить» → «Прикрепить» → «Отправить товар». Tribute проверит результат перед выдачей и выплатой. Подтверждение покупки не означает завершение заказа или выплату продавцу.</p>' : ''}
     ${purchases.map((p) => `<p>${escapeText(p.title)} · ${(p.amountMinor / 100).toFixed(2)} ${p.currency.toUpperCase()} · Telegram ID: ${escapeText(p.ownerId)} · ${p.status === 'paid' ? 'Оплачено' : 'Зарегистрирован возврат'}</p>`).join('') || '<p>Подтверждённых покупок пока нет.</p>'}
   </section>`;
 }

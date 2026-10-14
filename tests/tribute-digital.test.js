@@ -2,8 +2,18 @@ import { mf } from './harness.js';
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
-import { start, stop, db, req, platform, TRIBUTE, WEBHOOK, notifications } from './harness.js';
-before(() => start({ TRIBUTE_SHOP_ID: '', TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0e' }));
+import {
+  start,
+  stop,
+  db,
+  req,
+  platform,
+  TRIBUTE,
+  WEBHOOK,
+  notifications,
+  mockProduct,
+} from './harness.js';
+before(() => start({ TRIBUTE_SHOP_ID: '', TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0x' }));
 after(stop);
 function event(id, overrides = {}, name = 'new_digital_product') {
   return {
@@ -32,7 +42,7 @@ test('exact product URL resolves through the API without a Shop ID', async () =>
   assert.equal(r.status, 200, JSON.stringify(r));
   assert.equal(r.body.mode, 'digital');
   assert.equal(r.body.productId, 456);
-  assert.equal(r.body.paymentUrl, 'https://web.tribute.tg/p/H0e');
+  assert.equal(r.body.paymentUrl, 'https://web.tribute.tg/p/H0x');
   assert.equal(r.body.cardsEnabled, true);
 });
 test('/pay presents the product to a customer before store ownership is linked', async () => {
@@ -50,7 +60,7 @@ test('/pay presents the product to a customer before store ownership is linked',
   );
   assert.equal(r.status, 200);
   const m = notifications.find((n) => n.payload.chat_id === '333');
-  assert.equal(m.payload.reply_markup.inline_keyboard[0][0].url, 'https://web.tribute.tg/p/H0e');
+  assert.equal(m.payload.reply_markup.inline_keyboard[0][0].url, 'https://web.tribute.tg/p/H0x');
 });
 test('digital events require valid HMAC and retain one receipt per purchase', async () => {
   const e = event(9001);
@@ -148,4 +158,75 @@ test('private bridge verifies signatures, ignores non-payment probes and is unav
     'ignored',
   );
   assert.equal((await req('/receiveEvent', 'POST', e)).status, 404);
+});
+
+test('custom product resolves without a digital filter and explains manual fulfillment', async () => {
+  mockProduct({ type: 'custom' });
+  try {
+    const config = await platform('payments/config');
+    assert.equal(config.status, 200);
+    assert.equal(config.body.productType, 'custom');
+    assert.equal(config.body.fulfillmentRequired, true);
+    const offset = notifications.length;
+    await req(
+      '/api/telegram/webhook',
+      'POST',
+      {
+        message: {
+          text: '/pay',
+          chat: { id: 555, type: 'private' },
+          from: { id: 555, language_code: 'ru' },
+        },
+      },
+      { 'X-Telegram-Bot-Api-Secret-Token': WEBHOOK },
+    );
+    const menu = notifications.slice(offset).find((n) => n.payload.chat_id === '555');
+    assert.match(menu.payload.text, /после выполнения заказа и модерации/);
+    assert.equal(menu.payload.reply_markup.inline_keyboard[0][0].text, 'Заказать через Tribute');
+    assert.equal(
+      menu.payload.reply_markup.inline_keyboard[0][0].url,
+      'https://web.tribute.tg/p/H0x',
+    );
+    assert.equal((await send(event(9100))).body.status, 'ok');
+    assert.equal((await send(event(9101, {}, 'custom_order_created'))).body.status, 'ignored');
+    assert.equal(
+      await db
+        .prepare('SELECT * FROM tribute_digital_purchases WHERE purchase_id=?')
+        .bind('9101')
+        .first(),
+      null,
+    );
+  } finally {
+    mockProduct();
+  }
+});
+
+test('pending or rejected custom products do not expose checkout; physical products are rejected', async () => {
+  try {
+    for (const status of ['pending', 'rejected']) {
+      mockProduct({ type: 'custom', status });
+      assert.equal((await platform('payments/config')).body.active, false);
+      const offset = notifications.length;
+      await req(
+        '/api/telegram/webhook',
+        'POST',
+        {
+          message: {
+            text: '/pay',
+            chat: { id: 555, type: 'private' },
+            from: { id: 555, language_code: 'en' },
+          },
+        },
+        { 'X-Telegram-Bot-Api-Secret-Token': WEBHOOK },
+      );
+      const menu = notifications.slice(offset).find((n) => n.payload.chat_id === '555');
+      assert.match(menu.payload.text, /not available/);
+      assert.equal(menu.payload.reply_markup, undefined);
+    }
+    mockProduct({ type: 'physical' });
+    assert.equal((await platform('payments/config')).status, 503);
+    assert.equal((await send(event(9102))).body.status, 'ignored');
+  } finally {
+    mockProduct();
+  }
 });

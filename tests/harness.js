@@ -8,6 +8,10 @@ export let mf, db, shop, demo, second, catalog, secondCatalog;
 export const TRIBUTE = 'local-test-tribute-secret';
 export const tributeOrders = new Map();
 let tributeFails = false;
+let productOverrides = {};
+export function mockProduct(value = {}) {
+  productOverrides = value;
+}
 export function failTribute(value) {
   tributeFails = value;
 }
@@ -129,7 +133,8 @@ export async function start(overrides = {}) {
               currency: 'EUR',
               status: 'approved',
               acceptCards: true,
-              webLink: 'https://web.tribute.tg/p/H0e',
+              webLink: 'https://web.tribute.tg/p/H0x',
+              ...productOverrides,
             };
             data =
               url.pathname === '/api/v1/products'

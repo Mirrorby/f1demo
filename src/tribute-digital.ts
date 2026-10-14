@@ -23,11 +23,15 @@ async function get(env: Env, path: string) {
 export async function digitalProduct(env: Env) {
   const wanted = digitalUrl(env);
   for (let page = 1; page <= 10; page++) {
-    const data = await get(env, '/products?type=digital&size=100&page=' + page);
+    const data = await get(env, '/products?size=100&page=' + page);
     requireThat(Array.isArray(data.rows), 'Некорректный список товаров Tribute', 502);
     const found = data.rows.map(object).find((p) => p.webLink === wanted);
     if (found) {
-      requireThat(found.type === 'digital', 'Нужен цифровой товар Tribute', 503);
+      requireThat(
+        ['digital', 'custom'].includes(String(found.type)),
+        'Нужен цифровой товар или товар на заказ Tribute',
+        503,
+      );
       return found;
     }
     if (data.rows.length < 100) break;
@@ -71,7 +75,8 @@ export async function digitalWebhook(env: Env, name: string, input: unknown) {
   const p = object(input);
   const productId = int(p.product_id, 1, Number.MAX_SAFE_INTEGER);
   const remote = await get(env, '/products/' + productId);
-  if (remote.webLink !== digitalUrl(env) || remote.type !== 'digital') return { status: 'ignored' };
+  if (remote.webLink !== digitalUrl(env) || !['digital', 'custom'].includes(String(remote.type)))
+    return { status: 'ignored' };
   const purchase = String(int(p.purchase_id, 1, Number.MAX_SAFE_INTEGER));
   const owner = String(int(p.telegram_user_id, 1, Number.MAX_SAFE_INTEGER));
   const amount = int(p.amount, 0, Number.MAX_SAFE_INTEGER);
@@ -155,10 +160,27 @@ export async function digitalMenu(env: Env, user: string, language: string) {
       '\n' +
       (int(product.amount, 0, Number.MAX_SAFE_INTEGER) / 100).toFixed(2) +
       ' ' +
-      text(product.currency, 3, true).toUpperCase(),
+      text(product.currency, 3, true).toUpperCase() +
+      (product.type === 'custom'
+        ? ru
+          ? '\nТовар на заказ. Продавец отправит результат через Tribute после выполнения заказа и модерации.'
+          : '\nMade to order. The seller will send the result through Tribute after fulfillment and moderation.'
+        : ''),
     reply_markup: {
       inline_keyboard: [
-        [{ text: ru ? 'Оплатить через Tribute' : 'Pay with Tribute', url: digitalUrl(env) }],
+        [
+          {
+            text:
+              product.type === 'custom'
+                ? ru
+                  ? 'Заказать через Tribute'
+                  : 'Order with Tribute'
+                : ru
+                  ? 'Оплатить через Tribute'
+                  : 'Pay with Tribute',
+            url: digitalUrl(env),
+          },
+        ],
       ],
     },
   });
