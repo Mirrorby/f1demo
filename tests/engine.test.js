@@ -461,7 +461,7 @@ test('browser factory routes require the platform key and do not expose secrets'
     commands.some(
       (n) =>
         n.payload.language_code === 'en' &&
-        n.payload.commands.find((c) => c.command === 'pay').description === 'Payments',
+        n.payload.commands.find((c) => c.command === 'pay').description === 'Payments and purchases',
     ),
   );
   const profiles = notifications.filter((n) => n.path.endsWith('/setMyDescription'));
