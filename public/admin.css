@@ -1113,3 +1113,31 @@ body.delokay-app[data-theme='dark'] .order-processing {
     gap: 8px;
   }
 }
+
+body.delokay-app .site-overview > .row {
+  align-items: flex-start;
+}
+body.delokay-app .site-overview h3 {
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+body.delokay-app .site-link {
+  padding: 15px;
+  margin: 16px 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.6;
+}
+body.delokay-app .site-overview .actions {
+  align-items: center;
+}
+body.delokay-app .site-open-link {
+  font-weight: 750;
+  text-decoration: none;
+  font-size: 12px;
+  padding: 11px 7px;
+}
