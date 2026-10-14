@@ -21,7 +21,7 @@ function paymentButton(url, label) {
   return `<button class="primary" data-payment-url="${esc(url)}">${esc(label)}</button>`;
 }
 async function showPayments(seq) {
-  main.innerHTML = '<h2>Оплата услуг</h2><p>Загружаем данные Tribute…</p>';
+  main.innerHTML = '<h2>Оплата услуг</h2><div class="card"><p>Загружаем данные Tribute…</p></div>';
   const [config, purchases] = await Promise.all([api('payments/config'), api('payments')]);
   if (seq !== generation) return;
   const canOrder = config.configured && (config.orderLinkAvailable || config.active);
@@ -32,15 +32,15 @@ async function showPayments(seq) {
     review: 'Нужна сверка',
     creating: 'Создаётся',
   };
-  main.innerHTML = `<h2>Оплата услуг</h2><p>Создание и настройка сайта-каталога.</p>
-    ${
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Оплата услуг</h2><p class="section-caption">Оплачивайте услуги и следите за статусом покупок в одном месте.</p></div></div><div class="card payment-intro"><h3>Создание и настройка сайта-каталога.</h3>
+    </div>${
       config.mode === 'digital'
-        ? `<div class="card"><h3>${esc(config.name || 'Создание сайта')}</h3>${config.configured ? `<p>${(config.amountMinor / 100).toFixed(2)} ${esc(String(config.currency).toUpperCase())}</p>` : ''}
+        ? `<div class="card payment-offer"><h3>${esc(config.name || 'Создание сайта')}</h3>${config.configured ? `<p>${(config.amountMinor / 100).toFixed(2)} ${esc(String(config.currency).toUpperCase())}</p>` : ''}
     ${config.fulfillmentRequired ? '<p>Товар на заказ. Продавец отправит результат через Tribute после выполнения заказа и модерации.</p>' : ''}
     ${canOrder && config.paymentUrl ? paymentButton(config.paymentUrl, config.fulfillmentRequired ? 'Заказать через Tribute' : 'Оплатить через Tribute') : '<p>Товар пока недоступен для оформления заказа.</p>'}</div>`
         : ''
     }
-    <h3>Мои покупки и счета</h3>${purchases.map((p) => `<div class="card"><h3>${esc(p.title)}</h3><p>${(p.amountMinor / 100).toFixed(2)} ${esc(p.currency.toUpperCase())}</p><p>${esc(labels[p.status] || p.status)}</p>${p.paymentUrl && p.status === 'pending' ? paymentButton(p.paymentUrl, 'Оплатить через Tribute') : ''}</div>`).join('') || '<p>Покупок и счетов пока нет.</p>'}
+    <h3 class="section-label">Мои покупки и счета</h3>${purchases.map((p) => `<div class="card payment-item"><h3 data-no-i18n>${esc(p.title)}</h3><p>${(p.amountMinor / 100).toFixed(2)} ${esc(p.currency.toUpperCase())}</p><span class="badge payment-badge">${esc(labels[p.status] || p.status)}</span>${p.paymentUrl && p.status === 'pending' ? paymentButton(p.paymentUrl, 'Оплатить через Tribute') : ''}</div>`).join('') || '<div class="card empty-panel"><p>Покупок и счетов пока нет.</p></div>'}
     <button data-tab="payments">Обновить оплату</button>`;
 }
 function moreScreen() {
@@ -251,7 +251,7 @@ function editProduct(index) {
   edited = index === undefined ? null : products[index];
   photos = [...(edited?.photos || [])];
   const p = edited || {};
-  main.innerHTML = `<div class="row between page-heading"><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea>
+  main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
  ${store.settings.currencies.map((c) => field('price-' + c, 'Цена, ' + c, (p.prices?.[c] ?? 0) / 100, 'number', true)).join('')}
  <details><summary>Дополнительные валюты и характеристики</summary>${[
    'BYN',
@@ -294,7 +294,7 @@ function editProduct(index) {
 }
 function renderSettings() {
   const s = store.settings;
-  main.innerHTML = `<h2>Настройки</h2><form id="settings-form"><div class="card">${field('store-title', 'Название магазина', store.name, 'text', true)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea><label for="theme">Шаблон витрины</label><select id="theme">${[
+  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
     ['minimal', 'Универсальный'],
     ['fashion', 'Одежда и аксессуары'],
     ['home', 'Дом и декор'],
@@ -306,7 +306,7 @@ function renderSettings() {
     )
     .join(
       '',
-    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp">${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}<label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
+    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"></div><div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
     ['btn_cart', 'Кнопка корзины'],
     ['btn_add', 'Добавить в корзину'],
     ['label_size', 'Название вариантов'],
@@ -321,19 +321,24 @@ function renderSettings() {
 function showOrder(o) {
   const c = o.customer;
   const buttons = {
-    new: [
-      ['processing', 'Принять'],
-      ['completed', 'Выполнен'],
-      ['cancelled', 'Отменить'],
-    ],
-    processing: [
-      ['completed', 'Выполнен'],
-      ['cancelled', 'Отменить'],
-    ],
+    new: [['processing','Принять'],['completed','Выполнен'],['cancelled','Отменить']],
+    processing: [['completed','Выполнен'],['cancelled','Отменить']],
     completed: [],
     cancelled: [],
   };
-  main.innerHTML = `<div class="row between page-heading"><h2>Заказ №${o.number}</h2><button data-tab="orders">Назад</button></div><div class="card"><span class="badge">${statusNames[o.status]}</span><h3 style="margin-top:16px">${esc(c.name)}</h3><p>${esc(c.phone)}</p><p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city, c.region, c.index].filter(Boolean).join(', '))}</p>${c.comment ? `<p>${esc(c.comment)}</p>` : ''}<ul class="order-lines">${o.items.map((i) => `<li>${esc(i.name)} · ${esc(i.variant)}<br>${i.quantity} × ${(i.unitMinor / 100).toLocaleString('ru-RU')} ${o.currency}</li>`).join('')}</ul><h3>Итого: ${(o.totalMinor / 100).toLocaleString('ru-RU')} ${o.currency}</h3><div class="actions">${buttons[o.status].map(([s, label]) => `<button data-status="${s}" data-order-id="${o.id}" class="${s === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div></div>`;
+  const locale = window.DelokayI18n?.locale() || 'ru-RU';
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Заказ №${o.number}</h2><p class="section-caption">Информация о заказе</p></div><button data-tab="orders">Назад</button></div>
+    <section class="card"><div class="row between"><h3>Статус заказов</h3><span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></div>
+      <div class="order-total">${(o.totalMinor/100).toLocaleString(locale)} ${esc(o.currency)}</div>
+      <p class="section-caption">${new Date(o.createdAt*1000).toLocaleString(locale)}</p></section>
+    <section class="card"><h3 class="form-section-heading">Клиент</h3>
+      <div class="order-customer" data-no-i18n><strong>${esc(c.name)}</strong><p>${esc(c.phone)}</p>
+      <p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city,c.region,c.index].filter(Boolean).join(', '))}</p>
+      ${c.comment ? `<p>${esc(c.comment)}</p>` : ''}</div></section>
+    <section class="card"><h3 class="form-section-heading">Состав заказа</h3>
+      <ul class="order-lines">${o.items.map((i)=>`<li><strong data-no-i18n>${esc(i.name)}</strong><span class="muted" data-no-i18n>${esc(i.variant)}</span><span>${i.quantity} × ${(i.unitMinor/100).toLocaleString(locale)} ${esc(o.currency)}</span></li>`).join('')}</ul>
+      <div class="row between order-summary"><strong>Итого</strong><strong>${(o.totalMinor/100).toLocaleString(locale)} ${esc(o.currency)}</strong></div></section>
+    ${buttons[o.status].length ? `<div class="actions order-actions">${buttons[o.status].map(([status,label])=>`<button data-status="${status}" data-order-id="${o.id}" class="${status==='cancelled'?'danger':'primary'}">${label}</button>`).join('')}</div>` : ''}`;
 }
 async function uploadImage(file) {
   if (
