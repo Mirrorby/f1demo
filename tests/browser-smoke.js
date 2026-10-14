@@ -171,7 +171,7 @@ try {
   await cloneCard.getByRole('button', { name: 'Удалить демо', exact: true }).click();
   await page.locator('#notice').filter({ hasText: 'Демо удалено' }).waitFor();
   assert.equal((await req('/api/stores/browser-clone')).status, 404);
-  await factory.locator('input').fill('555');
+  await factory.locator('input[id^="owner-"]').fill('555');
   await factory.getByRole('button', { name: 'Создать приглашение' }).click();
   await factory.locator('a[href^="https://t.me/"]').waitFor();
   const activeShop = page.locator(`section[data-store-id="${shop.id}"]`);
@@ -188,6 +188,23 @@ try {
   page.once('dialog', (dialog) => dialog.accept());
   await activeShop.getByRole('button', { name: 'Возобновить заказы', exact: true }).click();
   await activeShop.getByRole('button', { name: 'Приостановить заказы', exact: true }).waitFor();
+  await activeShop.locator('summary').filter({ hasText: 'Оплата Tribute' }).click();
+  const invoiceForm = activeShop.locator('form[data-invoice-store]');
+  await invoiceForm.locator('[name=title]').fill('Online store setup');
+  await invoiceForm.locator('[name=description]').fill('Telegram store management setup');
+  await invoiceForm.locator('[name=amount]').fill('125.00');
+  await invoiceForm.locator('[name=currency]').selectOption('EUR');
+  await invoiceForm.getByRole('button', { name: 'Создать счёт', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Счёт создан' }).waitFor();
+  const bills = await req('/api/platform/stores/' + shop.id + '/invoices', 'GET', undefined, {
+    Authorization: 'Bearer ' + PLATFORM,
+  });
+  assert.equal(bills.status, 200);
+  assert.equal(bills.body.length, 1);
+  assert.equal(bills.body[0].amountMinor, 12500);
+  assert.equal(bills.body[0].currency, 'eur');
+  await activeShop.locator('summary').filter({ hasText: 'Оплата Tribute' }).click();
+  await activeShop.getByRole('link', { name: 'Открыть оплату ↗' }).waitFor();
   assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
   const stockFixture = await req(
     '/api/platform/stores/' + shop.id + '/products',

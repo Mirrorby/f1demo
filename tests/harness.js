@@ -5,6 +5,16 @@ import { build } from 'esbuild';
 import { unstable_splitSqlQuery } from 'wrangler';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 export let mf, db, shop, demo, second, catalog, secondCatalog;
+export const TRIBUTE = 'local-test-tribute-secret';
+export const tributeOrders = new Map();
+let tributeFails = false;
+let productOverrides = {};
+export function mockProduct(value = {}) {
+  productOverrides = value;
+}
+export function failTribute(value) {
+  tributeFails = value;
+}
 let telegramFails = false;
 export function failTelegram(value) {
   telegramFails = value;
@@ -68,9 +78,25 @@ export function orderFor(p = catalog.products.find((p) => p.name === 'Bag'), qua
 }
 export const checkout = (data, key = crypto.randomUUID(), slug = shop.slug) =>
   req(`/api/stores/${slug}/orders`, 'POST', data, { 'Idempotency-Key': key });
-export async function start() {
+export async function start(overrides = {}) {
+  const extraBindings = Object.hasOwn(overrides, 'TRIBUTE_PRODUCT_URL') ? overrides : {};
   const result = await build({
     entryPoints: ['src/index.ts'],
+    external: ['cloudflare:workers'],
+    plugins: [
+      {
+        name: 'platform-text',
+        setup(b) {
+          b.onLoad(
+            { filter: /public\/(platform\.(js|html)|platform-editor\.html|admin\.(js|html))$/ },
+            async (args) => ({
+              contents: 'export default ' + JSON.stringify(await readFile(args.path, 'utf8')),
+              loader: 'js',
+            }),
+          );
+        },
+      },
+    ],
     bundle: true,
     format: 'esm',
     platform: 'browser',
@@ -85,15 +111,69 @@ export async function start() {
       compatibilityFlags: ['nodejs_compat'],
       cronTriggers: ['*/10 * * * *'],
       d1Databases: { DB: 'engine' },
+      serviceBindings: { TEST_BRIDGE: { name: 'engine', entrypoint: 'CatalogTributeBridge' } },
       r2Buckets: ['IMAGES'],
       bindings: {
+        TRIBUTE_API_KEY: TRIBUTE,
+        TRIBUTE_SHOP_ID: '901',
         PLATFORM_API_KEY: PLATFORM,
         TELEGRAM_BOT_TOKEN: BOT,
         TELEGRAM_WEBHOOK_SECRET: WEBHOOK,
         BOT_USERNAME: 'catalog_test_bot',
         PUBLIC_ORIGIN: 'https://store.example',
+        ...extraBindings,
       },
       outboundService: async (request) => {
+        const url = new URL(request.url);
+        if (url.hostname === 'tribute.tg') {
+          let data;
+          if (url.pathname.startsWith('/api/v1/products')) {
+            const product = {
+              id: 456,
+              type: 'digital',
+              name: 'Online store setup',
+              amount: 10000,
+              currency: 'EUR',
+              status: 'approved',
+              acceptCards: true,
+              webLink: 'https://web.tribute.tg/p/H0x',
+              ...productOverrides,
+            };
+            data =
+              url.pathname === '/api/v1/products'
+                ? { rows: [product] }
+                : {
+                    ...product,
+                    webLink: url.pathname.endsWith('/456')
+                      ? product.webLink
+                      : 'https://web.tribute.tg/p/another',
+                  };
+          } else if (url.pathname === '/api/v1/shop')
+            data = {
+              id: 901,
+              name: 'Catalog Factory',
+              status: 1,
+              onlyStars: false,
+              callbackUrl: 'https://store.example/api/tribute/webhook',
+            };
+          else if (url.pathname === '/api/v1/shop/orders' && request.method === 'POST') {
+            const payload = await request.json();
+            const id = crypto.randomUUID();
+            data = {
+              ...payload,
+              uuid: id,
+              status: 'pending',
+              paymentUrl: 'https://web.tribute.tg/shop/pay/' + id,
+              onlyStars: false,
+            };
+            tributeOrders.set(id, data);
+            if (tributeFails) return new Response('{}', { status: 503 });
+          } else data = tributeOrders.get(url.pathname.split('/').at(-1));
+          return new Response(JSON.stringify(data || {}), {
+            status: data ? 200 : 404,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
         notifications.push({ path: new URL(request.url).pathname, payload: await request.json() });
         return new Response(
           JSON.stringify({
@@ -111,7 +191,20 @@ export async function start() {
       assets: {
         directory: 'public',
         binding: 'ASSETS',
-        run_worker_first: true,
+        run_worker_first: [
+          '/api/*',
+          '/demo/*',
+          '/templates/*',
+          '/shop/*',
+          '/media/*',
+          '/admin',
+          '/admin/*',
+          '/platform',
+          '/platform/*',
+          '/platform.html',
+          '/platform-editor.html',
+          '/',
+        ],
         routerConfig: { has_user_worker: true },
       },
     }),

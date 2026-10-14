@@ -1,3 +1,19 @@
+import { WorkerEntrypoint } from 'cloudflare:workers';
+import platformScript from '../public/platform.js';
+import adminScript from '../public/admin.js';
+import adminPage from '../public/admin.html';
+import platformPage from '../public/platform.html';
+import platformEditorPage from '../public/platform-editor.html';
+import { digitalWebhook } from './tribute-digital';
+import {
+  createInvoice,
+  listInvoices,
+  tributeConfig,
+  tributeWebhook,
+  verifyTributeSignature,
+  reconcileInvoice,
+  flushPaymentNotifications,
+} from './tribute';
 import { platformAuth, telegramAuth } from './auth';
 import {
   catalog,
@@ -76,6 +92,57 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
+  if (path === '/api/tribute/webhook' && method === 'POST') {
+    const result = await tributeWebhook(request, env);
+    ctx.waitUntil(flushPaymentNotifications(env));
+    return json(result);
+  }
+  if (
+    ['/platform.js', '/platform/app.js'].includes(path) &&
+    (method === 'GET' || method === 'HEAD')
+  )
+    return new Response(method === 'HEAD' ? null : platformScript, {
+      headers: {
+        'Content-Type': 'application/javascript; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  if (
+    ['/admin', '/admin/', '/admin.html', '/admin.js', '/admin/app.js'].includes(path) &&
+    (method === 'GET' || method === 'HEAD')
+  )
+    return new Response(method === 'HEAD' ? null : path.endsWith('.js') ? adminScript : adminPage, {
+      headers: {
+        'Content-Type': path.endsWith('.js')
+          ? 'application/javascript; charset=utf-8'
+          : 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+      },
+    });
+  if (
+    [
+      '/platform',
+      '/platform/',
+      '/platform.html',
+      '/platform/editor',
+      '/platform-editor.html',
+    ].includes(path) &&
+    (method === 'GET' || method === 'HEAD')
+  ) {
+    const editor = path === '/platform/editor' || path === '/platform-editor.html';
+    return new Response(method === 'HEAD' ? null : editor ? platformEditorPage : platformPage, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Content-Security-Policy': editor ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
+      },
+    });
+  }
   if (path === '/api/health' && method === 'GET') return json({ ok: true });
   if (path === '/api/templates' && method === 'GET') return json(templateList());
   const previewApi = path.match(/^\/api\/templates\/([a-z]+)$/);
@@ -111,6 +178,28 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
   if (path.startsWith('/api/platform/')) {
     await platformAuth(request, env);
+    if (path === '/api/platform/payments/config' && method === 'GET')
+      return json(await tributeConfig(env));
+    if (path === '/api/platform/payments' && method === 'GET') return json(await listInvoices(env));
+    const invoiceStore = path.match(/^\/api\/platform\/stores\/([a-f0-9-]{36})\/invoices$/);
+    if (invoiceStore) {
+      if (method === 'GET') return json(await listInvoices(env, invoiceStore[1]));
+      if (method === 'POST') {
+        const s = await stmt(
+          env,
+          'SELECT * FROM stores WHERE id=?',
+          invoiceStore[1],
+        ).first<StoreRow>();
+        requireThat(s, 'Магазин не найден', 404);
+        return json(await createInvoice(env, s, await jsonBody(request)), 201);
+      }
+    }
+    const reconcile = path.match(/^\/api\/platform\/invoices\/([a-f0-9-]{36})\/reconcile$/);
+    if (reconcile && method === 'POST') {
+      const result = await reconcileInvoice(env, reconcile[1], await jsonBody(request));
+      ctx.waitUntil(flushPaymentNotifications(env));
+      return json(result);
+    }
     if (path === '/api/platform/telegram/setup' && method === 'POST')
       return json(await setupTelegram(env));
     if (path === '/api/platform/config' && method === 'GET')
@@ -173,6 +262,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
     const isPlatform = path.startsWith('/api/platform/');
     const owner = isPlatform ? null : await telegramAuth(request, env);
+    if (path === '/api/admin/payments/config' && method === 'GET')
+      return json(await tributeConfig(env));
+    if (path === '/api/admin/payments' && method === 'GET')
+      return json(await listInvoices(env, undefined, owner!));
     if (path === '/api/admin/stores' && method === 'GET') {
       const stores = await stmt(
         env,
@@ -348,8 +441,55 @@ export default {
   },
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
     ctx.waitUntil(flushNotifications(env));
+    ctx.waitUntil(flushPaymentNotifications(env));
     await processCopy(env, origin(env), undefined, 2);
     await cleanupMedia(env);
     await stmt(env, 'DELETE FROM owner_invites WHERE expires_at<unixepoch()-86400').run();
   },
 } satisfies ExportedHandler<Env>;
+
+// Callable only through a configured Cloudflare service binding.
+// The Leela entrypoint verifies Tribute's signature before calling this method.
+export class CatalogTributeBridge extends WorkerEntrypoint<Env> {
+  async verifySignature(body: string, signature: string) {
+    return verifyTributeSignature(body, signature, this.env.TRIBUTE_API_KEY);
+  }
+  async inspect() {
+    return tributeConfig(this.env);
+  }
+  async gatewayProbe() {
+    const body = JSON.stringify({ name: 'integration_probe', payload: {} });
+    const key = await crypto.subtle.importKey(
+      'raw',
+      new TextEncoder().encode(this.env.TRIBUTE_API_KEY),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const signed = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(body));
+    const signature = Array.from(new Uint8Array(signed), (v) =>
+      v.toString(16).padStart(2, '0'),
+    ).join('');
+    const r = await this.env.LEELA_PAYMENTS.fetch(
+      new Request('https://internal/tribute/webhook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'trbt-signature': signature },
+        body,
+      }),
+    );
+    return { status: r.status, result: await r.json() };
+  }
+  async receiveEvent(body: string) {
+    requireThat(
+      typeof body === 'string' && new TextEncoder().encode(body).length <= 64000,
+      'Некорректное уведомление',
+    );
+    const event = object(JSON.parse(body));
+    const name = text(event.name, 100, true);
+    if (!['new_digital_product', 'digital_product_refunded'].includes(name))
+      return { status: 'ignored' };
+    const result = await digitalWebhook(this.env, name, event.payload);
+    this.ctx.waitUntil(flushPaymentNotifications(this.env));
+    return result;
+  }
+}

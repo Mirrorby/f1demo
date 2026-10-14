@@ -403,6 +403,20 @@ test('browser factory routes require the platform key and do not expose secrets'
   const setup = await platform('telegram/setup', 'POST', {});
   assert.equal(setup.status, 200, JSON.stringify(setup));
   assert.equal(setup.body.webhookUrl, 'https://store.example/api/telegram/webhook');
+  const commands = notifications.filter((n) => n.path.endsWith('/setMyCommands'));
+  assert.equal(commands.length, 6);
+  assert.deepEqual(
+    new Set(commands.map((n) => n.payload.scope.type)),
+    new Set(['default', 'all_private_chats']),
+  );
+  assert.ok(commands.every((n) => n.payload.commands.some((c) => c.command === 'pay')));
+  assert.ok(
+    commands.some(
+      (n) =>
+        n.payload.language_code === 'en' &&
+        n.payload.commands.find((c) => c.command === 'pay').description === 'Payments',
+    ),
+  );
   const calls = notifications.filter((n) => n.path.endsWith('/setWebhook'));
   assert.ok(calls.length);
   assert.equal(calls.at(-1).payload.secret_token, WEBHOOK);

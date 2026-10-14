@@ -1,0 +1,265 @@
+import { mf } from './harness.js';
+import { test, before, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
+import {
+  start,
+  stop,
+  db,
+  req,
+  platform,
+  TRIBUTE,
+  WEBHOOK,
+  notifications,
+  mockProduct,
+  initData,
+} from './harness.js';
+before(() => start({ TRIBUTE_SHOP_ID: '', TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0x' }));
+after(stop);
+function event(id, overrides = {}, name = 'new_digital_product') {
+  return {
+    name,
+    created_at: '2026-10-14T10:00:00Z',
+    sent_at: '2026-10-14T10:00:01Z',
+    payload: {
+      product_id: 456,
+      product_name: 'Online store setup',
+      amount: 10000,
+      currency: 'eur',
+      telegram_user_id: 333,
+      purchase_id: id,
+      transaction_id: 12345,
+      ...overrides,
+    },
+  };
+}
+function send(e, key = TRIBUTE) {
+  return req('/api/tribute/webhook', 'POST', e, {
+    'trbt-signature': createHmac('sha256', key).update(JSON.stringify(e)).digest('hex'),
+  });
+}
+test('exact product URL resolves through the API without a Shop ID', async () => {
+  const r = await platform('payments/config');
+  assert.equal(r.status, 200, JSON.stringify(r));
+  assert.equal(r.body.mode, 'digital');
+  assert.equal(r.body.productId, 456);
+  assert.equal(r.body.paymentUrl, 'https://web.tribute.tg/p/H0x');
+  assert.equal(r.body.cardsEnabled, true);
+});
+test('current interfaces load scripts through existing Worker routes with legacy asset-first configuration', async () => {
+  for (const path of ['/admin', '/platform/editor']) {
+    const r = await req(path);
+    assert.equal(r.status, 200);
+    assert.match(r.body, /\/admin\/app\.js\?v=/);
+  }
+  assert.match((await req('/platform')).body, /\/platform\/app\.js\?v=/);
+  assert.match((await req('/admin/app.js')).body, /function showPayments/);
+  assert.match((await req('/platform/app.js')).body, /function digitalPaymentPanel/);
+});
+test('/pay presents the product to a customer before store ownership is linked', async () => {
+  const r = await req(
+    '/api/telegram/webhook',
+    'POST',
+    {
+      message: {
+        text: '/pay',
+        chat: { id: 333, type: 'private' },
+        from: { id: 333, language_code: 'en' },
+      },
+    },
+    { 'X-Telegram-Bot-Api-Secret-Token': WEBHOOK },
+  );
+  assert.equal(r.status, 200);
+  const m = notifications.find((n) => n.payload.chat_id === '333');
+  assert.equal(m.payload.reply_markup.inline_keyboard[0][0].url, 'https://web.tribute.tg/p/H0x');
+});
+test('digital events require valid HMAC and retain one receipt per purchase', async () => {
+  const e = event(9001);
+  assert.equal((await send(e, 'bad-key')).status, 401);
+  assert.equal((await send(e)).status, 200);
+  assert.equal((await send({ ...e, sent_at: '2026-10-14T10:05:00Z' })).status, 200);
+  assert.equal(
+    (
+      await db
+        .prepare('SELECT COUNT(*) n FROM tribute_digital_purchases WHERE purchase_id=?')
+        .bind('9001')
+        .first()
+    ).n,
+    1,
+  );
+  assert.equal(
+    (
+      await db
+        .prepare('SELECT COUNT(*) n FROM tribute_digital_outbox WHERE purchase_id=?')
+        .bind('9001')
+        .first()
+    ).n,
+    1,
+  );
+  assert.equal(
+    (
+      await db
+        .prepare('SELECT owner_id FROM tribute_digital_purchases WHERE purchase_id=?')
+        .bind('9001')
+        .first()
+    ).owner_id,
+    '333',
+  );
+  assert.equal(
+    (await platform('payments')).body.find((p) => p.id === 'digital:9001').type,
+    'digital',
+  );
+});
+test('another product is ignored and a reused purchase cannot change its payer', async () => {
+  assert.equal((await send(event(9002, { product_id: 999 }))).status, 200);
+  assert.equal(
+    await db
+      .prepare('SELECT * FROM tribute_digital_purchases WHERE purchase_id=?')
+      .bind('9002')
+      .first(),
+    null,
+  );
+  assert.equal((await send(event(9001, { telegram_user_id: 444 }))).status, 409);
+  assert.equal((await send(event(9003, { purchase_id: undefined }))).status, 400);
+});
+test('refund arriving before purchase is retained; later paid cannot overwrite it', async () => {
+  assert.equal((await send(event(9004, {}, 'digital_product_refunded'))).status, 200);
+  assert.equal((await send(event(9004))).status, 200);
+  assert.equal(
+    (
+      await db
+        .prepare('SELECT status FROM tribute_digital_purchases WHERE purchase_id=?')
+        .bind('9004')
+        .first()
+    ).status,
+    'refund_reported',
+  );
+});
+test('personal payment history excludes other payers and signed sale price survives catalog changes', async () => {
+  assert.equal((await send(event(9005, { amount: 8000, telegram_user_id: 444 }))).status, 200);
+  const offset = notifications.length;
+  await req(
+    '/api/telegram/webhook',
+    'POST',
+    {
+      message: {
+        text: '/pay',
+        chat: { id: 333, type: 'private' },
+        from: { id: 333, language_code: 'ru' },
+      },
+    },
+    { 'X-Telegram-Bot-Api-Secret-Token': WEBHOOK },
+  );
+  const history = notifications.slice(offset).filter((n) => n.payload.chat_id === '333');
+  assert.equal(history.length, 3);
+  assert.ok(history.some((n) => n.payload.text.includes('Оплачено')));
+  assert.ok(history.every((n) => !n.payload.text.includes('80.00')));
+});
+
+test('private bridge verifies signatures, ignores non-payment probes and is unavailable over public HTTP', async () => {
+  const { TEST_BRIDGE } = await mf.getBindings();
+  const e = event(9020);
+  const body = JSON.stringify(e);
+  const signature = createHmac('sha256', TRIBUTE).update(body).digest('hex');
+  assert.equal(await TEST_BRIDGE.verifySignature(body, signature), true);
+  assert.equal(await TEST_BRIDGE.verifySignature(body, 'b'.repeat(64)), false);
+  assert.equal(
+    (await TEST_BRIDGE.receiveEvent(JSON.stringify({ name: 'integration_probe', payload: {} })))
+      .status,
+    'ignored',
+  );
+  assert.equal((await req('/receiveEvent', 'POST', e)).status, 404);
+});
+
+test('Mini App payments authenticate Telegram users without requiring an owned store and isolate receipts', async () => {
+  for (const path of ['/api/admin/payments', '/api/admin/payments/config'])
+    assert.equal((await req(path)).status, 401);
+  const headers = { Authorization: 'tma ' + initData(333) };
+  const config = await req('/api/admin/payments/config', 'GET', undefined, headers);
+  assert.equal(config.status, 200);
+  assert.equal(config.body.productId, 456);
+  assert.ok(!JSON.stringify(config.body).includes(TRIBUTE));
+  const history = await req('/api/admin/payments', 'GET', undefined, headers);
+  assert.equal(history.status, 200);
+  assert.ok(history.body.some((p) => p.id === 'digital:9001'));
+  assert.ok(history.body.every((p) => p.ownerId === '333'));
+  assert.ok(history.body.every((p) => p.id !== 'digital:9005'));
+  const newcomer = await req('/api/admin/payments', 'GET', undefined, {
+    Authorization: 'tma ' + initData(777),
+  });
+  assert.deepEqual(newcomer.body, []);
+});
+
+test('custom product resolves without a digital filter and explains manual fulfillment', async () => {
+  mockProduct({ type: 'custom', status: 'new' });
+  try {
+    const config = await platform('payments/config');
+    assert.equal(config.status, 200);
+    assert.equal(config.body.productType, 'custom');
+    assert.equal(config.body.fulfillmentRequired, true);
+    assert.equal(config.body.active, false);
+    assert.equal(config.body.orderLinkAvailable, true);
+    assert.equal(config.body.paymentUrl, 'https://t.me/tribute/app?startapp=pH0x');
+    const offset = notifications.length;
+    await req(
+      '/api/telegram/webhook',
+      'POST',
+      {
+        message: {
+          text: '/pay',
+          chat: { id: 555, type: 'private' },
+          from: { id: 555, language_code: 'ru' },
+        },
+      },
+      { 'X-Telegram-Bot-Api-Secret-Token': WEBHOOK },
+    );
+    const menu = notifications.slice(offset).find((n) => n.payload.chat_id === '555');
+    assert.match(menu.payload.text, /после выполнения заказа и модерации/);
+    assert.equal(menu.payload.reply_markup.inline_keyboard[0][0].text, 'Заказать через Tribute');
+    assert.equal(
+      menu.payload.reply_markup.inline_keyboard[0][0].url,
+      'https://t.me/tribute/app?startapp=pH0x',
+    );
+    assert.equal((await send(event(9100))).body.status, 'ok');
+    assert.equal((await send(event(9101, {}, 'custom_order_created'))).body.status, 'ignored');
+    assert.equal(
+      await db
+        .prepare('SELECT * FROM tribute_digital_purchases WHERE purchase_id=?')
+        .bind('9101')
+        .first(),
+      null,
+    );
+  } finally {
+    mockProduct();
+  }
+});
+
+test('pending or rejected custom products do not expose checkout; physical products are rejected', async () => {
+  try {
+    for (const status of ['pending', 'rejected']) {
+      mockProduct({ type: 'custom', status });
+      assert.equal((await platform('payments/config')).body.active, false);
+      const offset = notifications.length;
+      await req(
+        '/api/telegram/webhook',
+        'POST',
+        {
+          message: {
+            text: '/pay',
+            chat: { id: 555, type: 'private' },
+            from: { id: 555, language_code: 'en' },
+          },
+        },
+        { 'X-Telegram-Bot-Api-Secret-Token': WEBHOOK },
+      );
+      const menu = notifications.slice(offset).find((n) => n.payload.chat_id === '555');
+      assert.match(menu.payload.text, /not available/);
+      assert.equal(menu.payload.reply_markup, undefined);
+    }
+    mockProduct({ type: 'physical' });
+    assert.equal((await platform('payments/config')).status, 503);
+    assert.equal((await send(event(9102))).body.status, 'ignored');
+  } finally {
+    mockProduct();
+  }
+});

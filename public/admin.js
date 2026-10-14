@@ -2,6 +2,37 @@
 const tg = window.Telegram?.WebApp;
 const platformMode = document.body.dataset.mode === 'platform';
 let platformKey = '';
+function emptyStore() {
+  document.getElementById('store-name').textContent = 'Магазин не подключён';
+  main.innerHTML =
+    '<div class="card"><h2>Подключить магазин</h2><p>Получите персональную ссылку приглашения от разработчика и откройте её в Telegram.</p><p>Оформить заказ на создание сайта можно в разделе «Оплата».</p><button class="primary" data-tab="payments">Перейти к оплате</button></div>';
+}
+function paymentButton(url, label) {
+  return `<button class="primary" data-payment-url="${esc(url)}">${esc(label)}</button>`;
+}
+async function showPayments(seq) {
+  main.innerHTML = '<h2>Оплата услуг</h2><p>Загружаем данные Tribute…</p>';
+  const [config, purchases] = await Promise.all([api('payments/config'), api('payments')]);
+  if (seq !== generation) return;
+  const canOrder = config.configured && (config.orderLinkAvailable || config.active);
+  const labels = {
+    paid: 'Покупка подтверждена',
+    refund_reported: 'Возврат зарегистрирован',
+    pending: 'Ожидает оплаты',
+    review: 'Нужна сверка',
+    creating: 'Создаётся',
+  };
+  main.innerHTML = `<h2>Оплата услуг</h2><p>Создание и настройка сайта-каталога.</p>
+    ${
+      config.mode === 'digital'
+        ? `<div class="card"><h3>${esc(config.name || 'Создание сайта')}</h3>${config.configured ? `<p>${(config.amountMinor / 100).toFixed(2)} ${esc(String(config.currency).toUpperCase())}</p>` : ''}
+    ${config.fulfillmentRequired ? '<p>Товар на заказ. Продавец отправит результат через Tribute после выполнения заказа и модерации.</p>' : ''}
+    ${canOrder && config.paymentUrl ? paymentButton(config.paymentUrl, config.fulfillmentRequired ? 'Заказать через Tribute' : 'Оплатить через Tribute') : '<p>Товар пока недоступен для оформления заказа.</p>'}</div>`
+        : ''
+    }
+    <h3>Мои покупки и счета</h3>${purchases.map((p) => `<div class="card"><h3>${esc(p.title)}</h3><p>${(p.amountMinor / 100).toFixed(2)} ${esc(p.currency.toUpperCase())}</p><p>${esc(labels[p.status] || p.status)}</p>${p.paymentUrl && p.status === 'pending' ? paymentButton(p.paymentUrl, 'Оплатить через Tribute') : ''}</div>`).join('') || '<p>Покупок и счетов пока нет.</p>'}
+    <button data-tab="payments">Обновить оплату</button>`;
+}
 function storeState() {
   return store.status === 'demo'
     ? 'Демонстрация'
@@ -88,7 +119,11 @@ async function show(next = tab) {
     .forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
   const seq = ++generation;
   try {
-    if (tab === 'home') {
+    if (tab === 'payments' && !platformMode) {
+      await showPayments(seq);
+    } else if (!store) {
+      emptyStore();
+    } else if (tab === 'home') {
       await reload();
       if (seq !== generation) return;
       main.innerHTML = `<div class="stats"><div class="card"><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div><div class="card"><div class="stat">${store.stats.newOrderCount}</div><p>Новых заказов</p></div></div><div class="card"><h2>Всё под рукой</h2><p>Каталог и настройки обновляются на сайте сразу после сохранения.</p><div class="actions"><button class="primary" data-action="add">Добавить товар</button><button data-tab="orders">Посмотреть заказы</button></div></div><div class="card"><h3>${storeState()}</h3><p>${store.status === 'demo' ? 'Заказы отключены. После продажи разработчик активирует магазин.' : 'Новые заказы появятся в Telegram и в разделе «Заказы».'}</p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть мой сайт</a></div>`;
@@ -112,7 +147,11 @@ async function show(next = tab) {
     else if (tab === 'site')
       main.innerHTML = `<h2>Мой сайт</h2><div class="card"><h3>${esc(store.name)}</h3><p>${storeState()}</p><p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">${esc(siteUrl())}</a></p><button class="primary" data-action="copy">Скопировать ссылку</button></div>`;
   } catch (e) {
+    if (seq !== generation) return;
     notice(e.message);
+    if (tab === 'payments')
+      main.innerHTML =
+        '<h2>Оплата услуг</h2><p>Не удалось загрузить оплату. Попробуйте ещё раз.</p><button data-tab="payments">Обновить оплату</button>';
   }
 }
 function field(key, label, value = '', type = 'text', required = false) {
@@ -242,6 +281,22 @@ document.addEventListener('click', async (event) => {
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   try {
+    if (button.dataset.paymentUrl) {
+      const url = new URL(button.dataset.paymentUrl);
+      if (
+        url.protocol !== 'https:' ||
+        !(
+          url.hostname === 't.me' ||
+          url.hostname === 'tribute.tg' ||
+          url.hostname.endsWith('.tribute.tg')
+        )
+      )
+        throw new Error('Некорректная ссылка оплаты');
+      if (url.hostname === 't.me' && tg?.openTelegramLink) tg.openTelegramLink(url.href);
+      else if (tg?.openLink) tg.openLink(url.href);
+      else window.open(url.href, '_blank', 'noopener');
+      return;
+    }
     if (button.dataset.tab) {
       orderOffset = 0;
       await show(button.dataset.tab);
@@ -478,9 +533,16 @@ document.addEventListener('submit', async (event) => {
   }
   try {
     stores = await api('stores');
-    if (!stores.length)
-      throw new Error('Нет подключённых магазинов. Используйте персональную ссылку приглашения.');
     const params = new URLSearchParams(location.search);
+    if (!platformMode && params.get('tab') === 'payments') tab = 'payments';
+    if (!stores.length) {
+      document.getElementById('store-name').textContent = 'Мой кабинет';
+      document.querySelectorAll('#nav [data-tab]').forEach((button) => {
+        button.disabled = !['home', 'payments'].includes(button.dataset.tab);
+      });
+      await show(tab);
+      return;
+    }
     store = stores.find((s) => s.id === params.get('store')) || stores[0];
     const picker = document.getElementById('store-picker');
     picker.hidden = platformMode || stores.length < 2;
@@ -490,10 +552,15 @@ document.addEventListener('submit', async (event) => {
           `<option value="${s.id}" ${s.id === store.id ? 'selected' : ''}>${esc(s.name)}</option>`,
       )
       .join('');
-    await show('home');
+    await show(tab);
     if (params.get('order'))
       showOrder(await api(base() + '/orders/' + encodeURIComponent(params.get('order'))));
   } catch (e) {
+    if (!store) document.getElementById('store-name').textContent = 'Мой кабинет';
+    if (tab === 'payments') {
+      await show('payments');
+      return;
+    }
     notice(e.message);
     main.innerHTML =
       '<p>Не удалось подключиться. Обновите страницу или откройте панель заново.</p>';

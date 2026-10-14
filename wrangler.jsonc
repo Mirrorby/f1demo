@@ -2,6 +2,19 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "catalog-factory",
   "main": "src/index.ts",
+  "rules": [
+    {
+      "type": "Text",
+      "globs": [
+        "**/platform.js",
+        "**/admin.js",
+        "**/admin.html",
+        "**/platform.html",
+        "**/platform-editor.html",
+      ],
+      "fallthrough": false,
+    },
+  ],
   "compatibility_date": "2026-10-06",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -15,9 +28,12 @@
       "/media/*",
       "/admin",
       "/admin/*",
+      "/admin.html",
+      "/admin.js",
       "/platform",
       "/platform/*",
       "/platform.html",
+      "/platform.js",
       "/platform-editor.html",
       "/",
     ],
@@ -36,15 +52,23 @@
       "bucket_name": "catalog-factory-images",
     },
   ],
+  "services": [{ "binding": "LEELA_PAYMENTS", "service": "leela-worker" }],
   "vars": {
     "BOT_USERNAME": "",
     "PUBLIC_ORIGIN": "http://localhost:8787",
+    "TRIBUTE_SHOP_ID": "",
+    "TRIBUTE_PRODUCT_URL": "https://web.tribute.tg/p/H0x",
   },
   "triggers": {
     "crons": ["*/10 * * * *"],
   },
   "secrets": {
-    "required": ["PLATFORM_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET"],
+    "required": [
+      "PLATFORM_API_KEY",
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_WEBHOOK_SECRET",
+      "TRIBUTE_API_KEY",
+    ],
   },
   "observability": {
     "logs": {

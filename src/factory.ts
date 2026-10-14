@@ -22,6 +22,11 @@ export async function deleteDemo(env: Env, s: StoreRow, input: unknown) {
   requireThat(s.status === 'demo', 'Можно удалить только демо', 409);
   requireThat(d.confirmSlug === s.slug, 'Для удаления введите slug магазина');
   requireThat(int(d.version, 1, Number.MAX_SAFE_INTEGER) === s.version, 'Магазин изменён', 409);
+  requireThat(
+    !(await stmt(env, 'SELECT id FROM platform_invoices WHERE store_id=? LIMIT 1', s.id).first()),
+    'Демо содержит счета и сохраняется для истории платежей',
+    409,
+  );
   try {
     await env.DB.batch([
       storeMutationGuard(env, s),

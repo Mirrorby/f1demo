@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Reads secrets from environment. Never prints a token or embeds it in arguments.
+import botCommands from '../src/telegram-commands.json' with { type: 'json' };
 const { TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET, PUBLIC_ORIGIN } = process.env;
 if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_WEBHOOK_SECRET || !PUBLIC_ORIGIN?.startsWith('https://')) {
   console.error('Set TELEGRAM_BOT_TOKEN, TELEGRAM_WEBHOOK_SECRET and HTTPS PUBLIC_ORIGIN.');
@@ -20,13 +21,13 @@ try {
     secret_token: TELEGRAM_WEBHOOK_SECRET,
     allowed_updates: ['message', 'callback_query'],
   });
-  await call('setMyCommands', {
-    commands: [
-      { command: 'start', description: 'Подключить магазин' },
-      { command: 'admin', description: 'Управлять магазином' },
-      { command: 'shop', description: 'Мой сайт' },
-    ],
-  });
+  for (const type of ['default', 'all_private_chats'])
+    for (const language of ['', 'ru', 'en'])
+      await call('setMyCommands', {
+        scope: { type },
+        language_code: language,
+        commands: language === 'ru' ? botCommands.ru : botCommands.en,
+      });
   await call('setChatMenuButton', {
     menu_button: {
       type: 'web_app',

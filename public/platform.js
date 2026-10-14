@@ -4,7 +4,9 @@ const main = document.getElementById('main'),
 let apiKey = '',
   config = null,
   templates = [],
-  stores = [];
+  stores = [],
+  invoices = [],
+  paymentConfig = null;
 let editorStoreId = null,
   copyTimer = null;
 const escapeText = (v) =>
@@ -30,7 +32,12 @@ async function request(path, method = 'GET', body) {
   return data;
 }
 async function refresh() {
-  stores = await request('stores');
+  [stores, invoices] = await Promise.all([request('stores'), request('payments')]);
+  try {
+    paymentConfig = await request('payments/config');
+  } catch (e) {
+    paymentConfig = { configured: false, error: e.message };
+  }
   if (!editorStoreId) render();
   await updateCopies();
 }
@@ -76,11 +83,62 @@ window.addEventListener('message', (event) => {
   )
     frame.contentWindow.postMessage({ type: 'catalog-platform-key', key: apiKey }, location.origin);
 });
+
+function digitalPaymentPanel() {
+  if (paymentConfig?.mode !== 'digital') return '';
+  const purchases = invoices.filter((p) => p.type === 'digital');
+  return `<section class="card"><h2>Оплата через Tribute</h2>
+    <p>${escapeText(paymentConfig.name || 'Товар для оплаты услуг')}</p>
+    <p>${paymentConfig.configured ? (paymentConfig.active ? 'Товар доступен для оплаты' : paymentConfig.orderLinkAvailable ? 'Товар на заказ: доступность оформления и оплаты проверяется на странице Tribute.' : 'Товар пока не одобрен Tribute') : 'Добавьте TRIBUTE_API_KEY для проверки товара и подтверждения оплат.'}</p>
+    ${paymentConfig.configured ? `<p>Оплата картами: ${paymentConfig.cardsEnabled ? 'включена' : 'не включена в настройках товара'}</p>` : ''}
+    <p><a href="${escapeText(paymentConfig.paymentUrl)}" target="_blank" rel="noopener">Открыть товар Tribute ↗</a></p>
+    <p>Клиент открывает товар командой /pay. Покупки учитываются по его Telegram ID при получении подтверждения Tribute.</p>
+    ${paymentConfig.fulfillmentRequired ? '<p>Товар на заказ: выполните заказ и отправьте результат покупателю через @Tribute → «Ответить» → «Прикрепить» → «Отправить товар». Tribute проверит результат перед выдачей и выплатой. Подтверждение покупки не означает завершение заказа или выплату продавцу.</p>' : ''}
+    ${purchases.map((p) => `<p>${escapeText(p.title)} · ${(p.amountMinor / 100).toFixed(2)} ${p.currency.toUpperCase()} · Telegram ID: ${escapeText(p.ownerId)} · ${p.status === 'paid' ? 'Оплачено' : 'Зарегистрирован возврат'}</p>`).join('') || '<p>Подтверждённых покупок пока нет.</p>'}
+  </section>`;
+}
+
+function invoicePanel(s, i) {
+  if (paymentConfig?.mode === 'digital')
+    return '<p>Оплата услуг доступна клиенту в боте командой /pay.</p>';
+  const rows = invoices.filter((x) => x.storeId === s.id);
+  const labels = {
+    creating: 'Создаётся',
+    review: 'Нужна сверка в Tribute',
+    pending: 'Ожидает оплаты',
+    paid: 'Оплачено',
+    refund_reported: 'Зарегистрирован возврат',
+  };
+  return `<details><summary>Оплата Tribute</summary>
+    <p>${escapeText(paymentConfig?.error || (paymentConfig?.configured && paymentConfig?.active && paymentConfig?.cardsEnabled && paymentConfig?.callbackMatches ? 'Tribute подключён' : 'Настройте Tribute API-ключ, Shop ID и webhook перед выставлением счетов.'))}</p>
+    <p>Webhook: ${escapeText(paymentConfig?.webhookUrl || config.publicOrigin + '/api/tribute/webhook')}</p>
+    <p>Клиент найдёт счёт в боте командой /pay.</p>
+    ${
+      rows
+        .map(
+          (
+            x,
+          ) => `<p>${escapeText(x.title)} · ${(x.amountMinor / 100).toFixed(2)} ${x.currency.toUpperCase()} · ${labels[x.status] || escapeText(x.status)}
+      ${x.paymentUrl && x.status === 'pending' ? `<a href="${escapeText(x.paymentUrl)}" target="_blank" rel="noopener">Открыть оплату ↗</a>` : ''}
+      <button data-reconcile="${x.id}">Сверить с Tribute</button></p>`,
+        )
+        .join('') || '<p>Счетов пока нет.</p>'
+    }
+    <form id="invoice-form-${i}" data-invoice-store="${s.id}" class="card">
+      <input type="hidden" name="invoiceId" value="${crypto.randomUUID()}">
+      <label for="invoice-title-${i}">Название услуги для клиента</label><input id="invoice-title-${i}" name="title" required maxlength="100" value="Online store setup">
+      <label for="invoice-description-${i}">Описание для клиента</label><textarea id="invoice-description-${i}" name="description" required maxlength="300">Setup of your online store with Telegram management.</textarea>
+      <label for="invoice-amount-${i}">Сумма</label><input id="invoice-amount-${i}" name="amount" required inputmode="decimal" pattern="[0-9]+([.,][0-9]{1,2})?" placeholder="100.00">
+      <label for="invoice-currency-${i}">Валюта</label><select id="invoice-currency-${i}" name="currency"><option>EUR</option><option>USD</option><option>RUB</option></select>
+      <button type="submit" ${s.ownerLinked ? '' : 'disabled'}>Создать счёт</button>
+    </form></details>`;
+}
+
 function render() {
   document.getElementById('logout').hidden = false;
-  main.innerHTML = `<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
+  main.innerHTML = `${digitalPaymentPanel()}<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
  <form id="create-form" class="card"><h2>2. Создать магазин</h2><label for="new-template">Шаблон витрины</label><select id="new-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><p id="template-description"></p><a id="template-preview" href="/templates/minimal" target="_blank" rel="noopener">Открыть предпросмотр шаблона ↗</a><label class="seed-choice"><input id="seed-products" type="checkbox" disabled> Добавить примерные товары</label><p>Примерные цены, остатки и иллюстрации замените перед активацией магазина.</p><label for="new-name">Название</label><input id="new-name" required maxlength="200" placeholder="Мой магазин"><label for="new-slug">Slug для ссылки</label><input id="new-slug" required maxlength="80" pattern="[a-z0-9][a-z0-9-]*" placeholder="my-store"><label for="new-description">Описание</label><textarea id="new-description" maxlength="2000"></textarea><label for="new-currency">Основная валюта</label><select id="new-currency">${['BYN', 'RUB', 'KZT', 'USD', 'EUR'].map((c) => `<option>${c}</option>`).join('')}</select><label for="new-accent">Основной цвет</label><input id="new-accent" type="color" value="#354f46"><button class="primary" type="submit" style="margin-top:16px">Создать демо</button><details><summary>Создать из готового JSON</summary><p>Если поле заполнено, используется JSON вместо полей выше. Формат соответствует API фабрики.</p><textarea id="new-json" aria-label="JSON магазина" placeholder="Вставьте JSON магазина"></textarea></details></form>
- <div id="copy-status" role="status"></div><h2>3. Магазины</h2><div id="store-list">${stores.map((s, i) => `<section class="card" data-store-id="${s.id}"><h3>${escapeText(s.name)}</h3><p>${s.status === 'demo' ? 'Демонстрация' : s.acceptingOrders ? 'Активный магазин' : 'Приём заказов приостановлен'} · ${s.ownerLinked ? 'Владелец подключён' : 'Владелец не подключён'}</p><p><a href="/${s.status === 'demo' ? 'demo' : 'shop'}/${escapeText(s.slug)}" target="_blank" rel="noopener">Открыть сайт</a></p><label for="owner-${i}">${s.ownerLinked ? 'Telegram ID нового владельца' : 'Числовой Telegram ID владельца'}</label><input id="owner-${i}" inputmode="numeric" placeholder="ID, который показал бот после /start"><button data-invite="${i}" style="margin-top:12px">${s.ownerLinked ? 'Передать магазин' : 'Создать приглашение'}</button><div id="invite-${i}"></div><div class="actions" style="margin-top:16px"><button class="primary" data-edit="${i}">Редактировать магазин</button><button data-copy="${i}">Копировать магазин</button>${s.status === 'demo' ? `<button class="primary" data-activate="${i}" ${s.ownerLinked ? '' : 'disabled'}>Активировать магазин</button>` : ''}${s.status === 'active' ? `<button data-intake="${i}">${s.acceptingOrders ? 'Приостановить заказы' : 'Возобновить заказы'}</button>` : `<button class="danger" data-delete-demo="${i}">Удалить демо</button>`}<button data-export="${i}">Экспорт JSON</button></div></section>`).join('') || '<p>Создайте первый магазин.</p>'}</div><button data-action="refresh">Обновить список</button>`;
+ <div id="copy-status" role="status"></div><h2>3. Магазины</h2><div id="store-list">${stores.map((s, i) => `<section class="card" data-store-id="${s.id}"><h3>${escapeText(s.name)}</h3><p>${s.status === 'demo' ? 'Демонстрация' : s.acceptingOrders ? 'Активный магазин' : 'Приём заказов приостановлен'} · ${s.ownerLinked ? 'Владелец подключён' : 'Владелец не подключён'}</p><p><a href="/${s.status === 'demo' ? 'demo' : 'shop'}/${escapeText(s.slug)}" target="_blank" rel="noopener">Открыть сайт</a></p><label for="owner-${i}">${s.ownerLinked ? 'Telegram ID нового владельца' : 'Числовой Telegram ID владельца'}</label><input id="owner-${i}" inputmode="numeric" placeholder="ID, который показал бот после /start"><button data-invite="${i}" style="margin-top:12px">${s.ownerLinked ? 'Передать магазин' : 'Создать приглашение'}</button><div id="invite-${i}"></div><div class="actions" style="margin-top:16px"><button class="primary" data-edit="${i}">Редактировать магазин</button><button data-copy="${i}">Копировать магазин</button>${s.status === 'demo' ? `<button class="primary" data-activate="${i}" ${s.ownerLinked ? '' : 'disabled'}>Активировать магазин</button>` : ''}${s.status === 'active' ? `<button data-intake="${i}">${s.acceptingOrders ? 'Приостановить заказы' : 'Возобновить заказы'}</button>` : `<button class="danger" data-delete-demo="${i}">Удалить демо</button>`}<button data-export="${i}">Экспорт JSON</button></div>${invoicePanel(s, i)}</section>`).join('') || '<p>Создайте первый магазин.</p>'}</div><button data-action="refresh">Обновить список</button>`;
 }
 document.getElementById('logout').addEventListener('click', () => {
   apiKey = '';
@@ -101,6 +159,22 @@ document.addEventListener('submit', async (event) => {
       templates = await templateResponse.json();
       document.getElementById('platform-key').value = '';
       await refresh();
+    } else if (form.dataset.invoiceStore) {
+      const rawAmount = form.elements.amount.value.trim().replace(',', '.');
+      if (!/^\d+(\.\d{1,2})?$/.test(rawAmount))
+        throw new Error('Введите сумму с точностью до двух знаков');
+      const [whole, fraction = ''] = rawAmount.split('.');
+      const amountMinor = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+      if (!Number.isSafeInteger(amountMinor)) throw new Error('Некорректная сумма');
+      const result = await request('stores/' + form.dataset.invoiceStore + '/invoices', 'POST', {
+        id: form.elements.invoiceId.value,
+        amountMinor,
+        currency: form.elements.currency.value,
+        title: form.elements.title.value,
+        description: form.elements.description.value,
+      });
+      await refresh();
+      notice('Счёт создан. Клиент может открыть его командой /pay. Номер: ' + result.id);
     } else if (form.id === 'create-form') {
       const raw = document.getElementById('new-json').value.trim();
       const input = raw
@@ -136,12 +210,26 @@ document.addEventListener('click', async (event) => {
     button.dataset.edit === undefined &&
     button.dataset.copy === undefined &&
     button.dataset.intake === undefined &&
+    button.dataset.reconcile === undefined &&
     button.dataset.deleteDemo === undefined
   )
     return;
   button.disabled = true;
   notice('');
   try {
+    if (button.dataset.reconcile !== undefined) {
+      const invoice = invoices.find((x) => x.id === button.dataset.reconcile);
+      if (!invoice) throw new Error('Обновите список счетов');
+      const remoteUuid = prompt(
+        'UUID счёта из кабинета Tribute (для проверки после обрыва соединения):',
+      );
+      if (!remoteUuid) return;
+      await request('invoices/' + invoice.id + '/reconcile', 'POST', {
+        remoteUuid: remoteUuid.trim(),
+      });
+      await refresh();
+      notice('Статус счёта обновлён.');
+    }
     if (button.dataset.action === 'telegram') {
       await request('telegram/setup', 'POST', {});
       notice('Бот настроен. Отправьте ему /start, чтобы узнать Telegram ID.');
