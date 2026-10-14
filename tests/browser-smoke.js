@@ -149,21 +149,6 @@ try {
   await editor.locator('#notice').filter({ hasText: 'Логотип загружен' }).waitFor();
   await editor.getByRole('button', { name: 'Сохранить настройки' }).click();
   await editor.locator('#notice').filter({ hasText: 'Настройки сохранены' }).waitFor();
-  await activeShop.locator('summary').filter({ hasText: 'Оплата Tribute' }).click();
-  const invoiceForm = activeShop.locator('form[data-invoice-store]');
-  await invoiceForm.locator('[name=title]').fill('Online store setup');
-  await invoiceForm.locator('[name=description]').fill('Telegram store management setup');
-  await invoiceForm.locator('[name=amount]').fill('125.00');
-  await invoiceForm.locator('[name=currency]').selectOption('EUR');
-  await invoiceForm.getByRole('button', { name: 'Создать счёт', exact: true }).click();
-  await page.locator('#notice').filter({ hasText: 'Счёт создан' }).waitFor();
-  const bills = await req('/api/platform/stores/' + shop.id + '/invoices', 'GET', undefined, { Authorization: 'Bearer ' + PLATFORM });
-  assert.equal(bills.status, 200);
-  assert.equal(bills.body.length, 1);
-  assert.equal(bills.body[0].amountMinor, 12500);
-  assert.equal(bills.body[0].currency, 'eur');
-  await activeShop.locator('summary').filter({ hasText: 'Оплата Tribute' }).click();
-  await activeShop.getByRole('link', { name: 'Открыть оплату ↗' }).waitFor();
   assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
   await page.getByRole('button', { name: 'Все магазины', exact: false }).click();
   const answers = ['Browser clone', 'browser-clone'];
@@ -203,6 +188,23 @@ try {
   page.once('dialog', (dialog) => dialog.accept());
   await activeShop.getByRole('button', { name: 'Возобновить заказы', exact: true }).click();
   await activeShop.getByRole('button', { name: 'Приостановить заказы', exact: true }).waitFor();
+  await activeShop.locator('summary').filter({ hasText: 'Оплата Tribute' }).click();
+  const invoiceForm = activeShop.locator('form[data-invoice-store]');
+  await invoiceForm.locator('[name=title]').fill('Online store setup');
+  await invoiceForm.locator('[name=description]').fill('Telegram store management setup');
+  await invoiceForm.locator('[name=amount]').fill('125.00');
+  await invoiceForm.locator('[name=currency]').selectOption('EUR');
+  await invoiceForm.getByRole('button', { name: 'Создать счёт', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Счёт создан' }).waitFor();
+  const bills = await req('/api/platform/stores/' + shop.id + '/invoices', 'GET', undefined, {
+    Authorization: 'Bearer ' + PLATFORM,
+  });
+  assert.equal(bills.status, 200);
+  assert.equal(bills.body.length, 1);
+  assert.equal(bills.body[0].amountMinor, 12500);
+  assert.equal(bills.body[0].currency, 'eur');
+  await activeShop.locator('summary').filter({ hasText: 'Оплата Tribute' }).click();
+  await activeShop.getByRole('link', { name: 'Открыть оплату ↗' }).waitFor();
   assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
   const stockFixture = await req(
     '/api/platform/stores/' + shop.id + '/products',
