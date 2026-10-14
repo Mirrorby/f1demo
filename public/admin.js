@@ -1,11 +1,21 @@
 'use strict';
 const tg = window.Telegram?.WebApp;
 const platformMode = document.body.dataset.mode === 'platform';
+if (document.body.classList.contains('delokay-app')) {
+  const applyTheme = () => {
+    document.body.dataset.theme =
+      tg?.colorScheme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  };
+  applyTheme();
+  tg?.onEvent?.('themeChanged', applyTheme);
+}
 let platformKey = '';
 function emptyStore() {
-  document.getElementById('store-name').textContent = 'Магазин не подключён';
-  main.innerHTML =
-    '<div class="card"><h2>Подключить магазин</h2><p>Получите персональную ссылку приглашения от разработчика и откройте её в Telegram.</p><p>Оформить заказ на создание сайта можно в разделе «Оплата».</p><button class="primary" data-tab="payments">Перейти к оплате</button></div>';
+  document.getElementById('store-name').textContent = 'Ваши инструменты';
+  main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">ДОБРО ПОЖАЛОВАТЬ В DELOKAY</span><h2>Начнём с вашего магазина</h2><p>Создайте онлайн-каталог, добавляйте товары и принимайте заказы прямо в Telegram.</p><div class="actions"><button class="primary" data-tab="payments">Начать с каталога →</button></div></section>
+    <div class="section-label">Ваши инструменты</div>
+    <section class="card"><div class="tool-row"><div class="empty-visual">▦</div><div class="tool-copy"><h3>Каталоги</h3><p>Первый инструмент Delokay</p></div><span class="badge">Доступен</span></div></section>
+    <p class="section-caption">После оформления заказа мы отправим вам приглашение для подключения магазина.</p>`;
 }
 function paymentButton(url, label) {
   return `<button class="primary" data-payment-url="${esc(url)}">${esc(label)}</button>`;
@@ -32,6 +42,14 @@ async function showPayments(seq) {
     }
     <h3>Мои покупки и счета</h3>${purchases.map((p) => `<div class="card"><h3>${esc(p.title)}</h3><p>${(p.amountMinor / 100).toFixed(2)} ${esc(p.currency.toUpperCase())}</p><p>${esc(labels[p.status] || p.status)}</p>${p.paymentUrl && p.status === 'pending' ? paymentButton(p.paymentUrl, 'Оплатить через Tribute') : ''}</div>`).join('') || '<p>Покупок и счетов пока нет.</p>'}
     <button data-tab="payments">Обновить оплату</button>`;
+}
+function moreScreen() {
+  main.innerHTML = `<div class="section-label">Ваши инструменты</div><div class="more-list">
+    ${store ? '<button class="more-link" data-tab="site"><span class="more-icon mint">↗</span><span class="more-copy"><strong>Мой сайт</strong><small>Ссылка на вашу витрину и её статус</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${store ? '<button class="more-link" data-tab="settings"><span class="more-icon">⚙</span><span class="more-copy"><strong>Настройки</strong><small>Оформление магазина, контакты и доставка</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${!platformMode ? '<button class="more-link" data-tab="payments"><span class="more-icon mint">▣</span><span class="more-copy"><strong>Оплата</strong><small>Услуги Delokay, история покупок и Tribute</small></span><span class="more-chevron">›</span></button>' : ''}
+    </div>
+    <div class="section-label">Delokay</div><div class="hint-strip">Меньше рутины. Больше дела. ✨<br>Новые инструменты будут появляться здесь по мере запуска.</div>`;
 }
 function storeState() {
   return store.status === 'demo'
@@ -114,19 +132,39 @@ async function show(next = tab) {
   tab = next;
   edited = null;
   notice('');
+  const selectedNav = ['settings', 'site', 'payments'].includes(tab) ? 'more' : tab;
   document
-    .querySelectorAll('[data-tab]')
-    .forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+    .querySelectorAll('#nav [data-tab]')
+    .forEach((b) => b.classList.toggle('active', b.dataset.tab === selectedNav));
   const seq = ++generation;
   try {
     if (tab === 'payments' && !platformMode) {
       await showPayments(seq);
+    } else if (tab === 'more') {
+      moreScreen();
     } else if (!store) {
       emptyStore();
     } else if (tab === 'home') {
       await reload();
       if (seq !== generation) return;
-      main.innerHTML = `<div class="stats"><div class="card"><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div><div class="card"><div class="stat">${store.stats.newOrderCount}</div><p>Новых заказов</p></div></div><div class="card"><h2>Всё под рукой</h2><p>Каталог и настройки обновляются на сайте сразу после сохранения.</p><div class="actions"><button class="primary" data-action="add">Добавить товар</button><button data-tab="orders">Посмотреть заказы</button></div></div><div class="card"><h3>${storeState()}</h3><p>${store.status === 'demo' ? 'Заказы отключены. После продажи разработчик активирует магазин.' : 'Новые заказы появятся в Telegram и в разделе «Заказы».'}</p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть мой сайт</a></div>`;
+      main.innerHTML = `<section class="card hero-card">
+      <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
+      <h2>Всё под рукой</h2>
+      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>
+      <div class="actions"><button class="primary" data-action="add">Добавить товар →</button></div>
+    </section>
+    <div class="section-label">Обзор магазина</div>
+    <div class="stats">
+      <div class="card"><div class="stat-symbol">▦</div><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div>
+      <div class="card"><div class="stat-symbol mint">▤</div><div class="stat">${store.stats.newOrderCount}</div><p>Новых заказов</p></div>
+    </div>
+    <div class="section-label">Быстрые действия</div>
+    <div class="quick-grid">
+      <button class="quick-action" data-tab="products"><span class="quick-icon">▦</span><span>Все товары →</span></button>
+      <button class="quick-action" data-tab="orders"><span class="quick-icon mint">▤</span><span>Посмотреть заказы →</span></button>
+    </div>
+    <div class="section-label">Ваш сайт</div>
+    <div class="card"><div class="status-row"><span class="status-indicator"></span><div><h3>${storeState()}</h3><p class="muted">${store.status === 'demo' ? 'Заказы отключены в демонстрационном режиме.' : 'Новые заказы появятся здесь и в Telegram.'}</p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть витрину ↗</a></div></div></div>`;
     } else if (tab === 'products') {
       await reload();
       if (seq !== generation) return;
@@ -538,7 +576,7 @@ document.addEventListener('submit', async (event) => {
     if (!stores.length) {
       document.getElementById('store-name').textContent = 'Мой кабинет';
       document.querySelectorAll('#nav [data-tab]').forEach((button) => {
-        button.disabled = !['home', 'payments'].includes(button.dataset.tab);
+        button.disabled = !['home', 'more'].includes(button.dataset.tab);
       });
       await show(tab);
       return;
