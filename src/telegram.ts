@@ -1,4 +1,5 @@
 import { paymentMenu } from './tribute';
+import botCommands from './telegram-commands.json';
 import { digest, equalSecret } from './auth';
 import { stmt, ownedStore, storeMutationGuard } from './catalog';
 import { changeStatus } from './orders';
@@ -76,6 +77,11 @@ async function menu(env: Env, user: string) {
         'Ваш Telegram ID: ' +
         user +
         '\nПопросите разработчика прислать персональную ссылку подключения магазина.',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Оплата / Payments', web_app: { url: origin(env) + '/admin?tab=payments' } }],
+        ],
+      },
     });
     return;
   }
@@ -226,6 +232,15 @@ export async function flushNotifications(env: Env, onlyOrder?: string) {
   }
 }
 
+export async function setupTelegramCommands(env: Env) {
+  for (const type of ['default', 'all_private_chats'])
+    for (const language of ['', 'ru', 'en'])
+      await telegram(env, 'setMyCommands', {
+        scope: { type },
+        language_code: language,
+        commands: language === 'ru' ? botCommands.ru : botCommands.en,
+      });
+}
 export async function setupTelegram(env: Env) {
   const base = origin(env);
   requireThat(base.startsWith('https://'), 'Настройте HTTPS PUBLIC_ORIGIN', 503);
@@ -242,14 +257,7 @@ export async function setupTelegram(env: Env) {
     secret_token: env.TELEGRAM_WEBHOOK_SECRET,
     allowed_updates: ['message', 'callback_query'],
   });
-  await telegram(env, 'setMyCommands', {
-    commands: [
-      { command: 'start', description: 'Подключить магазин' },
-      { command: 'admin', description: 'Управлять магазином' },
-      { command: 'shop', description: 'Мой сайт' },
-      { command: 'pay', description: 'Оплата / Payments' },
-    ],
-  });
+  await setupTelegramCommands(env);
   await telegram(env, 'setChatMenuButton', {
     menu_button: { type: 'web_app', text: 'Мой магазин', web_app: { url: base + '/admin' } },
   });

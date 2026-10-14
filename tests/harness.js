@@ -87,7 +87,7 @@ export async function start(overrides = {}) {
       {
         name: 'platform-text',
         setup(b) {
-          b.onLoad({ filter: /public\/platform\.js$/ }, async (args) => ({
+          b.onLoad({ filter: /public\/(platform\.js|admin\.(js|html))$/ }, async (args) => ({
             contents: 'export default ' + JSON.stringify(await readFile(args.path, 'utf8')),
             loader: 'js',
           }));

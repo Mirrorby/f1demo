@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import { createServer } from 'node:http';
 import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
-import { start, stop, mf, req, PLATFORM, TRIBUTE, mockProduct } from './harness.js';
+import { start, stop, mf, req, PLATFORM, TRIBUTE, mockProduct, initData, shop } from './harness.js';
 let browser, server;
 try {
   mockProduct({ type: 'custom', status: 'new' });
@@ -60,6 +60,40 @@ try {
   await page
     .getByText('Online store setup · 100.00 EUR · Telegram ID: 333 · Оплачено', { exact: true })
     .waitFor();
+  const mini = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const errors = [];
+  mini.on('pageerror', (e) => errors.push(e.message));
+  let owner = 333;
+  await mini.route('https://telegram.org/js/**', (route) =>
+    route.fulfill({
+      contentType: 'application/javascript',
+      body: `window.Telegram={WebApp:{initData:${JSON.stringify(initData(owner))},ready(){},expand(){},openTelegramLink(url){window.__paymentLink=url}}};`,
+    }),
+  );
+  const origin = 'http://127.0.0.1:' + server.address().port;
+  await mini.goto(origin + '/admin');
+  await mini.getByRole('heading', { name: 'Подключить магазин', exact: true }).waitFor();
+  assert.equal(await mini.getByRole('button', { name: 'Товары', exact: true }).isDisabled(), true);
+  await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
+  await mini.getByRole('heading', { name: 'Мои покупки и счета', exact: true }).waitFor();
+  await mini.getByText('Покупка подтверждена', { exact: true }).waitFor();
+  await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).click();
+  assert.equal(
+    await mini.evaluate(() => window.__paymentLink),
+    'https://t.me/tribute/app?startapp=pH0x',
+  );
+  assert.ok(await mini.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  owner = 111;
+  await mini.goto(origin + '/admin?store=' + shop.id);
+  await mini.getByText('Всё под рукой', { exact: true }).waitFor();
+  await mini.getByRole('button', { name: 'Оплата', exact: true }).click();
+  await mini.getByText('Покупок и счетов пока нет.', { exact: true }).waitFor();
+  owner = 777;
+  await mini.goto(origin + '/admin?tab=payments');
+  await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
+  assert.equal(await mini.locator('#store-name').innerText(), 'Мой кабинет');
+  assert.equal(await mini.getByText('Покупка подтверждена', { exact: true }).count(), 0);
+  assert.deepEqual(errors, []);
   console.log(
     'Digital product browser check passed: exact H0x link, no Shop form, signed receipt visible in dashboard.',
   );

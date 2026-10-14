@@ -12,6 +12,7 @@ import {
   WEBHOOK,
   notifications,
   mockProduct,
+  initData,
 } from './harness.js';
 before(() => start({ TRIBUTE_SHOP_ID: '', TRIBUTE_PRODUCT_URL: 'https://web.tribute.tg/p/H0x' }));
 after(stop);
@@ -158,6 +159,25 @@ test('private bridge verifies signatures, ignores non-payment probes and is unav
     'ignored',
   );
   assert.equal((await req('/receiveEvent', 'POST', e)).status, 404);
+});
+
+test('Mini App payments authenticate Telegram users without requiring an owned store and isolate receipts', async () => {
+  for (const path of ['/api/admin/payments', '/api/admin/payments/config'])
+    assert.equal((await req(path)).status, 401);
+  const headers = { Authorization: 'tma ' + initData(333) };
+  const config = await req('/api/admin/payments/config', 'GET', undefined, headers);
+  assert.equal(config.status, 200);
+  assert.equal(config.body.productId, 456);
+  assert.ok(!JSON.stringify(config.body).includes(TRIBUTE));
+  const history = await req('/api/admin/payments', 'GET', undefined, headers);
+  assert.equal(history.status, 200);
+  assert.ok(history.body.some((p) => p.id === 'digital:9001'));
+  assert.ok(history.body.every((p) => p.ownerId === '333'));
+  assert.ok(history.body.every((p) => p.id !== 'digital:9005'));
+  const newcomer = await req('/api/admin/payments', 'GET', undefined, {
+    Authorization: 'tma ' + initData(777),
+  });
+  assert.deepEqual(newcomer.body, []);
 });
 
 test('custom product resolves without a digital filter and explains manual fulfillment', async () => {

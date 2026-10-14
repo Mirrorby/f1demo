@@ -1,0 +1,14 @@
+{
+  "ru": [
+    { "command": "start", "description": "Подключить магазин" },
+    { "command": "admin", "description": "Управлять магазином" },
+    { "command": "shop", "description": "Мой сайт" },
+    { "command": "pay", "description": "Оплата услуг" }
+  ],
+  "en": [
+    { "command": "start", "description": "Connect your store" },
+    { "command": "admin", "description": "Manage your store" },
+    { "command": "shop", "description": "My website" },
+    { "command": "pay", "description": "Payments" }
+  ]
+}

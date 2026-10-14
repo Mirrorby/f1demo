@@ -1,5 +1,7 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import platformScript from '../public/platform.js';
+import adminScript from '../public/admin.js';
+import adminPage from '../public/admin.html';
 import { digitalWebhook } from './tribute-digital';
 import {
   createInvoice,
@@ -99,6 +101,21 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         'Content-Type': 'application/javascript; charset=utf-8',
         'Cache-Control': 'no-cache',
         'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  if (
+    ['/admin', '/admin/', '/admin.html', '/admin.js'].includes(path) &&
+    (method === 'GET' || method === 'HEAD')
+  )
+    return new Response(method === 'HEAD' ? null : path === '/admin.js' ? adminScript : adminPage, {
+      headers: {
+        'Content-Type':
+          path === '/admin.js'
+            ? 'application/javascript; charset=utf-8'
+            : 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
       },
     });
   if (path === '/api/health' && method === 'GET') return json({ ok: true });
@@ -220,6 +237,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
     const isPlatform = path.startsWith('/api/platform/');
     const owner = isPlatform ? null : await telegramAuth(request, env);
+    if (path === '/api/admin/payments/config' && method === 'GET')
+      return json(await tributeConfig(env));
+    if (path === '/api/admin/payments' && method === 'GET')
+      return json(await listInvoices(env, undefined, owner!));
     if (path === '/api/admin/stores' && method === 'GET') {
       const stores = await stmt(
         env,
