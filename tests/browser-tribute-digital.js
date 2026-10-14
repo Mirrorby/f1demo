@@ -128,6 +128,15 @@ try {
   await paymentReload;
   await mini.getByRole('button', { name: 'Заказать через Tribute', exact: true }).waitFor();
   assert.equal(await mini.getByText('Не удалось подключиться.', { exact: false }).count(), 0);
+  await mini.evaluate(() => window.DelokayI18n.set('en'));
+  await mini.getByRole('button', { name: 'Home', exact: true }).waitFor();
+  await mini.getByRole('button', { name: 'More', exact: true }).click();
+  await mini.getByRole('button', { name: 'Payments', exact: true }).click();
+  await mini.getByRole('heading', { name: 'Service payments', exact: true }).waitFor();
+  await mini.locator('#locale-switch').click();
+  await mini.getByRole('heading', { name: 'Оплата услуг', exact: true }).waitFor();
+  await mini.reload();
+  await mini.getByRole('button', { name: 'Главная', exact: true }).waitFor();
   assert.equal(legacyScripts, 0);
   assert.deepEqual(errors, []);
   console.log(
