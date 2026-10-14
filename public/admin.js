@@ -251,7 +251,11 @@ async function show(next = tab) {
       renderOrdersList();
     } else if (tab === 'settings') renderSettings();
     else if (tab === 'site')
-      main.innerHTML = `<h2>Мой сайт</h2><div class="card"><h3>${esc(store.name)}</h3><p>${storeState()}</p><p><a href="${esc(siteUrl())}" target="_blank" rel="noopener">${esc(siteUrl())}</a></p><button class="primary" data-action="copy">Скопировать ссылку</button></div>`;
+      main.innerHTML = `<div class="row between page-heading"><div><h2>Мой сайт</h2><p class="section-caption">Ссылка на витрину</p></div></div>
+        <div class="card site-overview"><div class="row between"><h3 data-no-i18n>${esc(store.name)}</h3><span class="badge">${storeState()}</span></div>
+        <p class="section-caption">${store.status==='demo'?'Заказы отключены в демонстрационном режиме.':'Магазин готов делиться с клиентами.'}</p>
+        <div class="site-link" data-no-i18n>${esc(siteUrl())}</div>
+        <div class="actions"><button class="primary" data-action="copy">Скопировать ссылку</button><a class="site-open-link" href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть витрину ↗</a></div></div>`;
   } catch (e) {
     if (seq !== generation) return;
     notice(e.message);
