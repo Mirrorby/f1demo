@@ -1,14 +1,46 @@
 {
   "ru": [
-    { "command": "start", "description": "Подключить магазин" },
-    { "command": "admin", "description": "Управлять магазином" },
-    { "command": "shop", "description": "Мой сайт" },
-    { "command": "pay", "description": "Оплата услуг" }
+    {
+      "command": "start",
+      "description": "Главное меню"
+    },
+    {
+      "command": "shop",
+      "description": "Открыть Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "Оплата и покупки"
+    },
+    {
+      "command": "help",
+      "description": "Помощь и инструкции"
+    },
+    {
+      "command": "language",
+      "description": "Выбрать язык"
+    }
   ],
   "en": [
-    { "command": "start", "description": "Connect your store" },
-    { "command": "admin", "description": "Manage your store" },
-    { "command": "shop", "description": "My website" },
-    { "command": "pay", "description": "Payments" }
+    {
+      "command": "start",
+      "description": "Main menu"
+    },
+    {
+      "command": "shop",
+      "description": "Open Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "Payments and purchases"
+    },
+    {
+      "command": "help",
+      "description": "Help and instructions"
+    },
+    {
+      "command": "language",
+      "description": "Choose language"
+    }
   ]
 }
