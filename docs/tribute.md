@@ -91,7 +91,7 @@ shop_order_refunded регистрируется как refund_reported: это 
 
 ## Список команд Telegram
 
-Delokay: команды start/shop/pay/help/language задаются из общего src/telegram-commands.json. Обработчик продолжает принимать старую /admin для совместимости. Скрипт telegram:setup и настройка в /platform публикуют языковые команды, названия, короткое и полное описание бота (src/telegram-profile.json). Кнопка «Delokay» открывает прежнюю Mini App /admin; раздел «Оплата» и /pay сохраняются. Язык определяется по Telegram language_code (ru или en, остальные — en), ручной выбор через /language хранится в D1 (migrations/0005_telegram_preferences.sql). Для уведомлений существующих владельцев без сохранённого языка используется ru до первого сообщения боту. Вручную выбранный язык имеет приоритет.
+Delokay: команды start/shop/pay/help/language задаются из общего src/telegram-commands.json. Обработчик продолжает принимать старую /admin для совместимости. Скрипт telegram:setup и настройка в /platform публикуют языковые команды, названия, короткое и полное описание бота (src/telegram-profile.json). Кнопка «Delokay» открывает прежнюю Mini App /admin; раздел «Оплата» и /pay сохраняются. Язык определяется по Telegram language_code (ru или en, остальные — en), ручной выбор через /language хранится в D1 (migrations/0005_telegram_preferences.sql). Для уведомлений существующих владельцев без сохранённого языка используется ru до первого сообщения боту. Вручную выбранный язык имеет приоритет. Аватар Delokay загружается отдельно через BotFather, так как Telegram Bot API не предоставляет обычного метода для смены фотографии бота.
 
 ## Проверка доставки интерфейса
 
