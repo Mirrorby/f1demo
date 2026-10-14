@@ -8,6 +8,8 @@
       "globs": [
         "**/platform.js",
         "**/admin.js",
+        "**/admin-i18n.js",
+        "**/admin.css",
         "**/admin.html",
         "**/platform.html",
         "**/platform-editor.html",
