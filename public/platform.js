@@ -33,7 +33,11 @@ async function request(path, method = 'GET', body) {
 }
 async function refresh() {
   [stores, invoices] = await Promise.all([request('stores'), request('payments')]);
-  try { paymentConfig = await request('payments/config'); } catch (e) { paymentConfig = { configured: false, error: e.message }; }
+  try {
+    paymentConfig = await request('payments/config');
+  } catch (e) {
+    paymentConfig = { configured: false, error: e.message };
+  }
   if (!editorStoreId) render();
   await updateCopies();
 }
@@ -82,14 +86,28 @@ window.addEventListener('message', (event) => {
 
 function invoicePanel(s, i) {
   const rows = invoices.filter((x) => x.storeId === s.id);
-  const labels = { creating: 'Создаётся', review: 'Нужна сверка в Tribute', pending: 'Ожидает оплаты', paid: 'Оплачено', refund_reported: 'Зарегистрирован возврат' };
+  const labels = {
+    creating: 'Создаётся',
+    review: 'Нужна сверка в Tribute',
+    pending: 'Ожидает оплаты',
+    paid: 'Оплачено',
+    refund_reported: 'Зарегистрирован возврат',
+  };
   return `<details><summary>Оплата Tribute</summary>
     <p>${escapeText(paymentConfig?.error || (paymentConfig?.configured && paymentConfig?.active && paymentConfig?.cardsEnabled && paymentConfig?.callbackMatches ? 'Tribute подключён' : 'Настройте Tribute API-ключ, Shop ID и webhook перед выставлением счетов.'))}</p>
     <p>Webhook: ${escapeText(paymentConfig?.webhookUrl || config.publicOrigin + '/api/tribute/webhook')}</p>
     <p>Клиент найдёт счёт в боте командой /pay.</p>
-    ${rows.map((x) => `<p>${escapeText(x.title)} · ${(x.amountMinor / 100).toFixed(2)} ${x.currency.toUpperCase()} · ${labels[x.status] || escapeText(x.status)}
+    ${
+      rows
+        .map(
+          (
+            x,
+          ) => `<p>${escapeText(x.title)} · ${(x.amountMinor / 100).toFixed(2)} ${x.currency.toUpperCase()} · ${labels[x.status] || escapeText(x.status)}
       ${x.paymentUrl && x.status === 'pending' ? `<a href="${escapeText(x.paymentUrl)}" target="_blank" rel="noopener">Открыть оплату ↗</a>` : ''}
-      <button data-reconcile="${x.id}">Сверить с Tribute</button></p>`).join('') || '<p>Счетов пока нет.</p>'}
+      <button data-reconcile="${x.id}">Сверить с Tribute</button></p>`,
+        )
+        .join('') || '<p>Счетов пока нет.</p>'
+    }
     <form id="invoice-form-${i}" data-invoice-store="${s.id}" class="card">
       <input type="hidden" name="invoiceId" value="${crypto.randomUUID()}">
       <label for="invoice-title-${i}">Название услуги для клиента</label><input id="invoice-title-${i}" name="title" required maxlength="100" value="Online store setup">
@@ -127,13 +145,17 @@ document.addEventListener('submit', async (event) => {
       await refresh();
     } else if (form.dataset.invoiceStore) {
       const rawAmount = form.elements.amount.value.trim().replace(',', '.');
-      if (!/^\d+(\.\d{1,2})?$/.test(rawAmount)) throw new Error('Введите сумму с точностью до двух знаков');
+      if (!/^\d+(\.\d{1,2})?$/.test(rawAmount))
+        throw new Error('Введите сумму с точностью до двух знаков');
       const [whole, fraction = ''] = rawAmount.split('.');
       const amountMinor = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
       if (!Number.isSafeInteger(amountMinor)) throw new Error('Некорректная сумма');
       const result = await request('stores/' + form.dataset.invoiceStore + '/invoices', 'POST', {
-        id: form.elements.invoiceId.value, amountMinor, currency: form.elements.currency.value,
-        title: form.elements.title.value, description: form.elements.description.value,
+        id: form.elements.invoiceId.value,
+        amountMinor,
+        currency: form.elements.currency.value,
+        title: form.elements.title.value,
+        description: form.elements.description.value,
       });
       await refresh();
       notice('Счёт создан. Клиент может открыть его командой /pay. Номер: ' + result.id);
@@ -182,9 +204,13 @@ document.addEventListener('click', async (event) => {
     if (button.dataset.reconcile !== undefined) {
       const invoice = invoices.find((x) => x.id === button.dataset.reconcile);
       if (!invoice) throw new Error('Обновите список счетов');
-      const remoteUuid = prompt('UUID счёта из кабинета Tribute (для проверки после обрыва соединения):');
+      const remoteUuid = prompt(
+        'UUID счёта из кабинета Tribute (для проверки после обрыва соединения):',
+      );
       if (!remoteUuid) return;
-      await request('invoices/' + invoice.id + '/reconcile', 'POST', { remoteUuid: remoteUuid.trim() });
+      await request('invoices/' + invoice.id + '/reconcile', 'POST', {
+        remoteUuid: remoteUuid.trim(),
+      });
       await refresh();
       notice('Статус счёта обновлён.');
     }

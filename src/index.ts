@@ -1,4 +1,11 @@
-import { createInvoice, listInvoices, tributeConfig, tributeWebhook, reconcileInvoice, flushPaymentNotifications } from './tribute';
+import {
+  createInvoice,
+  listInvoices,
+  tributeConfig,
+  tributeWebhook,
+  reconcileInvoice,
+  flushPaymentNotifications,
+} from './tribute';
 import { platformAuth, telegramAuth } from './auth';
 import {
   catalog,
@@ -117,13 +124,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
   if (path.startsWith('/api/platform/')) {
     await platformAuth(request, env);
-    if (path === '/api/platform/payments/config' && method === 'GET') return json(await tributeConfig(env));
+    if (path === '/api/platform/payments/config' && method === 'GET')
+      return json(await tributeConfig(env));
     if (path === '/api/platform/payments' && method === 'GET') return json(await listInvoices(env));
     const invoiceStore = path.match(/^\/api\/platform\/stores\/([a-f0-9-]{36})\/invoices$/);
     if (invoiceStore) {
       if (method === 'GET') return json(await listInvoices(env, invoiceStore[1]));
       if (method === 'POST') {
-        const s = await stmt(env, 'SELECT * FROM stores WHERE id=?', invoiceStore[1]).first<StoreRow>();
+        const s = await stmt(
+          env,
+          'SELECT * FROM stores WHERE id=?',
+          invoiceStore[1],
+        ).first<StoreRow>();
         requireThat(s, 'Магазин не найден', 404);
         return json(await createInvoice(env, s, await jsonBody(request)), 201);
       }

@@ -31,7 +31,10 @@ export function deploymentConfig(source, values) {
     origin.hash
   )
     throw new Error('PUBLIC_ORIGIN must be an HTTPS origin, without a path or credentials.');
-  config.vars = { ...config.vars, BOT_USERNAME: bot, PUBLIC_ORIGIN: origin.origin };
+  const tributeShop = values.TRIBUTE_SHOP_ID?.trim();
+  if (!tributeShop || !/^[1-9]\d{0,15}$/.test(tributeShop) || !Number.isSafeInteger(Number(tributeShop)))
+    throw new Error('Set TRIBUTE_SHOP_ID to the active Tribute Shop ID in Build variables.');
+  config.vars = { ...config.vars, BOT_USERNAME: bot, PUBLIC_ORIGIN: origin.origin, TRIBUTE_SHOP_ID: tributeShop };
   config.d1_databases[0].database_id = databaseId;
   const secrets = {};
   for (const key of config.secrets.required) {

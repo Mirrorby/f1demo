@@ -45,7 +45,12 @@
     "crons": ["*/10 * * * *"],
   },
   "secrets": {
-    "required": ["PLATFORM_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET", "TRIBUTE_API_KEY"],
+    "required": [
+      "PLATFORM_API_KEY",
+      "TELEGRAM_BOT_TOKEN",
+      "TELEGRAM_WEBHOOK_SECRET",
+      "TRIBUTE_API_KEY",
+    ],
   },
   "observability": {
     "logs": {

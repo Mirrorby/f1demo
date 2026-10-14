@@ -6,7 +6,8 @@
 
 1. В @tribute подключите активный **Tribute Shop** с приёмом карт. Обычный цифровой товар и OnlyStars-магазин не подходят для этой интеграции. Если раздел Shops отсутствует, уточните доступ к Shop API у поддержки Tribute.
 2. В Cloudflare → Workers → catalog-factory → Settings → Variables and Secrets добавьте **TRIBUTE_API_KEY** как Secret. Ключ не вставлять в чат, исходники или браузерную панель.
-3. Добавьте **TRIBUTE_SHOP_ID** как текстовую переменную: числовой ID нужного магазина. API GET /api/v1/shops показывает доступные активные магазины. Ключ и ID должны принадлежать одному магазину.
+   При использовании Cloudflare Builds добавьте этот ключ также в Build secrets; `deploy:cloudflare` берёт его оттуда.
+3. Добавьте **TRIBUTE_SHOP_ID** как текстовую переменную: числовой ID нужного магазина. API GET /api/v1/shops показывает доступные активные магазины. Ключ и ID должны принадлежать одному магазину. При использовании Cloudflare Builds добавьте TRIBUTE_SHOP_ID также в Build variables.
 4. В настройках этого Tribute Shop задайте callback/webhook:
    https://catalog-factory.nikita-karpof.workers.dev/api/tribute/webhook
    Если другие продукты уже используют другой webhook, сохраните их маршрутизацию: проверьте callbackUrl именно этого Shop через API.
@@ -19,9 +20,10 @@
 
 Суммы хранятся в целых центах/копейках. API:
 POST /api/platform/stores/{storeId}/invoices
-Authorization: Bearer <platform key>
+Authorization: *** key>
 
 Пример тела:
+
 ```json
 {
   "id": "11111111-1111-4111-8111-111111111111",
@@ -51,6 +53,7 @@ shop_order_refunded регистрируется как refund_reported: это 
 После настройки нужны реальная небольшая оплата, проверка подписанного webhook и появления paid в панели и /pay, затем проверка вывода средств на выбранный вами способ. Доступность оплаты зависит от магазина Tribute и банка плательщика; обещание «любой платёж из любой страны» не даётся.
 
 Источники:
+
 - https://wiki.tribute.tg/for-shops/api
 - https://wiki.tribute.tg/for-shops/api/methods
 - https://wiki.tribute.tg/for-shops/api/webhooks
