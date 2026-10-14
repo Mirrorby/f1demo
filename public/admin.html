@@ -13,7 +13,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/admin.css" />
-    <script defer src="/admin/app.js?v=20261014-delokay-ui-1"></script>
+    <script defer src="/admin-i18n.js?v=20261014-delokay-i18n-1"></script>\n    <script defer src="/admin/app.js?v=20261014-delokay-ui-1"></script>
   </head>
   <body class="delokay-app">
     <header class="app-header">
@@ -38,7 +38,7 @@
           <h1 id="store-name">Подключаем магазин…</h1>
         </div>
       </div>
-      <select id="store-picker" aria-label="Выбрать магазин" hidden></select>
+      <div class="header-controls"><button id="locale-switch" type="button" aria-label="Switch to English">🇷🇺 RU</button><select id="store-picker" aria-label="Выбрать магазин" hidden></select></div>
     </header>
     <div id="notice" role="status" hidden></div>
     <main id="main"><p>Подключаем магазин…</p></main>
