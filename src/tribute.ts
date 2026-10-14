@@ -9,6 +9,7 @@ import {
 } from './tribute-digital';
 import { equalSecret, digest } from './auth';
 import { stmt } from './catalog';
+import { notificationLanguage } from './telegram-i18n';
 import { telegram, origin } from './telegram';
 import { HttpError, int, object, requireThat, text, limitedBytes } from './validation';
 import type { StoreRow } from './types';
@@ -450,13 +451,18 @@ export async function flushPaymentNotifications(env: Env) {
     ).first<{ attempts: number }>();
     if (!lease) continue;
     try {
+      const lang = await notificationLanguage(env, n.owner_id);
       if (!(n.kind === 'paid' && n.status === 'refund_reported')) {
         await telegram(env, 'sendMessage', {
           chat_id: n.owner_id,
           text:
             (n.kind === 'paid'
-              ? 'Payment confirmed / Оплата подтверждена'
-              : 'Refund reported / Зарегистрирован возврат') +
+              ? lang === 'ru'
+                ? '✅ Оплата подтверждена'
+                : '✅ Payment confirmed'
+              : lang === 'ru'
+                ? '↩️ Зарегистрирован возврат'
+                : '↩️ Refund reported') +
             '\n' +
             n.title +
             '\n' +

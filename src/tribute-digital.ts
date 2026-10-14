@@ -1,4 +1,5 @@
 import { stmt } from './catalog';
+import { notificationLanguage } from './telegram-i18n';
 import { telegram } from './telegram';
 import { int, object, requireThat, text } from './validation';
 
@@ -212,13 +213,18 @@ export async function flushDigitalNotifications(env: Env) {
     ).first<{ attempts: number }>();
     if (!lease) continue;
     try {
+      const lang = await notificationLanguage(env, p.owner_id);
       if (!(p.kind === 'paid' && p.status === 'refund_reported'))
         await telegram(env, 'sendMessage', {
           chat_id: p.owner_id,
           text:
             (p.kind === 'paid'
-              ? 'Payment confirmed / Оплата подтверждена'
-              : 'Refund reported / Зарегистрирован возврат') +
+              ? lang === 'ru'
+                ? '✅ Оплата подтверждена'
+                : '✅ Payment confirmed'
+              : lang === 'ru'
+                ? '↩️ Зарегистрирован возврат'
+                : '↩️ Refund reported') +
             '\n' +
             p.title +
             '\n' +

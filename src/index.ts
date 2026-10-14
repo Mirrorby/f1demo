@@ -440,6 +440,25 @@ export default {
     }
   },
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(
+      (async () => {
+        const configured = await stmt(
+          env,
+          'SELECT username FROM telegram_bot_setup WHERE id=1',
+        ).first<{ username: string }>();
+        if (configured?.username === env.BOT_USERNAME) return;
+        await setupTelegram(env);
+        await stmt(
+          env,
+          'INSERT INTO telegram_bot_setup(id,username,configured_at) VALUES(1,?,unixepoch()) ON CONFLICT(id) DO UPDATE SET username=excluded.username,configured_at=excluded.configured_at',
+          env.BOT_USERNAME,
+        ).run();
+      })().catch(() =>
+        console.error(
+          JSON.stringify({ event: 'telegram_setup_retry', username: env.BOT_USERNAME }),
+        ),
+      ),
+    );
     ctx.waitUntil(flushNotifications(env));
     ctx.waitUntil(flushPaymentNotifications(env));
     await processCopy(env, origin(env), undefined, 2);
