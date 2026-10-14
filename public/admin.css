@@ -340,3 +340,503 @@ summary {
   width: auto;
   margin: 0;
 }
+
+
+/* Delokay mobile workspace. Scoped so the operator console keeps its legacy layout. */
+body.delokay-app {
+  color-scheme: light;
+  --bg: #f7f8fc;
+  --card: #ffffff;
+  --text: #253047;
+  --muted: #718096;
+  --accent: #5865e8;
+  --button-text: #ffffff;
+  --border: #e5e9f2;
+  --soft: #edefff;
+  --mint: #ddf4ec;
+  --shadow: 0 8px 28px rgb(38 50 88 / 5%);
+  background: var(--bg);
+  color: var(--text);
+  font-family: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
+body.delokay-app .app-header,
+body.delokay-app main,
+body.delokay-app #notice {
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding-inline: 20px;
+}
+body.delokay-app .app-header {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  padding-top: calc(22px + env(safe-area-inset-top));
+  padding-bottom: 16px;
+}
+body.delokay-app .app-header-main {
+  flex: 1;
+  min-width: 0;
+}
+body.delokay-app .brand-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+  letter-spacing: -0.04em;
+}
+body.delokay-app .brand-symbol {
+  display: inline-grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  flex: none;
+  border-radius: 12px;
+  color: #fff;
+  background: var(--accent);
+}
+body.delokay-app .brand-symbol svg {
+  width: 25px;
+  height: 25px;
+}
+body.delokay-app .brand-wordmark {
+  color: var(--text);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1;
+}
+body.delokay-app .store-title-block {
+  display: grid;
+  gap: 3px;
+}
+body.delokay-app .eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  color: #8893ab;
+}
+body.delokay-app h1 {
+  font-size: clamp(22px, 5.3vw, 29px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.22;
+  margin: 0;
+}
+body.delokay-app h2 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.3;
+  margin: 0 0 14px;
+}
+body.delokay-app h3 {
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+body.delokay-app p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+body.delokay-app main {
+  padding-top: 5px;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+body.delokay-app .card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 13px;
+}
+body.delokay-app button,
+body.delokay-app select,
+body.delokay-app input,
+body.delokay-app textarea {
+  border-radius: 13px;
+}
+body.delokay-app button {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-weight: 650;
+}
+body.delokay-app button:focus-visible,
+body.delokay-app input:focus-visible,
+body.delokay-app select:focus-visible,
+body.delokay-app textarea:focus-visible {
+  outline: 3px solid #5865e855;
+  outline-offset: 2px;
+}
+body.delokay-app button.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px #5865e82b;
+}
+body.delokay-app input,
+body.delokay-app select,
+body.delokay-app textarea {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+}
+body.delokay-app .page-heading {
+  margin-bottom: 16px;
+}
+body.delokay-app .page-heading h2 {
+  margin: 0;
+}
+body.delokay-app .stat {
+  color: var(--text);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+}
+body.delokay-app .stats .card {
+  border-radius: 18px;
+}
+body.delokay-app .stats p {
+  margin-bottom: 0;
+  font-size: 12px;
+}
+body.delokay-app .badge {
+  padding: 6px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #316b5a;
+  background: var(--mint);
+}
+body.delokay-app .product {
+  gap: 14px;
+  min-height: 86px;
+}
+body.delokay-app .product .info h3 {
+  margin-bottom: 4px;
+}
+body.delokay-app .product img,
+body.delokay-app .thumb {
+  width: 66px;
+  height: 66px;
+  border-radius: 13px;
+  background: #f1f2f8;
+}
+body.delokay-app .product-chevron {
+  color: var(--muted);
+  font-size: 24px;
+}
+body.delokay-app .stock-item {
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+body.delokay-app #notice {
+  background: #fff5e7;
+  color: #875327;
+  border: 1px solid #ffe4b9;
+  border-radius: 12px;
+  margin: 6px auto 12px;
+  font-weight: 600;
+}
+body.delokay-app #store-picker {
+  width: min(42%, 190px);
+  max-width: 190px;
+  min-height: 38px;
+  font-size: 11px;
+  padding: 8px 10px;
+  margin-bottom: 5px;
+}
+body.delokay-app nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: color-mix(in srgb, var(--card) 96%, transparent);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-top: 1px solid var(--border);
+  padding: 7px max(14px, env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+  box-shadow: 0 -5px 25px rgb(28 37 72 / 4%);
+}
+body.delokay-app nav button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 142px;
+  min-width: 0;
+  min-height: 57px;
+  padding: 7px 4px 5px;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 13px;
+  font-size: 11px;
+  font-weight: 650;
+}
+body.delokay-app nav button.active {
+  color: var(--accent);
+  background: var(--soft);
+  font-weight: 800;
+}
+body.delokay-app nav svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+body.delokay-app .hero-card {
+  position: relative;
+  background: linear-gradient(125deg, #ecedff, #f4f4ff 70%, #e4f4f4);
+  padding: 23px 22px;
+  overflow: hidden;
+}
+body.delokay-app .hero-card::after {
+  content: "";
+  position: absolute;
+  right: -38px;
+  top: -48px;
+  height: 160px;
+  width: 160px;
+  border: 23px solid #5865e811;
+  border-radius: 46px;
+  transform: rotate(28deg);
+  pointer-events: none;
+}
+body.delokay-app .hero-card h2 {
+  position: relative;
+  margin-bottom: 6px;
+  z-index: 1;
+}
+body.delokay-app .hero-card p,
+body.delokay-app .hero-card .actions {
+  position: relative;
+  z-index: 1;
+}
+body.delokay-app .hero-card p {
+  color: #606b85;
+  max-width: 340px;
+}
+body.delokay-app .hero-card .primary {
+  padding-inline: 17px;
+}
+body.delokay-app .section-label {
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -0.015em;
+  margin: 21px 0 10px;
+}
+body.delokay-app .home-eyebrow {
+  display: inline-flex;
+  color: #5865e8;
+  letter-spacing: 0.07em;
+  font-size: 10px;
+  font-weight: 800;
+  margin-bottom: 10px;
+}
+body.delokay-app .stat-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 35px;
+  height: 35px;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  background: var(--soft);
+  color: var(--accent);
+}
+body.delokay-app .stat-symbol.mint {
+  background: var(--mint);
+  color: #258d7e;
+}
+body.delokay-app .quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+body.delokay-app .quick-action {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+  min-height: 76px;
+  border-radius: 17px;
+  padding: 14px;
+  font-size: 12px;
+  box-shadow: var(--shadow);
+}
+body.delokay-app .quick-icon,
+body.delokay-app .more-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--accent);
+  border-radius: 12px;
+  height: 36px;
+  width: 36px;
+  font-size: 17px;
+}
+body.delokay-app .quick-icon.mint,
+body.delokay-app .more-icon.mint {
+  background: var(--mint);
+  color: #258d7e;
+}
+body.delokay-app .status-row {
+  display: flex;
+  gap: 13px;
+  align-items: start;
+}
+body.delokay-app .status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: #28ac84;
+  margin-top: 5px;
+  box-shadow: 0 0 0 5px #ddf4ec;
+}
+body.delokay-app .status-row .muted {
+  margin: 3px 0 6px;
+}
+body.delokay-app .tool-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+body.delokay-app .tool-row .tool-copy {
+  flex: 1;
+  min-width: 0;
+}
+body.delokay-app .tool-row h3 {
+  margin: 0;
+}
+body.delokay-app .tool-row p {
+  margin: 3px 0 0;
+  font-size: 12px;
+}
+body.delokay-app .more-list {
+  display: grid;
+  gap: 11px;
+}
+body.delokay-app .more-link {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  min-height: 73px;
+  gap: 15px;
+  border-radius: 18px;
+  padding: 15px;
+  width: 100%;
+}
+body.delokay-app .more-link .more-copy {
+  min-width: 0;
+  flex: 1;
+}
+body.delokay-app .more-link strong {
+  display: block;
+  font-size: 14px;
+}
+body.delokay-app .more-link small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+body.delokay-app .more-chevron {
+  font-size: 21px;
+  font-weight: 400;
+  color: var(--muted);
+}
+body.delokay-app .empty-visual {
+  display: grid;
+  place-items: center;
+  background: var(--mint);
+  color: #268b7b;
+  border-radius: 16px;
+  width: 55px;
+  height: 55px;
+  font-size: 25px;
+  margin-bottom: 14px;
+}
+body.delokay-app .section-caption {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+body.delokay-app .hint-strip {
+  border-radius: 15px;
+  border: 1px solid #dfe4fb;
+  background: #f0f2ff;
+  color: #596783;
+  padding: 14px 16px;
+  line-height: 1.6;
+  font-size: 12px;
+}
+@media (max-width: 380px) {
+  body.delokay-app .app-header,
+  body.delokay-app main,
+  body.delokay-app #notice {
+    padding-inline: 16px;
+  }
+  body.delokay-app .brand-line {
+    margin-bottom: 16px;
+  }
+  body.delokay-app .quick-action {
+    padding: 11px;
+    gap: 7px;
+  }
+  body.delokay-app .quick-icon {
+    height: 31px;
+    width: 31px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  body.delokay-app button {
+    transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  }
+  body.delokay-app button:active {
+    transform: scale(0.975);
+  }
+}
+body.delokay-app[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #131824;
+  --card: #202738;
+  --text: #f4f6fc;
+  --muted: #a4aec3;
+  --accent: #8992ff;
+  --border: #344056;
+  --soft: #2a3058;
+  --mint: #224b48;
+  --shadow: 0 8px 28px rgb(0 0 0 / 10%);
+}
+body.delokay-app[data-theme='dark'] .brand-symbol,
+body.delokay-app[data-theme='dark'] button.primary {
+  background: #5865e8;
+  color: #fff;
+}
+body.delokay-app[data-theme='dark'] .hero-card {
+  background: linear-gradient(120deg, #272c58, #232e44);
+}
+body.delokay-app[data-theme='dark'] .hero-card p {
+  color: #c0c7df;
+}
+body.delokay-app[data-theme='dark'] .hint-strip {
+  color: #c2c9e1;
+  background: #292e4c;
+  border-color: #39416a;
+}
+body.delokay-app[data-theme='dark'] .home-eyebrow {
+  color: #aab0ff;
+}
