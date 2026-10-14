@@ -1,0 +1,29 @@
+name: Delokay live smoke check
+on:
+  push:
+    branches: [feat/delokay-miniapp-redesign]
+    paths: [.github/workflows/delokay-live-smoke-once.yml]
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check deployed Delokay
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://catalog-factory.nikita-karpof.workers.dev"
+          curl -fsS --max-time 20 "$base/api/health" | grep -F '"ok":true'
+          curl -fsS --max-time 20 "$base/admin" -o /tmp/delokay-admin.html
+          grep -q 'delokay-theme-inline' /tmp/delokay-admin.html
+          grep -q 'delokay-language-inline' /tmp/delokay-admin.html
+          grep -q 'store-name' /tmp/delokay-admin.html
+          curl -fsS --max-time 20 "$base/admin/app.js" -o /tmp/delokay-app.js
+          grep -q 'product-search' /tmp/delokay-app.js
+          curl -fsS --max-time 20 "$base/platform/editor" -o /tmp/delokay-editor.html
+          grep -q 'delokay-theme-inline' /tmp/delokay-editor.html
+          health="$(curl -s -o /dev/null -w '%{http_code}' "$base/api/admin/stores")"
+          if [[ "$health" != 401 ]]; then
+            echo "Unauthorized API must return 401; got $health"
+            exit 1
+          fi
+          echo 'Delokay production smoke check passed'
