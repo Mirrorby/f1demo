@@ -341,7 +341,6 @@ summary {
   margin: 0;
 }
 
-
 /* Delokay mobile workspace. Scoped so the operator console keeps its legacy layout. */
 body.delokay-app {
   color-scheme: light;
@@ -357,7 +356,12 @@ body.delokay-app {
   --shadow: 0 8px 28px rgb(38 50 88 / 5%);
   background: var(--bg);
   color: var(--text);
-  font-family: Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family:
+    Manrope,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   font-size: 14px;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
@@ -558,7 +562,8 @@ body.delokay-app nav {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border-top: 1px solid var(--border);
-  padding: 7px max(14px, env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-right));
+  padding: 7px max(14px, env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-right));
   box-shadow: 0 -5px 25px rgb(28 37 72 / 4%);
 }
 body.delokay-app nav button {
@@ -599,7 +604,7 @@ body.delokay-app .hero-card {
   overflow: hidden;
 }
 body.delokay-app .hero-card::after {
-  content: "";
+  content: '';
   position: absolute;
   right: -38px;
   top: -48px;
@@ -803,7 +808,10 @@ body.delokay-app .hint-strip {
 }
 @media (prefers-reduced-motion: no-preference) {
   body.delokay-app button {
-    transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+    transition:
+      background 160ms ease,
+      color 160ms ease,
+      transform 160ms ease;
   }
   body.delokay-app button:active {
     transform: scale(0.975);
