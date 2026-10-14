@@ -5,6 +5,10 @@ import { build } from 'esbuild';
 import { unstable_splitSqlQuery } from 'wrangler';
 import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 export let mf, db, shop, demo, second, catalog, secondCatalog;
+export const TRIBUTE = 'local-test-tribute-secret';
+export const tributeOrders = new Map();
+let tributeFails = false;
+export function failTribute(value) { tributeFails = value; }
 let telegramFails = false;
 export function failTelegram(value) {
   telegramFails = value;
@@ -87,6 +91,8 @@ export async function start() {
       d1Databases: { DB: 'engine' },
       r2Buckets: ['IMAGES'],
       bindings: {
+        TRIBUTE_API_KEY: TRIBUTE,
+        TRIBUTE_SHOP_ID: '901',
         PLATFORM_API_KEY: PLATFORM,
         TELEGRAM_BOT_TOKEN: BOT,
         TELEGRAM_WEBHOOK_SECRET: WEBHOOK,
@@ -94,6 +100,19 @@ export async function start() {
         PUBLIC_ORIGIN: 'https://store.example',
       },
       outboundService: async (request) => {
+        const url = new URL(request.url);
+        if (url.hostname === 'tribute.tg') {
+          let data;
+          if (url.pathname === '/api/v1/shop') data = { id: 901, name: 'Catalog Factory', status: 1, onlyStars: false, callbackUrl: 'https://store.example/api/tribute/webhook' };
+          else if (url.pathname === '/api/v1/shop/orders' && request.method === 'POST') {
+            const payload = await request.json();
+            const id = crypto.randomUUID();
+            data = { ...payload, uuid: id, status: 'pending', paymentUrl: 'https://web.tribute.tg/shop/pay/' + id, onlyStars: false };
+            tributeOrders.set(id, data);
+            if (tributeFails) return new Response('{}', { status: 503 });
+          } else data = tributeOrders.get(url.pathname.split('/').at(-1));
+          return new Response(JSON.stringify(data || {}), { status: data ? 200 : 404, headers: { 'Content-Type': 'application/json' } });
+        }
         notifications.push({ path: new URL(request.url).pathname, payload: await request.json() });
         return new Response(
           JSON.stringify({

@@ -39,12 +39,13 @@
   "vars": {
     "BOT_USERNAME": "",
     "PUBLIC_ORIGIN": "http://localhost:8787",
+    "TRIBUTE_SHOP_ID": "",
   },
   "triggers": {
     "crons": ["*/10 * * * *"],
   },
   "secrets": {
-    "required": ["PLATFORM_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET"],
+    "required": ["PLATFORM_API_KEY", "TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET", "TRIBUTE_API_KEY"],
   },
   "observability": {
     "logs": {

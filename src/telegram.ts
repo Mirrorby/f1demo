@@ -1,3 +1,4 @@
+import { paymentMenu } from './tribute';
 import { digest, equalSecret } from './auth';
 import { stmt, ownedStore, storeMutationGuard } from './catalog';
 import { changeStatus } from './orders';
@@ -85,6 +86,7 @@ async function menu(env: Env, user: string) {
       reply_markup: {
         inline_keyboard: [
           [{ text: 'Управлять магазином', web_app: { url: origin(env) + `/admin?store=${s.id}` } }],
+          [{ text: 'Оплата / Payments', url: `https://t.me/${env.BOT_USERNAME}?start=payments` }],
         ],
       },
     });
@@ -161,6 +163,10 @@ export async function webhook(request: Request, env: Env, input: unknown) {
         });
         return;
       }
+    }
+    if (/^\/(pay)(\s|$|@)/.test(msg) || msg === '/start payments') {
+      await paymentMenu(env, user, text(from.language_code, 20));
+      return;
     }
     if (/^\/(start|admin|shop)(\s|$|@)/.test(msg)) await menu(env, user);
   }
@@ -241,6 +247,7 @@ export async function setupTelegram(env: Env) {
       { command: 'start', description: 'Подключить магазин' },
       { command: 'admin', description: 'Управлять магазином' },
       { command: 'shop', description: 'Мой сайт' },
+      { command: 'pay', description: 'Оплата / Payments' },
     ],
   });
   await telegram(env, 'setChatMenuButton', {
