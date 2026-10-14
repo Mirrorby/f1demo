@@ -848,3 +848,268 @@ body.delokay-app[data-theme='dark'] .hint-strip {
 body.delokay-app[data-theme='dark'] .home-eyebrow {
   color: #aab0ff;
 }
+
+/* Delokay secondary workspace screens */
+body.delokay-app .header-controls {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-bottom: 2px;
+}
+body.delokay-app #locale-switch {
+  min-height: 36px;
+  height: 36px;
+  min-width: 70px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  font-weight: 800;
+}
+body.delokay-app #store-picker {
+  width: 145px;
+  max-width: 145px;
+  margin: 0;
+}
+body.delokay-app .product-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 135px;
+  gap: 9px;
+  margin-bottom: 15px;
+}
+body.delokay-app .product-toolbar input,
+body.delokay-app .product-toolbar select {
+  min-width: 0;
+  height: 46px;
+  margin: 0;
+  border-radius: 13px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+body.delokay-app .product-toolbar select {
+  font-size: 12px;
+}
+body.delokay-app .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+body.delokay-app .page-heading .section-caption {
+  margin: 4px 0 0;
+}
+body.delokay-app .product-row {
+  min-height: 103px;
+}
+body.delokay-app .product-row .info,
+body.delokay-app .order-row .info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+  align-items: flex-start;
+}
+body.delokay-app .product-title {
+  display: block;
+  font-size: 14px;
+  line-height: 1.38;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+body.delokay-app .product-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+body.delokay-app .product-placeholder,
+body.delokay-app .order-symbol {
+  height: 66px;
+  width: 66px;
+  flex: none;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--soft);
+  color: var(--accent);
+  font-size: 26px;
+}
+body.delokay-app .order-symbol {
+  background: var(--mint);
+  color: #228978;
+}
+body.delokay-app .stock-summary {
+  margin-top: 5px;
+}
+body.delokay-app .availability-unavailable,
+body.delokay-app .order-cancelled {
+  background: #fff0f1;
+  color: #b5475a;
+}
+body.delokay-app .availability-preorder,
+body.delokay-app .order-processing {
+  background: #fff4e6;
+  color: #a46c24;
+}
+body.delokay-app .order-new {
+  background: var(--soft);
+  color: var(--accent);
+}
+body.delokay-app .order-completed {
+  background: var(--mint);
+  color: #227b65;
+}
+body.delokay-app .empty-panel {
+  text-align: center;
+  padding: 34px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+body.delokay-app .empty-panel .empty-visual {
+  margin: 0 0 16px;
+  display: grid;
+  place-items: center;
+}
+body.delokay-app .empty-panel h3 {
+  margin: 0 0 5px;
+}
+body.delokay-app .empty-panel p {
+  margin: 0 0 16px;
+  max-width: 320px;
+}
+body.delokay-app .order-filter-row {
+  margin-bottom: 15px;
+  display: grid;
+  gap: 6px;
+}
+body.delokay-app .order-filter-row label {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 750;
+}
+body.delokay-app .order-filter-row select {
+  max-width: 260px;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+body.delokay-app .pagination {
+  justify-content: center;
+  margin-top: 10px;
+}
+body.delokay-app form .card {
+  margin-bottom: 13px;
+}
+body.delokay-app .form-section-heading {
+  color: var(--text);
+  font-size: 16px;
+  margin: 0 0 18px;
+  font-weight: 800;
+}
+body.delokay-app .form-actions {
+  position: relative;
+  display: flex;
+  gap: 10px;
+}
+body.delokay-app .form-actions button.primary {
+  flex: 1;
+}
+body.delokay-app .order-total {
+  font-size: 29px;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  margin: 14px 0 0;
+  color: var(--text);
+}
+body.delokay-app .order-customer p {
+  margin: 4px 0;
+  line-height: 1.7;
+}
+body.delokay-app .order-summary {
+  margin-top: 15px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+body.delokay-app .order-lines {
+  padding: 0;
+}
+body.delokay-app .order-lines li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 12px 0;
+  border-color: var(--border);
+}
+body.delokay-app .order-lines li strong {
+  font-size: 13px;
+}
+body.delokay-app .order-lines li span {
+  font-size: 12px;
+}
+body.delokay-app .order-actions button {
+  flex: 1;
+  min-width: 104px;
+}
+body.delokay-app .payment-intro {
+  background: linear-gradient(135deg, var(--soft), var(--card));
+}
+body.delokay-app .payment-intro h3 {
+  margin: 0;
+}
+body.delokay-app .payment-offer {
+  border-color: #5865e83d;
+}
+body.delokay-app .payment-offer .primary {
+  width: 100%;
+}
+body.delokay-app .payment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+body.delokay-app .payment-item > * {
+  margin: 0;
+}
+body.delokay-app .payment-badge {
+  align-self: flex-start;
+}
+body.delokay-app .payment-item .primary {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+body.delokay-app[data-theme='dark'] .availability-unavailable,
+body.delokay-app[data-theme='dark'] .order-cancelled {
+  background: #4d2839;
+  color: #ffb4bc;
+}
+body.delokay-app[data-theme='dark'] .availability-preorder,
+body.delokay-app[data-theme='dark'] .order-processing {
+  background: #4f3a29;
+  color: #f7c98e;
+}
+@media (max-width: 380px) {
+  body.delokay-app .product-toolbar {
+    grid-template-columns: minmax(0, 1fr) 115px;
+    gap: 7px;
+  }
+  body.delokay-app .header-controls #store-picker {
+    max-width: 115px;
+  }
+  body.delokay-app .app-header {
+    gap: 8px;
+  }
+}
