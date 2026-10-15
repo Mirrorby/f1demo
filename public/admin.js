@@ -301,7 +301,7 @@ function editProduct(index) {
   edited = index === undefined ? null : products[index];
   photos = [...(edited?.photos || [])];
   const p = edited || {};
-  main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
+  main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple><label for="photo-url">Ссылка на фото</label><input id="photo-url" type="url" maxlength="1000" placeholder="https://example.com/photo.jpg"><button type="button" data-action="photo-link">Добавить фото по ссылке</button>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
  ${store.settings.currencies.map((c) => field('price-' + c, 'Цена, ' + c, (p.prices?.[c] ?? 0) / 100, 'number', true)).join('')}
  <details><summary>Дополнительные валюты и характеристики</summary>${[
    'BYN',
@@ -344,7 +344,7 @@ function editProduct(index) {
 }
 function renderSettings() {
   const s = store.settings;
-  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
+  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}<label for="store-language">Язык сайта</label><select id="store-language"><option value="ru" ${(s.language || 'ru') === 'ru' ? 'selected' : ''}>Русский</option><option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option></select><p>Язык интерфейса и стандартных текстов. Собственные названия и описания товаров редактируются отдельно.</p>${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
     ['minimal', 'Универсальный'],
     ['fashion', 'Одежда и аксессуары'],
     ['home', 'Дом и декор'],
@@ -463,6 +463,22 @@ document.addEventListener('click', async (event) => {
     }
     if (button.dataset.order !== undefined) {
       showOrder(orders[Number(button.dataset.order)]);
+      return;
+    }
+    if (button.dataset.action === 'photo-link') {
+      if (photos.length >= 8) throw new Error('Максимум 8 фотографий');
+      const input = document.getElementById('photo-url');
+      let url;
+      try {
+        url = new URL(input.value.trim());
+      } catch {
+        throw new Error('Укажите прямую HTTPS-ссылку на фото');
+      }
+      if (url.protocol !== 'https:' || url.username || url.password || url.href.length > 1000)
+        throw new Error('Укажите прямую HTTPS-ссылку на фото');
+      if (!photos.includes(url.href)) photos.push(url.href);
+      input.value = '';
+      renderPhotos();
       return;
     }
     if (button.dataset.removePhoto !== undefined) {
@@ -632,6 +648,7 @@ document.addEventListener('submit', async (event) => {
         heroTitle: val('hero-title'),
         description: val('store-description'),
         theme: val('theme'),
+        language: val('store-language'),
         accentColor: val('accent'),
         logo: val('logo'),
         whatsapp: val('whatsapp'),

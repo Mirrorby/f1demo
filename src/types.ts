@@ -1,4 +1,5 @@
 export interface Settings {
+  language: 'ru' | 'en';
   theme: 'minimal' | 'fashion' | 'home' | 'beauty';
   description: string;
   accentColor: string;

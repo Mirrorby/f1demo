@@ -186,8 +186,8 @@ function render() {
   document.getElementById('logout').hidden = false;
   templateEditor = null;
   main.innerHTML = `${digitalPaymentPanel()}${domainSetupPanel()}<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
- <form id="create-form" class="card"><h2>2. Создать магазин</h2><label for="new-template">Шаблон витрины</label><select id="new-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><p id="template-description"></p><a id="template-preview" href="/templates/minimal" target="_blank" rel="noopener">Открыть предпросмотр шаблона ↗</a><label class="seed-choice"><input id="seed-products" type="checkbox" checked> Добавить примерные товары</label><p>Примерные цены, остатки и иллюстрации замените перед активацией магазина.</p><label for="new-name">Название</label><input id="new-name" required maxlength="200" placeholder="Мой магазин"><label for="new-slug">Slug для ссылки</label><input id="new-slug" required maxlength="80" pattern="[a-z0-9][a-z0-9-]*" placeholder="my-store"><label for="new-description">Описание</label><textarea id="new-description" maxlength="2000"></textarea><label for="new-currency">Основная валюта</label><select id="new-currency">${['BYN', 'RUB', 'KZT', 'USD', 'EUR'].map((c) => `<option>${c}</option>`).join('')}</select><label for="new-accent">Основной цвет</label><input id="new-accent" type="color" value="#354f46"><button class="primary" type="submit" style="margin-top:16px">Создать демо</button><details><summary>Создать из готового JSON</summary><p>Если поле заполнено, используется JSON вместо полей выше. Формат соответствует API фабрики.</p><textarea id="new-json" aria-label="JSON магазина" placeholder="Вставьте JSON магазина"></textarea></details></form>
- <section class="card"><h2>Фото примеров в шаблонах</h2><p>Загрузите своё главное фото для каждого примерного товара. Оно появится в предпросмотре и в новых магазинах; существующие магазины сохранят свои фото.</p><div class="actions">${templates.map((t) => `<button data-template-edit="${t.id}">${escapeText(t.title)}</button>`).join('')}</div></section>
+ <form id="create-form" class="card"><h2>2. Создать магазин</h2><label for="new-template">Шаблон витрины</label><select id="new-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><p id="template-description"></p><a id="template-preview" href="/templates/minimal" target="_blank" rel="noopener">Открыть предпросмотр шаблона ↗</a><label class="seed-choice"><input id="seed-products" type="checkbox" checked> Добавить примерные товары</label><p>Примерные цены, остатки и иллюстрации замените перед активацией магазина.</p><label for="new-name">Название</label><input id="new-name" required maxlength="200" placeholder="Мой магазин"><label for="new-slug">Slug для ссылки</label><input id="new-slug" required maxlength="80" pattern="[a-z0-9][a-z0-9-]*" placeholder="my-store"><label for="new-description">Описание</label><textarea id="new-description" maxlength="2000"></textarea><label for="new-language">Язык сайта</label><select id="new-language"><option value="ru">Русский</option><option value="en">English</option></select><label for="new-currency">Основная валюта</label><select id="new-currency">${['BYN', 'RUB', 'KZT', 'USD', 'EUR'].map((c) => `<option>${c}</option>`).join('')}</select><label for="new-accent">Основной цвет</label><input id="new-accent" type="color" value="#354f46"><button class="primary" type="submit" style="margin-top:16px">Создать демо</button><details><summary>Создать из готового JSON</summary><p>Если поле заполнено, используется JSON вместо полей выше. Формат соответствует API фабрики.</p><textarea id="new-json" aria-label="JSON магазина" placeholder="Вставьте JSON магазина"></textarea></details></form>
+ <section class="card"><h2>Фото примеров в шаблонах</h2><p>Загрузите главное фото или вставьте ссылку для каждого примерного товара. Оно появится в предпросмотре и в новых магазинах; существующие магазины сохранят свои фото.</p><div class="actions">${templates.map((t) => `<button data-template-edit="${t.id}">${escapeText(t.title)}</button>`).join('')}</div></section>
  <div id="copy-status" role="status"></div><h2>3. Магазины</h2><div id="store-list">${stores.map((s, i) => `<section class="card" data-store-id="${s.id}"><h3>${escapeText(s.name)}</h3><p>${s.status === 'demo' ? 'Демонстрация' : s.acceptingOrders ? 'Активный магазин' : 'Приём заказов приостановлен'} · ${s.ownerLinked ? 'Владелец подключён' : 'Владелец не подключён'}</p><p><a href="/${s.status === 'demo' ? 'demo' : 'shop'}/${escapeText(s.slug)}" target="_blank" rel="noopener">Открыть сайт</a></p>${s.shareUrl ? `<p>Ссылка для клиента:<br><a class="share-link" href="${escapeText(s.shareUrl)}" target="_blank" rel="noopener">${escapeText(s.shareUrl)}</a></p>` : ''}<label for="owner-${i}">${s.ownerLinked ? 'Telegram ID нового владельца' : 'Числовой Telegram ID владельца'}</label><input id="owner-${i}" inputmode="numeric" placeholder="ID, который показал бот после /start"><button data-invite="${i}" style="margin-top:12px">${s.ownerLinked ? 'Передать магазин' : 'Создать приглашение'}</button><div id="invite-${i}"></div><div class="actions" style="margin-top:16px"><button class="primary" data-edit="${i}">Редактировать магазин</button><button data-copy="${i}">Копировать магазин</button>${s.status === 'demo' ? `<button class="primary" data-activate="${i}" ${s.ownerLinked ? '' : 'disabled'}>Активировать магазин</button>` : ''}${s.status === 'active' ? `<button data-intake="${i}">${s.acceptingOrders ? 'Приостановить заказы' : 'Возобновить заказы'}</button>` : `<button class="danger" data-delete-demo="${i}">Удалить демо</button>`}<button data-export="${i}">Экспорт JSON</button></div>${invoicePanel(s, i)}${domainPanel(s, i)}</section>`).join('') || '<p>Создайте первый магазин.</p>'}</div><button data-action="refresh">Обновить список</button>`;
   document.getElementById('new-template').dispatchEvent(new Event('change', { bubbles: true }));
 }
@@ -227,9 +227,14 @@ document.addEventListener('submit', async (event) => {
         'Домен добавлен. Откройте «Клиентские домены» у магазина, нажмите «Подключить / проверить» и добавьте DNS-записи.',
       );
     } else if (form.id === 'template-photos-form') {
+      const photos = {};
+      for (const input of form.querySelectorAll('[data-template-url]')) {
+        const value = input.value.trim();
+        if (value) photos[input.dataset.templateUrl] = value;
+      }
       await request('templates/' + templateEditor.id, 'PUT', {
         version: templateEditor.version,
-        photos: templateEditor.photos,
+        photos,
       });
       await refresh();
       notice('Фото шаблона сохранены. Они используются в новых магазинах.');
@@ -258,9 +263,17 @@ document.addEventListener('submit', async (event) => {
             seedProducts: document.getElementById('seed-products').checked,
             name: document.getElementById('new-name').value.trim(),
             slug: document.getElementById('new-slug').value.trim(),
-            description: document.getElementById('new-description').value.trim(),
+            description: (() => {
+              const field = document.getElementById('new-description');
+              return !field.value.trim() || field.value === field.dataset.defaultValue
+                ? undefined
+                : field.value.trim();
+            })(),
             accentColor: document.getElementById('new-accent').value,
-            settings: { currencies: [document.getElementById('new-currency').value] },
+            settings: {
+              language: document.getElementById('new-language').value,
+              currencies: [document.getElementById('new-currency').value],
+            },
           };
       const result = await request('stores', 'POST', input);
       await refresh();
@@ -470,10 +483,32 @@ document.addEventListener('input', (event) => {
 });
 
 function renderTemplateEditor() {
-  main.innerHTML = `<button data-action="back">← Все магазины</button><form id="template-photos-form" class="card"><h2>Фото шаблона: ${escapeText(templateEditor.title)}</h2><p>По одному главному фото на товар. JPEG, PNG или WebP, до 3 МБ. После загрузки нажмите «Сохранить фото шаблона».</p><div class="template-photo-grid">${templateEditor.products.map((p, i) => `<div class="card"><img class="template-photo" src="${escapeText(templateEditor.photos[i] || p.defaultPhoto)}" alt="${escapeText(p.name)}"><h3>${escapeText(p.name)}</h3><p>${escapeText(p.description)}</p><label for="template-photo-${i}">Фото товара</label><input id="template-photo-${i}" data-template-photo="${i}" type="file" accept="image/jpeg,image/png,image/webp">${templateEditor.photos[i] ? `<button type="button" data-template-reset="${i}">Вернуть иллюстрацию</button>` : ''}</div>`).join('')}</div><button class="primary" type="submit">Сохранить фото шаблона</button></form>`;
+  main.innerHTML = `<button data-action="back">← Все магазины</button><form id="template-photos-form" class="card"><h2>Фото шаблона: ${escapeText(templateEditor.title)}</h2><p>По одному главному фото на товар. JPEG, PNG или WebP, до 3 МБ. Можно загрузить файл или вставить прямую HTTPS-ссылку на фото. После изменения нажмите «Сохранить фото шаблона».</p><div class="template-photo-grid">${templateEditor.products.map((p, i) => `<div class="card"><img class="template-photo" src="${escapeText(templateEditor.photos[i] || p.defaultPhoto)}" alt="${escapeText(p.name)}"><h3>${escapeText(p.name)}</h3><p>${escapeText(p.description)}</p><label for="template-url-${i}">Ссылка на фото</label><input id="template-url-${i}" data-template-url="${i}" maxlength="1000" placeholder="https://example.com/photo.jpg" value="${escapeText(templateEditor.photos[i] || '')}"><label for="template-photo-${i}">Фото товара</label><input id="template-photo-${i}" data-template-photo="${i}" type="file" accept="image/jpeg,image/png,image/webp">${templateEditor.photos[i] ? `<button type="button" data-template-reset="${i}">Вернуть иллюстрацию</button>` : ''}</div>`).join('')}</div><button class="primary" type="submit">Сохранить фото шаблона</button></form>`;
 }
 document.addEventListener('change', async (event) => {
   const input = event.target;
+  if (input.dataset.templateUrl !== undefined) {
+    const index = Number(input.dataset.templateUrl);
+    const value = input.value.trim();
+    if (value && value !== templateEditor.photos[index]) {
+      let url;
+      try {
+        url = new URL(value);
+      } catch {
+        notice('Укажите прямую HTTPS-ссылку на фото');
+        return;
+      }
+      if (url.protocol !== 'https:' || url.username || url.password) {
+        notice('Укажите прямую HTTPS-ссылку на фото');
+        return;
+      }
+    }
+    if (value) templateEditor.photos[index] = value;
+    else delete templateEditor.photos[index];
+    input.closest('.card').querySelector('img').src =
+      value || templateEditor.products[index].defaultPhoto;
+    return;
+  }
   if (input.dataset.templatePhoto !== undefined) {
     const file = input.files[0];
     if (!file) return;
@@ -511,14 +546,31 @@ document.addEventListener('change', async (event) => {
     }
     return;
   }
-  if (event.target.id !== 'new-template') return;
-  const t = templates.find((t) => t.id === event.target.value);
-  document.getElementById('new-description').value = t.description;
-  document.getElementById('new-accent').value = t.accentColor;
+  if (!['new-template', 'new-language'].includes(event.target.id)) return;
+  const t = templates.find((t) => t.id === document.getElementById('new-template').value);
+  const language = document.getElementById('new-language').value;
+  const description = document.getElementById('new-description');
+  if (event.target.id === 'new-template')
+    document.getElementById('new-accent').value = t.accentColor;
   document.getElementById('template-description').textContent =
     t.title +
     (t.productCount ? ' · ' + t.productCount + ' примерных товаров' : ' · пустой каталог');
-  document.getElementById('template-preview').href = '/templates/' + t.id;
-  document.getElementById('seed-products').checked = t.productCount > 0;
+  document.getElementById('template-preview').href = '/templates/' + t.id + '?lang=' + language;
+  if (event.target.id === 'new-template')
+    document.getElementById('seed-products').checked = t.productCount > 0;
   document.getElementById('seed-products').disabled = !t.productCount;
+  try {
+    const response = await fetch('/api/templates/' + t.id + '?lang=' + language);
+    const preview = await response.json();
+    if (
+      document.getElementById('new-template')?.value !== t.id ||
+      document.getElementById('new-language')?.value !== language
+    )
+      return;
+    if (!description.value || description.value === description.dataset.defaultValue)
+      description.value = preview.store.settings.description;
+    description.dataset.defaultValue = preview.store.settings.description;
+  } catch {
+    if (!description.value) description.value = t.description;
+  }
 });

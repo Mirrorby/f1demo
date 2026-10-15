@@ -2,6 +2,12 @@
 (() => {
   'use strict';
   const en = {
+    'Язык сайта': 'Website language',
+    'Ссылка на фото': 'Photo URL',
+    'Добавить фото по ссылке': 'Add photo from URL',
+    'Укажите прямую HTTPS-ссылку на фото': 'Enter a direct HTTPS photo URL',
+    'Язык интерфейса и стандартных текстов. Собственные названия и описания товаров редактируются отдельно.':
+      'Language for the storefront interface and default copy. Edit your own product names and descriptions separately.',
     'ВАШЕ РАБОЧЕЕ ПРОСТРАНСТВО': 'YOUR WORKSPACE',
     'РЕДАКТОР МАГАЗИНА': 'STORE EDITOR',
     'Подключаем магазин…': 'Connecting your store…',

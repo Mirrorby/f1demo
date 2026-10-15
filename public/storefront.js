@@ -1,3 +1,7 @@
+let language = document.documentElement.lang === 'en' ? 'en' : 'ru';
+function ui(value) {
+  return language === 'en' ? STOREFRONT_EN[value] || value : value;
+}
 /* ════ DEFAULTS ════ */
 const DEFAULTS = {
   hero_title: 'Ваш магазин',
@@ -16,9 +20,9 @@ const DEFAULTS = {
   btn_clear: 'Очистить корзину',
   label_size: 'Вариант',
   label_qty: 'Количество',
-  label_year: 'Год',
+  label_year: 'Коллекция',
   label_color: 'Цвет',
-  label_number: 'Номер',
+  label_number: 'Артикул',
   label_total: 'Итого',
   label_pick: 'Выбрать параметры',
   filter_all: 'Все',
@@ -37,6 +41,8 @@ const DEFAULTS = {
   currency_secondary_code: 'RUB',
 };
 const STATUS_COLORS = {
+  'in stock': 'var(--red)',
+  preorder: '#555',
   'в наличии': 'var(--red)',
   'на заказ': '#555',
   нет: 'rgba(255,255,255,.08)',
@@ -47,7 +53,7 @@ let S = { ...DEFAULTS },
   activeCat = '',
   currency = 'primary';
 let deliveryData = null; // null = не заполнено
-let activeDelivery = 'Доставка';
+let activeDelivery = ui('Доставка');
 
 function esc(v) {
   return String(v ?? '').replace(
@@ -61,18 +67,24 @@ const slug = document.body.dataset.storeSlug || location.pathname.split('/')[2];
 const templatePreview = location.pathname.startsWith('/templates/');
 async function loadStore() {
   const r = await fetch(
-    (templatePreview ? '/api/templates/' : '/api/stores/') + encodeURIComponent(slug),
+    (templatePreview ? '/api/templates/' : '/api/stores/') +
+      encodeURIComponent(slug) +
+      (templatePreview
+        ? '?lang=' + (new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru')
+        : ''),
     { cache: 'no-store' },
   );
   const data = await r.json();
-  if (!r.ok) throw new Error(data.error || 'Не удалось загрузить магазин');
+  if (!r.ok) throw new Error(data.error || ui('Не удалось загрузить магазин'));
   currentStore = data.store;
   const cfg = currentStore.settings;
+  language = cfg.language === 'en' ? 'en' : 'ru';
+  document.documentElement.lang = language;
   document.documentElement.dataset.theme = cfg.theme || 'minimal';
   const codes = cfg.currencies,
     symbol = (c) => ({ BYN: 'Br', RUB: '₽', KZT: '₸', USD: '$', EUR: '€' })[c] || c;
   S = {
-    ...DEFAULTS,
+    ...Object.fromEntries(Object.entries(DEFAULTS).map(([k, v]) => [k, ui(v)])),
     ...cfg.texts,
     hero_title: cfg.heroTitle || currentStore.name,
     hero_subtitle: cfg.description,
@@ -108,9 +120,11 @@ async function loadStore() {
       price_secondary_orig: two,
       discount_percent: p.discountPercent,
       has_discount: p.discountPercent > 0,
-      avail: { available: 'В наличии', preorder: 'На заказ', unavailable: 'Нет в наличии' }[
-        p.availability
-      ],
+      avail: {
+        available: ui('В наличии'),
+        preorder: ui('На заказ'),
+        unavailable: ui('Нет в наличии'),
+      }[p.availability],
       photo: p.photos[0] || '',
       emoji: '◈',
     };
@@ -118,15 +132,18 @@ async function loadStore() {
   document.getElementById('cur-toggle').hidden = codes.length < 2;
   const banner = document.getElementById('demo-banner');
   banner.hidden = currentStore.status !== 'demo' && currentStore.acceptingOrders;
+  banner.textContent = ui('Демонстрационная версия. Реальные заказы отключены.');
   if (templatePreview)
-    banner.textContent =
-      'Предпросмотр шаблона · товары и цены приведены для примера · заказы отключены';
+    banner.textContent = ui(
+      'Предпросмотр шаблона · товары и цены приведены для примера · заказы отключены',
+    );
   if (currentStore.status !== 'demo' && !currentStore.acceptingOrders)
-    banner.textContent = 'Приём заказов временно приостановлен';
+    banner.textContent = ui('Приём заказов временно приостановлен');
   document.getElementById('hero-badge').textContent =
-    currentStore.status === 'demo' ? 'Демо магазина' : 'Каталог';
+    currentStore.status === 'demo' ? ui('Демо магазина') : ui('Каталог');
   const logo = document.getElementById('hero-logo');
   logo.hidden = !cfg.logo;
+  logo.alt = language === 'en' ? 'Logo' : 'Логотип';
   if (cfg.logo) logo.src = cfg.logo;
   const favicon = document.getElementById('store-favicon');
   favicon.href = cfg.logo || '/s/favicon.svg';
@@ -137,10 +154,22 @@ async function loadStore() {
 
 /* ════ SETTINGS → DOM ════ */
 function applySettings() {
+  document.querySelector('#confirm-ov .panel-title').textContent = ui('Заказ принят');
+  for (const [id, text] of [
+    ['confirm-wa-label', 'Написать в WhatsApp'],
+    ['confirm-tg-label', 'Написать в Telegram'],
+  ])
+    document.getElementById(id).textContent = ui(text);
+  document
+    .querySelectorAll('.close-btn')
+    .forEach((b) => b.setAttribute('aria-label', ui('Закрыть')));
+  document.getElementById('demo-banner').textContent ||= ui(
+    'Демонстрационная версия. Реальные заказы отключены.',
+  );
   const ac = S.accent_color || '#354f46';
   document.documentElement.style.setProperty('--red', ac);
   document.documentElement.style.setProperty('--red-dark', shadeHex(ac, -30));
-  document.title = S.site_title || 'Каталог';
+  document.title = S.site_title || ui('Каталог');
   document.getElementById('hero-title').textContent = S.hero_title;
   document.getElementById('hero-subtitle').textContent = S.hero_subtitle;
   document.getElementById('footer-text').textContent = S.footer_text;
@@ -148,7 +177,7 @@ function applySettings() {
   document.getElementById('hero-tg').href = 'https://t.me/' + tgUsername(S.telegram);
   document.getElementById('hero-ig').href = 'https://instagram.com/' + S.instagram;
   const sl = document.getElementById('hero-support-label');
-  if (sl) sl.textContent = S.support_label || 'По всем вопросам пишите нам';
+  if (sl) sl.textContent = S.support_label || ui('По всем вопросам пишите нам');
   document.getElementById('lbl-cart').textContent = S.btn_cart;
   document.getElementById('lbl-cart-title').textContent = S.btn_cart;
   document.getElementById('lbl-pick').textContent = S.label_pick;
@@ -199,15 +228,15 @@ function toggleCurrency() {
   if (document.getElementById('pm-ov').classList.contains('open') && curP) renderModalPrice(curP);
 }
 function fmt(n) {
-  return Number(n || 0).toLocaleString('ru-RU') + ' ' + curSymbol();
+  return Number(n || 0).toLocaleString(language === 'en' ? 'en-US' : 'ru-RU') + ' ' + curSymbol();
 }
 
 /* ════ RENDER ════ */
 function getCats() {
-  return [S.filter_all || 'Все', ...new Set(products.map((p) => p.cat))];
+  return [S.filter_all || ui('Все'), ...new Set(products.map((p) => p.cat))];
 }
 function renderFilters() {
-  if (!activeCat) activeCat = S.filter_all || 'Все';
+  if (!activeCat) activeCat = S.filter_all || ui('Все');
   document.getElementById('filters').innerHTML = getCats()
     .map(
       (c, i) =>
@@ -221,13 +250,11 @@ function setF(c) {
   renderGrid();
 }
 
-const STATUS_BLOCKED = ['нет', 'нет в наличии', 'no', '0', 'false', 'out of stock', 'недоступно'];
-const STATUS_PREORDER = ['на заказ', 'под заказ', 'preorder', 'to order'];
 function isAvail(p) {
-  return !STATUS_BLOCKED.includes((p.avail || '').trim().toLowerCase());
+  return p.availability !== 'unavailable';
 }
 function isPreorder(p) {
-  return STATUS_PREORDER.includes((p.avail || '').trim().toLowerCase());
+  return p.availability === 'preorder';
 }
 function statusColor(s) {
   const n = (s || '').trim().toLowerCase();
@@ -249,11 +276,11 @@ function cardImgHTML(p) {
 }
 
 function renderGrid() {
-  const all = S.filter_all || 'Все';
+  const all = S.filter_all || ui('Все');
   const list = activeCat === all ? products : products.filter((p) => p.cat === activeCat);
   const grid = document.getElementById('grid');
   if (!list.length) {
-    grid.innerHTML = `<div class="state-msg">Нет товаров в этой категории</div>`;
+    grid.innerHTML = `<div class="state-msg">${esc(ui('Нет товаров в этой категории'))}</div>`;
     return;
   }
   grid.innerHTML = list
@@ -395,7 +422,7 @@ function openProduct(id) {
   const isPre = isPreorder(p);
   // Для преордера без размеров — сразу ставим заглушку
   const noSizes = szArr.length === 0;
-  curSize = szArr.length === 1 ? szArr[0] : isPre && noSizes ? 'Уточнить вариант' : null;
+  curSize = szArr.length === 1 ? szArr[0] : isPre && noSizes ? ui('Уточнить вариант') : null;
   buildCarousel(p.photos, p.emoji);
   document.getElementById('pm-team').textContent = p.brand;
   document.getElementById('pm-name').textContent = p.name;
@@ -410,9 +437,11 @@ function openProduct(id) {
     descEl.style.display = 'none';
   }
   const attrs = [
-    p.collection ? `<span class="pm-attr"><b>Коллекция:</b> ${esc(p.collection)}</span>` : '',
+    p.collection
+      ? `<span class="pm-attr"><b>${esc(S.label_year)}:</b> ${esc(p.collection)}</span>`
+      : '',
     p.color ? `<span class="pm-attr"><b>${esc(S.label_color)}:</b> ${esc(p.color)}</span>` : '',
-    p.sku ? `<span class="pm-attr"><b>Артикул:</b> ${esc(p.sku)}</span>` : '',
+    p.sku ? `<span class="pm-attr"><b>${esc(S.label_number)}:</b> ${esc(p.sku)}</span>` : '',
   ].join('');
   document.getElementById('pm-attrs').innerHTML =
     attrs +
@@ -425,7 +454,7 @@ function openProduct(id) {
   if (noSizes && isPre) {
     // Нет ни одного размера — преордер, показываем информационную плашку
     document.getElementById('pm-sizes').innerHTML =
-      `<div style="font-size:12px;color:var(--muted);background:var(--surface3);padding:8px 12px;border-radius:var(--rsm);width:100%">Вариант будет уточнён менеджером при подтверждении заказа</div>`;
+      `<div style="font-size:12px;color:var(--muted);background:var(--surface3);padding:8px 12px;border-radius:var(--rsm);width:100%">${esc(ui('Вариант будет уточнён менеджером при подтверждении заказа'))}</div>`;
   } else {
     document.getElementById('pm-sizes').innerHTML = szArr
       .map((s, i) => {
@@ -459,13 +488,13 @@ function updAddBtn() {
   // Если товар на заказ и размер = "Уточнить вариант" (заглушка) — кнопка активна
   const ready = !!curSize;
   btn.disabled = !ready;
-  btn.textContent = ready ? S.btn_add : S.btn_add_size || 'Выберите вариант';
+  btn.textContent = ready ? S.btn_add : S.btn_add_size || ui('Выберите вариант');
 }
 
 /* ════ CART ════ */
 function addToCart() {
   if (!curSize || !curP) return;
-  const sizeNote = curSize === 'Уточнить вариант'; // флаг для пометки в заказе
+  const sizeNote = curSize === ui('Уточнить вариант'); // флаг для пометки в заказе
   const key = curP.id + '|' + curSize;
   const ex = cart.find((x) => x.key === key);
   if (ex) {
@@ -530,9 +559,11 @@ function renderCart() {
         ? `<img class="ci-img" src="${esc(driveThumb(it.photo, 80))}" alt="" onerror="this.style.display='none'">`
         : `<div class="ci-emoji">${it.emoji}</div>`;
       const sub = [
-        it.sizeNote ? `⚠️ Вариант: уточнить у менеджера` : `${esc(S.label_size)}: ${esc(it.size)}`,
+        it.sizeNote
+          ? `${esc(ui('⚠️ Вариант: уточнить у менеджера'))}`
+          : `${esc(S.label_size)}: ${esc(it.size)}`,
         it.color ? `${esc(S.label_color)}: ${esc(it.color)}` : '',
-        it.sku ? `Артикул: ${esc(it.sku)}` : '',
+        it.sku ? `${esc(S.label_number)}: ${esc(it.sku)}` : '',
       ]
         .filter(Boolean)
         .join(' · ');
@@ -564,17 +595,17 @@ function renderCart() {
     .join('');
 
   const filled = deliveryData;
-  const deliveryBlock = `<div class="delivery-section"><div class="delivery-section-title">Доставка</div>
-   <label class="d-label" for="delivery-method">Способ доставки</label>
+  const deliveryBlock = `<div class="delivery-section"><div class="delivery-section-title">${esc(ui('Доставка'))}</div>
+   <label class="d-label" for="delivery-method">${esc(ui('Способ доставки'))}</label>
    <select class="d-input" id="delivery-method">${currentStore.settings.deliveryMethods.map((m) => `<option ${m === (filled?.deliveryMethod || activeDelivery) ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select>
    ${[
-     ['name', 'Имя получателя *', 'text'],
-     ['phone', 'Телефон *', 'tel'],
-     ['address', 'Адрес или пункт самовывоза *', 'text'],
-     ['city', 'Город', 'text'],
-     ['region', 'Область', 'text'],
-     ['index', 'Индекс', 'text'],
-     ['comment', 'Комментарий', 'text'],
+     ['name', ui('Имя получателя *'), 'text'],
+     ['phone', ui('Телефон *'), 'tel'],
+     ['address', ui('Адрес или пункт самовывоза *'), 'text'],
+     ['city', ui('Город'), 'text'],
+     ['region', ui('Область'), 'text'],
+     ['index', ui('Индекс'), 'text'],
+     ['comment', ui('Комментарий'), 'text'],
    ]
      .map(
        ([k, label, type]) =>
@@ -582,13 +613,13 @@ function renderCart() {
      )
      .join('')}
    <p class="pvz-hint">${esc(currentStore.settings.deliveryHint)}</p>
-   <button class="d-submit" onclick="saveDelivery()" style="padding:12px;background:var(--red);color:white;border:0;border-radius:6px">Сохранить данные доставки</button>
-   ${filled ? '<p class="delivery-filled-badge">Данные доставки сохранены</p>' : ''}</div>`;
+   <button class="d-submit" onclick="saveDelivery()" style="padding:12px;background:var(--red);color:white;border:0;border-radius:6px">${esc(ui('Сохранить данные доставки'))}</button>
+   ${filled ? '<p class="delivery-filled-badge">' + esc(ui('Данные доставки сохранены')) + '</p>' : ''}</div>`;
   const canOrder = !!filled && currentStore.status !== 'demo' && currentStore.acceptingOrders;
   const disabledAttr = canOrder ? '' : 'disabled';
   const hintText = canOrder
     ? ''
-    : `<div class="delivery-required-hint">${currentStore.status === 'demo' ? 'Это демонстрация магазина' : !currentStore.acceptingOrders ? 'Приём заказов приостановлен' : 'Сначала заполните адрес доставки'}</div>`;
+    : `<div class="delivery-required-hint">${currentStore.status === 'demo' ? ui('Это демонстрация магазина') : !currentStore.acceptingOrders ? ui('Приём заказов приостановлен') : ui('Сначала заполните адрес доставки')}</div>`;
 
   body.innerHTML =
     items +
@@ -597,7 +628,7 @@ function renderCart() {
     `<div class="cart-actions">
       ${hintText}
       <button class="oa oa-place" ${disabledAttr} onclick="placeOrder()">
-        ${currentStore.status === 'demo' ? 'Заказы отключены в демо' : !currentStore.acceptingOrders ? 'Приём заказов приостановлен' : 'Оформить заказ'}
+        ${currentStore.status === 'demo' ? ui('Заказы отключены в демо') : !currentStore.acceptingOrders ? ui('Приём заказов приостановлен') : ui('Оформить заказ')}
       </button>
       <button class="oa oa-clear" onclick="clearCart()">${esc(S.btn_clear)}</button>
     </div>`;
@@ -637,31 +668,31 @@ function saveDelivery() {
   for (const k of ['name', 'phone', 'address', 'city', 'region', 'index', 'comment'])
     data[k] = document.getElementById('delivery-' + k).value.trim();
   if (!data.name || !data.phone || !data.address) {
-    showToast('Заполните обязательные поля');
+    showToast(ui('Заполните обязательные поля'));
     return;
   }
   deliveryData = data;
-  showToast('Данные доставки сохранены');
+  showToast(ui('Данные доставки сохранены'));
   renderCart();
 }
 async function placeOrder() {
   if (submitting || !cart.length) return;
   if (currentStore.status === 'demo') {
-    showToast('Это демонстрация. Реальные заказы отключены.');
+    showToast(ui('Это демонстрация. Реальные заказы отключены.'));
     return;
   }
   if (!currentStore.acceptingOrders) {
-    showToast('Приём заказов приостановлен');
+    showToast(ui('Приём заказов приостановлен'));
     return;
   }
   if (!deliveryData) {
-    showToast('Сохраните данные доставки');
+    showToast(ui('Сохраните данные доставки'));
     return;
   }
   submitting = true;
   const button = document.querySelector('.oa-place');
   button.disabled = true;
-  button.textContent = 'Оформление…';
+  button.textContent = ui('Оформление…');
   const storageKey = 'pending-order:' + currentStore.id;
   try {
     const payload = {
@@ -689,28 +720,31 @@ async function placeOrder() {
       body: serialized,
     });
     const result = await r.json();
-    if (!r.ok) throw new Error(result.error || 'Не удалось сохранить заказ');
-    if (!result.id || !result.number) throw new Error('Сервер не подтвердил сохранение заказа');
+    if (!r.ok) throw new Error(result.error || ui('Не удалось сохранить заказ'));
+    if (!result.id || !result.number) throw new Error(ui('Сервер не подтвердил сохранение заказа'));
     document.getElementById('confirm-order-num').textContent = '#' + result.number;
     document.querySelector('.order-sub').textContent =
-      'Заказ сохранён. Итого: ' +
-      (result.totalMinor / 100).toLocaleString('ru-RU') +
+      ui('Заказ сохранён. Итого: ') +
+      (result.totalMinor / 100).toLocaleString(language === 'en' ? 'en-US' : 'ru-RU') +
       ' ' +
       result.currency +
-      '. Продавец свяжется с вами для подтверждения.';
+      ui('. Продавец свяжется с вами для подтверждения.');
     const wa = document.getElementById('confirm-wa-btn'),
       tg = document.getElementById('confirm-tg-btn');
     wa.hidden = !S.whatsapp;
     tg.hidden = !S.telegram;
     wa.onclick = () =>
       window.open(
-        'https://wa.me/' + S.whatsapp + '?text=' + encodeURIComponent('Заказ #' + result.number),
+        'https://wa.me/' +
+          S.whatsapp +
+          '?text=' +
+          encodeURIComponent(ui('Заказ #') + result.number),
         '_blank',
         'noopener',
       );
     tg.onclick = () =>
       window.open(
-        'https://t.me/' + S.telegram + '?text=' + encodeURIComponent('Заказ #' + result.number),
+        'https://t.me/' + S.telegram + '?text=' + encodeURIComponent(ui('Заказ #') + result.number),
         '_blank',
         'noopener',
       );
@@ -721,11 +755,11 @@ async function placeOrder() {
     deliveryData = null;
     updCount();
   } catch (e) {
-    showToast(e.message || 'Ошибка сети. Заказ не подтверждён. Попробуйте снова.');
+    showToast(ui(e.message) || ui('Ошибка сети. Заказ не подтверждён. Попробуйте снова.'));
   } finally {
     submitting = false;
     button.disabled = false;
-    button.textContent = 'Оформить заказ';
+    button.textContent = ui('Оформить заказ');
   }
 }
 
@@ -816,11 +850,11 @@ async function init() {
       document.getElementById(key).hidden = !value || currentStore.status === 'demo';
     document.querySelector('.hero-contacts').hidden =
       currentStore.status === 'demo' || (!S.whatsapp && !S.telegram && !S.instagram);
-    activeCat = S.filter_all || 'Все';
+    activeCat = S.filter_all || ui('Все');
     renderFilters();
     renderGrid();
   } catch (e) {
-    document.getElementById('hero-title').textContent = 'Не удалось загрузить магазин';
+    document.getElementById('hero-title').textContent = ui('Не удалось загрузить магазин');
     document.getElementById('grid').textContent = e.message;
   }
 }

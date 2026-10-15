@@ -77,6 +77,8 @@ const textKeys = [
 ];
 export function settings(input: unknown, storeId?: string): Settings {
   const d = object(input ?? {});
+  const language = d.language ?? 'ru';
+  requireThat(language === 'ru' || language === 'en', 'Неподдерживаемый язык');
   const codes = d.currencies === undefined ? ['BYN'] : strings(d.currencies, 2);
   requireThat(
     codes.length > 0 &&
@@ -85,7 +87,11 @@ export function settings(input: unknown, storeId?: string): Settings {
     'Неподдерживаемая валюта',
   );
   const methods =
-    d.deliveryMethods === undefined ? ['Доставка', 'Самовывоз'] : strings(d.deliveryMethods, 6);
+    d.deliveryMethods === undefined
+      ? language === 'en'
+        ? ['Delivery', 'Pickup']
+        : ['Доставка', 'Самовывоз']
+      : strings(d.deliveryMethods, 6);
   requireThat(
     methods.length > 0 && new Set(methods).size === methods.length,
     'Укажите способы доставки',
@@ -106,6 +112,7 @@ export function settings(input: unknown, storeId?: string): Settings {
     texts[k] = text(v, 500);
   }
   return {
+    language,
     theme: theme as Settings['theme'],
     description: text(d.description, 2000),
     accentColor: accent,

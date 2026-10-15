@@ -60,6 +60,9 @@ try {
       body: `window.Telegram={WebApp:{initData:${JSON.stringify(initData(111))},ready(){},expand(){},showConfirm(message,callback){callback(true)}}};`,
     }),
   );
+  await page.route('https://images.example.com/**', (route) =>
+    route.fulfill({ contentType: 'image/png', body: imageFile.buffer }),
+  );
   const shotDir = process.env.BROWSER_SCREENSHOT_DIR;
   if (shotDir) await mkdir(shotDir, { recursive: true });
   for (const theme of ['minimal', 'fashion', 'home', 'beauty']) {
@@ -133,10 +136,32 @@ try {
   assert.ok(templateImage.startsWith('/media/'));
   await page.getByRole('button', { name: 'Универсальный', exact: true }).click();
   await page.waitForFunction(() => document.querySelector('.template-photo')?.naturalWidth > 0);
+  await page.locator('#template-url-1').fill('https://images.example.com/mug.png');
+  await page.locator('#template-url-1').press('Tab');
+  await page.getByRole('button', { name: 'Сохранить фото шаблона', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Фото шаблона сохранены' }).waitFor();
+  assert.equal(
+    (await req('/api/templates/minimal')).body.products[1].photos[0],
+    'https://images.example.com/mug.png',
+  );
+  await page.getByRole('button', { name: 'Универсальный', exact: true }).click();
+  assert.equal(
+    await page.locator('#template-url-1').inputValue(),
+    'https://images.example.com/mug.png',
+  );
   await page.getByRole('button', { name: 'Все магазины', exact: false }).click();
   await page.locator('#new-template').selectOption('fashion');
   assert.equal(await page.locator('#seed-products').isChecked(), true);
-  assert.equal(await page.locator('#template-preview').getAttribute('href'), '/templates/fashion');
+  assert.equal(
+    await page.locator('#template-preview').getAttribute('href'),
+    '/templates/fashion?lang=ru',
+  );
+  await page.locator('#new-language').selectOption('en');
+  await page.waitForFunction(
+    () =>
+      document.getElementById('template-preview').getAttribute('href') ===
+      '/templates/fashion?lang=en',
+  );
   await page.locator('#new-name').fill('Browser template');
   await page.locator('#new-slug').fill('browser-template');
   await page.locator('#new-currency').selectOption('EUR');
@@ -145,6 +170,8 @@ try {
   const seeded = (await req('/api/stores/browser-template')).body;
   assert.equal(seeded.store.settings.theme, 'fashion');
   assert.equal(seeded.products.length, 6);
+  assert.equal(seeded.store.settings.language, 'en');
+  assert.doesNotMatch(JSON.stringify(seeded.products), /[А-Яа-яЁё]/);
   assert.ok(seeded.products.every((p) => p.prices.EUR > 0));
   await page.locator('#seed-products').uncheck();
   await page.locator('#new-name').fill('Browser factory');
@@ -168,10 +195,14 @@ try {
   await editor.locator('#attributes').fill('Материал: хлопок\nУход: стирка при 30°C');
   await editor.locator('#photo-upload').setInputFiles(imageFile);
   await editor.locator('#notice').filter({ hasText: 'Фотографии загружены' }).waitFor();
+  await editor.locator('#photo-url').fill('https://images.example.com/product.png');
+  await editor.getByRole('button', { name: 'Добавить фото по ссылке', exact: true }).click();
+  assert.equal(await editor.locator('#photos img').count(), 2);
   await editor.getByRole('button', { name: 'Сохранить товар', exact: true }).click();
   await editor.getByRole('heading', { name: 'Товар оператора' }).waitFor();
   await editor.getByRole('button', { name: 'Ещё', exact: true }).click();
   await editor.getByRole('button', { name: 'Настройки', exact: true }).click();
+  await editor.locator('#store-language').selectOption('en');
   await editor.locator('#hero-title').fill('Подготовлено оператором');
   await editor.locator('#theme').selectOption('home');
   await editor.locator('#logo-upload').setInputFiles(imageFile);
@@ -448,6 +479,45 @@ try {
   assert.equal(await page.locator('body').getAttribute('data-store-slug'), shop.slug);
   assert.ok(await page.locator('.card-name').filter({ hasText: 'Новая кепка' }).count());
   if (shotDir) await page.screenshot({ path: shotDir + '/client-domain-storefront.png' });
+  // Complete English checkout uses the language chosen in the developer panel.
+  await db
+    .prepare("UPDATE stores SET status='active',owner_id='111' WHERE id=?")
+    .bind(seeded.store.id)
+    .run();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(origin + '/s/browser-template');
+  await page.locator('.card-name').first().waitFor();
+  assert.equal(await page.locator('html').getAttribute('lang'), 'en');
+  assert.equal(await page.locator('#lbl-cart').innerText(), 'Cart');
+  assert.doesNotMatch(await page.locator('#grid').innerText(), /[А-Яа-яЁё]/);
+  if (shotDir) await page.screenshot({ path: shotDir + '/english-storefront.png', fullPage: true });
+  await page.locator('.card').first().click();
+  await page.locator('.size-btn').first().click();
+  await page.getByRole('button', { name: 'Add to cart', exact: true }).click();
+  await page.locator('.cart-btn').click();
+  assert.doesNotMatch(await page.locator('#cart-body').innerText(), /[А-Яа-яЁё]/);
+  await page.getByRole('button', { name: 'Save delivery details', exact: true }).click();
+  await page.locator('#toast').filter({ hasText: 'Fill in the required fields' }).waitFor();
+  await page.locator('#delivery-name').fill('English buyer');
+  await page.locator('#delivery-phone').fill('+447700900123');
+  await page.locator('#delivery-address').fill('10 Sample Street');
+  await page.getByRole('button', { name: 'Save delivery details', exact: true }).click();
+  if (shotDir) await page.screenshot({ path: shotDir + '/english-cart.png' });
+  await page.getByRole('button', { name: 'Place order', exact: true }).click();
+  await page.locator('#confirm-ov.open').waitFor();
+  assert.equal(await page.locator('#confirm-ov .panel-title').innerText(), 'Order received');
+  assert.match(await page.locator('#confirm-ov .order-sub').innerText(), /^Order saved. Total:/);
+  assert.doesNotMatch(await page.locator('#confirm-ov').innerText(), /[А-Яа-яЁё]/);
+  assert.equal(
+    (
+      await db
+        .prepare('SELECT COUNT(*) n FROM orders WHERE store_id=?')
+        .bind(seeded.store.id)
+        .first()
+    ).n,
+    1,
+  );
+  if (shotDir) await page.screenshot({ path: shotDir + '/english-order.png' });
   assert.deepEqual(errors, []);
   console.log(
     'Browser smoke passed: admin CRUD/settings → public catalog → failed and successful checkout → D1 → order status; demo, XSS and 375/390/1280 layouts.',

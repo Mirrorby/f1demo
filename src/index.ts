@@ -9,6 +9,16 @@ import platformEditorPage from '../public/platform-editor.html';
 import storefrontPage from '../public/storefront.html';
 import storefrontScript from '../public/storefront.js';
 import favicon from '../public/favicon.svg';
+import { english, translate } from './language';
+const storefrontMarkup = (language: string = 'ru') =>
+  language !== 'en'
+    ? storefrontPage
+    : storefrontPage
+        .replace('<html lang="ru">', '<html lang="en">')
+        .replace(/>([^<>]+)</g, (all, value: string) => {
+          const text = value.trim();
+          return english[text] ? '>' + value.replace(text, english[text]) + '<' : all;
+        });
 const brandedPanel = (html: string) =>
   html
     .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
@@ -147,7 +157,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return new Response(
         method === 'HEAD'
           ? null
-          : storefrontPage.replace('<body>', '<body data-store-slug="' + s.slug + '">'),
+          : storefrontMarkup(JSON.parse(s.settings).language).replace(
+              '<body>',
+              '<body data-store-slug="' + s.slug + '">',
+            ),
         {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',
@@ -160,13 +173,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
 
   if (path === '/s/app.js' && (method === 'GET' || method === 'HEAD'))
-    return new Response(method === 'HEAD' ? null : storefrontScript, {
-      headers: {
-        'Content-Type': 'application/javascript; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'X-Content-Type-Options': 'nosniff',
+    return new Response(
+      method === 'HEAD'
+        ? null
+        : 'const STOREFRONT_EN = ' + JSON.stringify(english) + ';\n' + storefrontScript,
+      {
+        headers: {
+          'Content-Type': 'application/javascript; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'X-Content-Type-Options': 'nosniff',
+        },
       },
-    });
+    );
   if (path === '/s/favicon.svg' && (method === 'GET' || method === 'HEAD'))
     return new Response(method === 'HEAD' ? null : favicon, {
       headers: {
@@ -256,13 +274,13 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     const t = findTemplate(previewApi[1]);
     requireThat(t, 'Шаблон не найден', 404);
     const id = '00000000-0000-0000-0000-000000000000';
-    const cfg = settings(templateSettings(t));
-    const resolved = await resolvedTemplateProducts(env, t, cfg.currencies);
+    const cfg = settings(templateSettings(t, url.searchParams.get('lang') === 'en' ? 'en' : 'ru'));
+    const resolved = await resolvedTemplateProducts(env, t, cfg.currencies, cfg.language);
     return json({
       store: {
         id,
         slug: t.id,
-        name: t.name,
+        name: translate(t.name, cfg.language),
         status: 'demo',
         version: 1,
         acceptingOrders: false,
@@ -561,21 +579,24 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path === '/admin' || path === '/admin/') assetPath = '/admin.html';
   if (path === '/platform' || path === '/platform/') assetPath = '/platform.html';
   if (path === '/platform/editor') assetPath = '/platform-editor.html';
+  let storefrontLanguage = 'ru';
   const preview = path.match(/^\/templates\/([a-z]+)\/?$/);
   if (preview) {
     requireThat(findTemplate(preview[1]), 'Шаблон не найден', 404);
     assetPath = '/storefront.html';
+    storefrontLanguage = url.searchParams.get('lang') === 'en' ? 'en' : 'ru';
   }
   const storefront = path.match(/^\/(demo|shop|s)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {
     const s = await storeBySlug(env, storefront[2]);
+    storefrontLanguage = JSON.parse(s.settings).language || 'ru';
     const kind = s.status === 'demo' ? 'demo' : 'shop';
     if (storefront[1] !== kind && storefront[1] !== 's')
       return Response.redirect(url.origin + '/' + kind + '/' + s.slug, 302);
     assetPath = '/storefront.html';
   }
   if (assetPath === '/storefront.html')
-    return new Response(method === 'HEAD' ? null : storefrontPage, {
+    return new Response(method === 'HEAD' ? null : storefrontMarkup(storefrontLanguage), {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache',

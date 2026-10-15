@@ -1,6 +1,11 @@
 import type { Product, ProductRow, StoreRow, Settings, Variant } from './types';
 import { HttpError, object, product, requireThat, settings, text, int } from './validation';
-import { findTemplate, resolvedTemplateProducts, templateSettings } from './templates';
+import {
+  findTemplate,
+  resolvedTemplateProducts,
+  templateSettings,
+  switchSettingsLanguage,
+} from './templates';
 export const stmt = (env: Env, sql: string, ...values: (string | number | null)[]) =>
   env.DB.prepare(sql).bind(...values);
 export async function storeBySlug(env: Env, slug: string): Promise<StoreRow> {
@@ -27,7 +32,7 @@ export function publicStore(s: StoreRow, botUsername = '') {
     status: s.status,
     version: s.version,
     acceptingOrders: s.orders_enabled === 1,
-    settings: JSON.parse(s.settings) as Settings,
+    settings: { language: 'ru', ...JSON.parse(s.settings) } as Settings,
   };
 }
 export async function catalog(env: Env, storeId: string): Promise<Product[]> {
@@ -90,8 +95,10 @@ export async function createStore(env: Env, input: unknown, origin: string, targ
     'Недопустимый выбор примерных товаров',
   );
   requireThat(!d.seedProducts || template, 'Выберите шаблон для примерных товаров');
-  const defaults: Partial<Settings> = template ? templateSettings(template) : {};
   const supplied = object(d.settings ?? {});
+  const defaults: Partial<Settings> = template
+    ? templateSettings(template, supplied.language === 'en' ? 'en' : 'ru')
+    : {};
   const cfg = settings(
     {
       ...defaults,
@@ -115,7 +122,7 @@ export async function createStore(env: Env, input: unknown, origin: string, targ
     slug = slug.slice(0, 65) + '-' + crypto.randomUUID().slice(0, 8);
   const resolved =
     d.seedProducts && template && d.products === undefined
-      ? await resolvedTemplateProducts(env, template, cfg.currencies)
+      ? await resolvedTemplateProducts(env, template, cfg.currencies, cfg.language)
       : undefined;
   const files: { source: string; target: string }[] = [];
   const raw =
@@ -265,7 +272,7 @@ export async function saveProduct(env: Env, s: StoreRow, input: unknown, id?: st
 export async function updateSettings(env: Env, s: StoreRow, input: unknown) {
   const d = object(input),
     name = text(d.name, 200, true),
-    cfg = settings(d.settings, s.id),
+    cfg = switchSettingsLanguage(settings(d.settings, s.id), JSON.parse(s.settings)),
     version = int(d.version, 1, Number.MAX_SAFE_INTEGER);
   const ps = await catalog(env, s.id);
   requireThat(

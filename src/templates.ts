@@ -1,4 +1,5 @@
 import type { Settings } from './types';
+import { translate, type Language } from './language';
 import { requireThat, imageUrl, object, int } from './validation';
 
 // Illustrative prices are specified separately for each currency, not exchange rates.
@@ -301,9 +302,10 @@ const themeCopy = {
     support: 'Расскажем о текстурах и поможем с выбором ухода',
   },
 };
-export function templateSettings(t: Template) {
+export function templateSettings(t: Template, language: Language = 'ru') {
   const copy = themeCopy[t.id];
-  return {
+  const result = {
+    language,
     theme: t.id,
     description: t.description,
     heroTitle: copy.hero,
@@ -333,6 +335,31 @@ export function templateSettings(t: Template) {
       support_label: copy.support,
     },
   };
+  if (language === 'en') {
+    for (const key of ['description', 'heroTitle', 'footerText', 'deliveryHint'] as const)
+      result[key] = translate(result[key], language);
+    result.deliveryMethods = result.deliveryMethods.map((v) => translate(v, language));
+    result.texts = Object.fromEntries(
+      Object.entries(result.texts).map(([k, v]) => [k, translate(v, language)]),
+    ) as typeof result.texts;
+  }
+  return result;
+}
+
+// Only untouched built-in copy follows a language change. Merchant-authored copy stays intact.
+export function switchSettingsLanguage(next: Settings, previous: Settings): Settings {
+  if (next.language === (previous.language || 'ru')) return next;
+  const template = findTemplate(previous.theme || 'minimal');
+  if (!template) return next;
+  const from = templateSettings(template, previous.language || 'ru');
+  const to = templateSettings(template, next.language);
+  for (const key of ['description', 'heroTitle', 'footerText', 'deliveryHint'] as const)
+    if (next[key] === from[key]) next[key] = to[key];
+  if (JSON.stringify(next.deliveryMethods) === JSON.stringify(from.deliveryMethods))
+    next.deliveryMethods = to.deliveryMethods;
+  for (const [key, value] of Object.entries(from.texts))
+    if (next.texts[key] === value) next.texts[key] = (to.texts as Record<string, string>)[key];
+  return next;
 }
 const descriptions: Record<string, string> = {
   'Хлопковый шоппер':
@@ -382,21 +409,23 @@ const descriptions: Record<string, string> = {
   'Крем для ног':
     'Крем с плотной текстурой для вечернего ухода за кожей стоп. Наносите на чистую сухую кожу и распределяйте массажными движениями.',
 };
-export function templateProducts(t: Template, codes: string[]) {
+export function templateProducts(t: Template, codes: string[], language: Language = 'ru') {
+  const local = (v: string) =>
+    language === 'en' ? translate(v, language).replace(/ мл/g, ' ml').replace(/ см/g, ' cm') : v;
   return t.samples.map((s, i) => ({
-    name: s.name,
-    category: s.category,
-    description: descriptions[s.name],
-    color: t.id === 'beauty' ? 'Нейтральный' : 'Натуральный',
-    brand: t.name,
-    collection: 'Базовая коллекция',
+    name: local(s.name),
+    category: local(s.category),
+    description: local(descriptions[s.name]),
+    color: local(t.id === 'beauty' ? 'Нейтральный' : 'Натуральный'),
+    brand: local(t.name),
+    collection: local('Базовая коллекция'),
     sku: t.id.toUpperCase() + '-' + String(i + 1).padStart(3, '0'),
-    attributes: [{ label: s.detail[0], value: s.detail[1] }],
+    attributes: [{ label: local(s.detail[0]), value: local(s.detail[1]) }],
     photos: ['/template-assets/' + s.asset + '.svg'],
     prices: Object.fromEntries(
       codes.map((code) => [code, priceSets[s.price][code as keyof (typeof priceSets)[0]]]),
     ),
-    variants: s.variants.map((label) => ({ label, stock: 10 })),
+    variants: s.variants.map((label) => ({ label: local(label), stock: 10 })),
   }));
 }
 
@@ -416,14 +445,19 @@ export async function photoRecord(env: Env, id: string, create = false) {
     .bind(id)
     .first<TemplatePhotos>();
 }
-export async function resolvedTemplateProducts(env: Env, t: Template, codes: string[]) {
+export async function resolvedTemplateProducts(
+  env: Env,
+  t: Template,
+  codes: string[],
+  language: Language = 'ru',
+) {
   const record = await photoRecord(env, t.id);
   const photos = JSON.parse(record?.photos || '{}') as Record<string, string>;
   return {
     mediaId: record?.media_id,
     version: record?.version || 1,
     photos,
-    products: templateProducts(t, codes).map((p, i) => ({
+    products: templateProducts(t, codes, language).map((p, i) => ({
       ...p,
       defaultPhoto: p.photos[0],
       photos: photos[i] ? [photos[i]] : p.photos,
