@@ -106,8 +106,8 @@ async function api(path, method = 'GET', data, contentType = 'application/json')
   return result;
 }
 const base = () => `stores/${store.id}`;
-const siteUrl = () =>
-  location.origin + `/${store.status === 'demo' ? 'demo' : 'shop'}/${store.slug}`;
+const siteUrl = () => location.origin + '/s/' + store.slug;
+const shareUrl = () => store.shareUrl || siteUrl();
 function money(p) {
   return Object.entries(p.prices)
     .filter(([c]) => store.settings.currencies.includes(c))
@@ -168,6 +168,25 @@ function renderProductsList() {
     <div id="product-results" class="stack"></div>`;
   drawProductRows();
 }
+function orderPhoto(item) {
+  return item?.photo
+    ? `<img class="order-photo" src="${esc(item.photo)}" alt="${esc(item.name)}" loading="lazy">`
+    : '<span class="order-symbol" aria-hidden="true">▤</span>';
+}
+document.addEventListener(
+  'error',
+  (event) => {
+    const img = event.target;
+    if (img instanceof HTMLImageElement && img.classList.contains('order-photo')) {
+      const fallback = document.createElement('span');
+      fallback.className = 'order-symbol';
+      fallback.textContent = '▤';
+      fallback.setAttribute('aria-hidden', 'true');
+      img.replaceWith(fallback);
+    }
+  },
+  true,
+);
 function renderOrdersList() {
   main.innerHTML = `<div class="row between page-heading"><div><h2>Заказы</h2><p class="section-caption">Заказы клиентов</p></div></div>
     <div class="order-filter-row"><label for="order-filter">Статус заказов</label>
@@ -181,7 +200,7 @@ function renderOrdersList() {
       orders
         .map(
           (o, i) => `<button class="card product order-row" data-order="${i}">
-      <span class="order-symbol">▤</span><span class="info">
+      ${orderPhoto(o.items.find((item) => item.photo) || o.items[0])}<span class="info">
       <h3 class="product-title">№${o.number} · <span data-no-i18n>${esc(o.customer.name)}</span></h3>
       <span class="product-meta">${(o.totalMinor / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU')} ${esc(o.currency)} · ${new Date(o.createdAt * 1000).toLocaleDateString(window.DelokayI18n?.locale() || 'ru-RU')}</span>
       <span class="badge order-${esc(o.status)}">${statusNames[o.status]}</span></span>
@@ -254,7 +273,7 @@ async function show(next = tab) {
       main.innerHTML = `<div class="row between page-heading"><div><h2>Мой сайт</h2><p class="section-caption">Ссылка на витрину</p></div></div>
         <div class="card site-overview"><div class="row between"><h3 data-no-i18n>${esc(store.name)}</h3><span class="badge">${storeState()}</span></div>
         <p class="section-caption">${store.status === 'demo' ? 'Заказы отключены в демонстрационном режиме.' : 'Магазин готов делиться с клиентами.'}</p>
-        <div class="site-link" data-no-i18n>${esc(siteUrl())}</div>
+        <div class="site-link" data-no-i18n>${esc(shareUrl())}</div>
         <div class="actions"><button class="primary" data-action="copy">Скопировать ссылку</button><a class="site-open-link" href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть витрину ↗</a></div></div>`;
   } catch (e) {
     if (seq !== generation) return;
@@ -337,10 +356,24 @@ function renderSettings() {
     )
     .join(
       '',
-    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"></div><div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
+    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"><p>Логотип также используется как иконка вкладки магазина.</p></div><div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
     ['btn_cart', 'Кнопка корзины'],
     ['btn_add', 'Добавить в корзину'],
+    ['btn_add_size', 'Подсказка выбора варианта'],
+    ['btn_clear', 'Очистить корзину'],
     ['label_size', 'Название вариантов'],
+    ['label_qty', 'Количество'],
+    ['label_year', 'Коллекция'],
+    ['label_color', 'Цвет'],
+    ['label_number', 'Артикул'],
+    ['label_total', 'Итого'],
+    ['label_pick', 'Выбор параметров'],
+    ['msg_empty_cart', 'Пустая корзина'],
+    ['msg_added', 'Товар добавлен'],
+    ['wa_msg_header', 'Начало сообщения WhatsApp'],
+    ['wa_msg_footer', 'Конец сообщения WhatsApp'],
+    ['tg_msg_header', 'Начало сообщения Telegram'],
+    ['tg_msg_footer', 'Конец сообщения Telegram'],
     ['filter_all', 'Все категории'],
     ['support_label', 'Подпись к контактам'],
   ]
@@ -374,7 +407,7 @@ function showOrder(o) {
       <p>${esc(c.deliveryMethod)}<br>${esc(c.address)}<br>${esc([c.city, c.region, c.index].filter(Boolean).join(', '))}</p>
       ${c.comment ? `<p>${esc(c.comment)}</p>` : ''}</div></section>
     <section class="card"><h3 class="form-section-heading">Состав заказа</h3>
-      <ul class="order-lines">${o.items.map((i) => `<li><strong data-no-i18n>${esc(i.name)}</strong><span class="muted" data-no-i18n>${esc(i.variant)}</span><span>${i.quantity} × ${(i.unitMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</span></li>`).join('')}</ul>
+      <ul class="order-lines">${o.items.map((i) => `<li>${orderPhoto(i)}<div class="order-item-copy"><strong data-no-i18n>${esc(i.name)}</strong><span class="muted" data-no-i18n>${esc(i.variant)}</span><span>${i.quantity} × ${(i.unitMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</span></div></li>`).join('')}</ul>
       <div class="row between order-summary"><strong>Итого</strong><strong>${(o.totalMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</strong></div></section>
     ${buttons[o.status].length ? `<div class="actions order-actions">${buttons[o.status].map(([status, label]) => `<button data-status="${status}" data-order-id="${o.id}" class="${status === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div>` : ''}`;
 }
@@ -468,7 +501,7 @@ document.addEventListener('click', async (event) => {
       document.getElementById('variants').insertAdjacentHTML('beforeend', variantRow());
     }
     if (button.dataset.action === 'copy') {
-      await navigator.clipboard.writeText(siteUrl());
+      await navigator.clipboard.writeText(shareUrl());
       notice('Ссылка скопирована');
     }
     if (button.dataset.action === 'delete') {
@@ -636,6 +669,15 @@ document.addEventListener('submit', async (event) => {
   }
 });
 (async () => {
+  const startParam =
+    tg?.initDataUnsafe?.start_param ||
+    new URLSearchParams(location.search).get('tgWebAppStartParam') ||
+    '';
+  if (!platformMode && /^s_[a-z0-9][a-z0-9-]{0,79}$/.test(startParam)) {
+    tg?.ready?.();
+    location.replace('/s/' + startParam.slice(2));
+    return;
+  }
   if (platformMode) {
     if (window.parent === window) {
       main.innerHTML = '<p>Откройте редактор из <a href="/platform">панели фабрики</a>.</p>';

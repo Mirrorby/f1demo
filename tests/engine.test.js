@@ -27,7 +27,7 @@ after(stop);
 test('catalog isolation, assets and unknown stores', async () => {
   const a = await req('/shop/' + shop.slug);
   assert.equal(a.status, 200);
-  assert.match(a.body, /storefront.js/);
+  assert.match(a.body, /s\/app.js/);
   assert.equal((await req('/shop/not-found')).status, 404);
   assert.equal((await req('/api/stores/' + demo.slug)).body.store.status, 'demo');
   assert.notEqual(

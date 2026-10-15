@@ -76,6 +76,7 @@ export interface OrderItem {
   unitMinor: number;
   version: number;
   reserved: boolean;
+  photo?: string;
 }
 export interface Customer {
   name: string;

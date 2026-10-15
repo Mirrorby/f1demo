@@ -1,6 +1,6 @@
 import type { Product, ProductRow, StoreRow, Settings, Variant } from './types';
 import { HttpError, object, product, requireThat, settings, text, int } from './validation';
-import { findTemplate, templateProducts, templateSettings } from './templates';
+import { findTemplate, resolvedTemplateProducts, templateSettings } from './templates';
 export const stmt = (env: Env, sql: string, ...values: (string | number | null)[]) =>
   env.DB.prepare(sql).bind(...values);
 export async function storeBySlug(env: Env, slug: string): Promise<StoreRow> {
@@ -18,10 +18,11 @@ export async function ownedStore(env: Env, id: string, owner: string): Promise<S
   requireThat(row, 'Магазин не найден', 404);
   return row;
 }
-export function publicStore(s: StoreRow) {
+export function publicStore(s: StoreRow, botUsername = '') {
   return {
     id: s.id,
     slug: s.slug,
+    shareUrl: botUsername ? `https://t.me/${botUsername}?startapp=s_${s.slug}` : '',
     name: s.name,
     status: s.status,
     version: s.version,
@@ -112,36 +113,61 @@ export async function createStore(env: Env, input: unknown, origin: string, targ
   requireThat(/^[a-z0-9][a-z0-9-]{0,79}$/.test(slug), 'Slug: латиница, цифры и дефис');
   if (await stmt(env, 'SELECT id FROM stores WHERE slug=?', slug).first())
     slug = slug.slice(0, 65) + '-' + crypto.randomUUID().slice(0, 8);
+  const resolved =
+    d.seedProducts && template && d.products === undefined
+      ? await resolvedTemplateProducts(env, template, cfg.currencies)
+      : undefined;
+  const files: { source: string; target: string }[] = [];
   const raw =
-    d.products ?? (d.seedProducts && template ? templateProducts(template, cfg.currencies) : []);
+    d.products ??
+    resolved?.products.map((p) => ({
+      ...p,
+      photos: p.photos.map((url) => {
+        if (!resolved.mediaId || !url.startsWith('/media/' + resolved.mediaId + '/')) return url;
+        const key = id + '/' + crypto.randomUUID() + url.slice(url.lastIndexOf('.'));
+        files.push({ source: url.slice(7), target: key });
+        return '/media/' + key;
+      }),
+    })) ??
+    [];
   requireThat(Array.isArray(raw) && raw.length <= (targetId ? 500 : 200), 'Слишком много товаров');
   const normalized = raw.map((p) => ({ id: crypto.randomUUID(), ...product(p, cfg, id) }));
   // A JSON table insert keeps the number of D1 statements below Free's per-invocation limit.
   const products = normalized.map((p) => ({ id: p.id, data: JSON.stringify(p.data) }));
   const variants = normalized.flatMap((p) => p.variants.map((v) => ({ ...v, productId: p.id })));
-  await env.DB.batch([
-    stmt(
-      env,
-      'INSERT INTO stores(id,slug,name,settings) VALUES(?,?,?,?)',
-      id,
-      slug,
-      name,
-      JSON.stringify(cfg),
-    ),
-    stmt(
-      env,
-      "INSERT INTO products(id,store_id,data) SELECT json_extract(value,'$.id'),?,json_extract(value,'$.data') FROM json_each(?)",
-      id,
-      JSON.stringify(products),
-    ),
-    stmt(
-      env,
-      "INSERT INTO variants(id,store_id,product_id,label,stock) SELECT json_extract(value,'$.id'),?,json_extract(value,'$.productId'),json_extract(value,'$.label'),json_extract(value,'$.stock') FROM json_each(?)",
-      id,
-      JSON.stringify(variants),
-    ),
-  ]);
-  return { id, slug, status: 'demo', url: `${origin}/demo/${slug}` };
+  try {
+    for (const file of files) {
+      const source = await env.IMAGES.get(file.source);
+      requireThat(source, 'Фото шаблона недоступно. Обновите шаблон.', 409);
+      await env.IMAGES.put(file.target, source.body, { httpMetadata: source.httpMetadata });
+    }
+    await env.DB.batch([
+      stmt(
+        env,
+        'INSERT INTO stores(id,slug,name,settings) VALUES(?,?,?,?)',
+        id,
+        slug,
+        name,
+        JSON.stringify(cfg),
+      ),
+      stmt(
+        env,
+        "INSERT INTO products(id,store_id,data) SELECT json_extract(value,'$.id'),?,json_extract(value,'$.data') FROM json_each(?)",
+        id,
+        JSON.stringify(products),
+      ),
+      stmt(
+        env,
+        "INSERT INTO variants(id,store_id,product_id,label,stock) SELECT json_extract(value,'$.id'),?,json_extract(value,'$.productId'),json_extract(value,'$.label'),json_extract(value,'$.stock') FROM json_each(?)",
+        id,
+        JSON.stringify(variants),
+      ),
+    ]);
+  } catch (e) {
+    if (files.length) await env.IMAGES.delete(files.map((f) => f.target));
+    throw e;
+  }
+  return { id, slug, status: 'demo', url: `${origin}/s/${slug}` };
 }
 export async function saveProduct(env: Env, s: StoreRow, input: unknown, id?: string) {
   const d = object(input),

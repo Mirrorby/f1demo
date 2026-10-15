@@ -128,6 +128,10 @@ async function loadStore() {
   const logo = document.getElementById('hero-logo');
   logo.hidden = !cfg.logo;
   if (cfg.logo) logo.src = cfg.logo;
+  const favicon = document.getElementById('store-favicon');
+  favicon.href = cfg.logo || '/s/favicon.svg';
+  if (cfg.logo) favicon.removeAttribute('type');
+  document.getElementById('store-touch-icon').href = cfg.logo || '/s/favicon.svg';
   activeDelivery = cfg.deliveryMethods[0];
 }
 

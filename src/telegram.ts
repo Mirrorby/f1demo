@@ -94,11 +94,7 @@ async function menu(env: Env, user: string, lang: 'ru' | 'en', greeting = true) 
   for (const store of stores.results) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
-      text:
-        store.name +
-        '\n' +
-        origin(env) +
-        `/${store.status === 'demo' ? 'demo' : 'shop'}/${store.slug}`,
+      text: store.name + '\n' + `https://t.me/${env.BOT_USERNAME}?startapp=s_${store.slug}`,
       reply_markup: {
         inline_keyboard: [
           [{ text: t.store, web_app: { url: origin(env) + `/admin?store=${store.id}` } }],

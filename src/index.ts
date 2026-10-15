@@ -6,6 +6,9 @@ import adminStyle from '../public/admin.css';
 import adminPage from '../public/admin.html';
 import platformPage from '../public/platform.html';
 import platformEditorPage from '../public/platform-editor.html';
+import storefrontPage from '../public/storefront.html';
+import storefrontScript from '../public/storefront.js';
+import favicon from '../public/favicon.svg';
 const brandedPanel = (html: string) =>
   html
     .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
@@ -44,7 +47,14 @@ import {
 } from './factory';
 import { HttpError, object, requireThat, text, jsonBody, limitedBytes, int } from './validation';
 import type { OrderRow, ProductRow, StoreRow } from './types';
-import { findTemplate, templateList, templateProducts, templateSettings } from './templates';
+import {
+  findTemplate,
+  templateList,
+  templateSettings,
+  photoRecord,
+  resolvedTemplateProducts,
+  saveTemplatePhotos,
+} from './templates';
 import { settings, product } from './validation';
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -56,8 +66,7 @@ function json(data: unknown, status = 200) {
     },
   });
 }
-async function upload(request: Request, env: Env, access: StoreRow) {
-  const storeId = access.id;
+async function uploadMedia(request: Request, env: Env, storeId: string) {
   const bytes = await limitedBytes(request, 3 * 1024 * 1024);
   requireThat(bytes.length >= 12, 'Пустое изображение');
   let ext = '',
@@ -84,21 +93,41 @@ async function upload(request: Request, env: Env, access: StoreRow) {
   await env.IMAGES.put(key, bytes, {
     httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000, immutable' },
   });
+  return { url: '/media/' + key };
+}
+async function upload(request: Request, env: Env, access: StoreRow) {
+  const result = await uploadMedia(request, env, access.id);
   const current = await stmt(
     env,
     'SELECT version,owner_id FROM stores WHERE id=?',
-    storeId,
+    access.id,
   ).first<StoreRow>();
   if (!current || current.owner_id !== access.owner_id || current.version !== access.version) {
-    await env.IMAGES.delete(key);
+    await env.IMAGES.delete(result.url.slice(7));
     throw new HttpError(409, 'Магазин изменён. Обновите панель.');
   }
-  return { url: '/media/' + key };
+  return result;
 }
 async function route(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
+  if (path === '/s/app.js' && (method === 'GET' || method === 'HEAD'))
+    return new Response(method === 'HEAD' ? null : storefrontScript, {
+      headers: {
+        'Content-Type': 'application/javascript; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  if (path === '/s/favicon.svg' && (method === 'GET' || method === 'HEAD'))
+    return new Response(method === 'HEAD' ? null : favicon, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
   if (path === '/api/tribute/webhook' && method === 'POST') {
     const result = await tributeWebhook(request, env);
     ctx.waitUntil(flushPaymentNotifications(env));
@@ -157,7 +186,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   ) {
     const editor = path === '/platform/editor' || path === '/platform-editor.html';
     return new Response(
-      method === 'HEAD' ? null : editor ? brandedPanel(platformEditorPage) : platformPage,
+      method === 'HEAD'
+        ? null
+        : editor
+          ? brandedPanel(platformEditorPage)
+          : platformPage.replace('</head>', `<style>${adminStyle}</style></head>`),
       {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
@@ -177,6 +210,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     requireThat(t, 'Шаблон не найден', 404);
     const id = '00000000-0000-0000-0000-000000000000';
     const cfg = settings(templateSettings(t));
+    const resolved = await resolvedTemplateProducts(env, t, cfg.currencies);
     return json({
       store: {
         id,
@@ -187,8 +221,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         acceptingOrders: false,
         settings: cfg,
       },
-      products: templateProducts(t, cfg.currencies).map((p, i) => {
-        const normalized = product(p, cfg, id);
+      products: resolved.products.map((p, i) => {
+        const normalized = product(p, cfg, resolved.mediaId || id);
         return {
           ...normalized.data,
           variants: normalized.variants,
@@ -204,6 +238,25 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
   if (path.startsWith('/api/platform/')) {
     await platformAuth(request, env);
+    const templateRoute = path.match(/^\/api\/platform\/templates\/([a-z]+)(?:\/(images))?$/);
+    if (templateRoute) {
+      const t = findTemplate(templateRoute[1]);
+      requireThat(t, 'Шаблон не найден', 404);
+      if (templateRoute[2] === 'images' && method === 'POST') {
+        const record = await photoRecord(env, t.id, true);
+        return json(await uploadMedia(request, env, record!.media_id), 201);
+      }
+      if (!templateRoute[2] && method === 'GET') {
+        await photoRecord(env, t.id, true);
+        return json({
+          id: t.id,
+          title: t.title,
+          ...(await resolvedTemplateProducts(env, t, ['BYN', 'RUB', 'KZT', 'USD', 'EUR'])),
+        });
+      }
+      if (!templateRoute[2] && method === 'PUT')
+        return json(await saveTemplatePhotos(env, t.id, await jsonBody(request)));
+    }
     if (path === '/api/platform/payments/config' && method === 'GET')
       return json(await tributeConfig(env));
     if (path === '/api/platform/payments' && method === 'GET') return json(await listInvoices(env));
@@ -235,7 +288,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         env,
         'SELECT * FROM stores ORDER BY created_at DESC,id LIMIT 200',
       ).all<StoreRow>();
-      return json(stores.results.map((s) => ({ ...publicStore(s), ownerLinked: !!s.owner_id })));
+      return json(
+        stores.results.map((s) => ({
+          ...publicStore(s, env.BOT_USERNAME),
+          ownerLinked: !!s.owner_id,
+        })),
+      );
     }
     if (path === '/api/platform/stores' && method === 'POST')
       return json(await createStore(env, await jsonBody(request), origin(env)), 201);
@@ -282,7 +340,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         return json({ url: origin(env) + '/shop/' + s.slug });
       }
       if (match[2] === 'export' && method === 'GET')
-        return json({ schemaVersion: 1, ...publicStore(s), products: await catalog(env, s.id) });
+        return json({
+          schemaVersion: 1,
+          ...publicStore(s, env.BOT_USERNAME),
+          products: await catalog(env, s.id),
+        });
     }
   }
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
@@ -298,7 +360,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         'SELECT * FROM stores WHERE owner_id=? ORDER BY created_at LIMIT 50',
         owner,
       ).all<StoreRow>();
-      return json(stores.results.map(publicStore));
+      return json(stores.results.map((s) => publicStore(s, env.BOT_USERNAME)));
     }
     const match = path.match(
       /^\/api\/(?:admin|platform)\/stores\/([a-f0-9-]{36})(?:\/(products|orders|settings|images)(?:\/([a-f0-9-]{36}))?)?$/,
@@ -317,7 +379,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           s.id,
           s.id,
         ).first();
-        return json({ ...publicStore(s), stats });
+        return json({ ...publicStore(s, env.BOT_USERNAME), stats });
       }
       if (section === 'products' && !id && method === 'GET') return json(await catalog(env, s.id));
       if (section === 'products' && !id && method === 'POST')
@@ -349,7 +411,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
             id,
           ).first<OrderRow>();
           requireThat(o, 'Заказ не найден', 404);
-          return json(orderView(o));
+          return json(orderView(o, await catalog(env, s.id)));
         }
         const offset = Number(url.searchParams.get('offset') ?? 0);
         requireThat(
@@ -368,7 +430,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           ...(status ? [status] : []),
           offset,
         ).all<OrderRow>();
-        return json(orders.results.map(orderView));
+        const products = await catalog(env, s.id);
+        return json(orders.results.map((o) => orderView(o, products)));
       }
       if (section === 'orders' && id && method === 'PATCH') {
         await changeStatus(
@@ -392,7 +455,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (publicMatch) {
     const s = await storeBySlug(env, publicMatch[1]);
     if (method === 'GET' && !publicMatch[2])
-      return json({ store: publicStore(s), products: await catalog(env, s.id) });
+      return json({ store: publicStore(s, env.BOT_USERNAME), products: await catalog(env, s.id) });
     if (method === 'POST' && publicMatch[2]) {
       const result = await placeOrder(
         env,
@@ -431,14 +494,23 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     requireThat(findTemplate(preview[1]), 'Шаблон не найден', 404);
     assetPath = '/storefront.html';
   }
-  const storefront = path.match(/^\/(demo|shop)\/([a-z0-9-]{1,80})\/?$/);
+  const storefront = path.match(/^\/(demo|shop|s)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {
     const s = await storeBySlug(env, storefront[2]);
     const kind = s.status === 'demo' ? 'demo' : 'shop';
-    if (storefront[1] !== kind)
+    if (storefront[1] !== kind && storefront[1] !== 's')
       return Response.redirect(url.origin + '/' + kind + '/' + s.slug, 302);
     assetPath = '/storefront.html';
   }
+  if (assetPath === '/storefront.html')
+    return new Response(method === 'HEAD' ? null : storefrontPage, {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+        'X-Content-Type-Options': 'nosniff',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+      },
+    });
   const assetUrl = new URL(request.url);
   assetUrl.pathname = assetPath;
   const response = await env.ASSETS.fetch(

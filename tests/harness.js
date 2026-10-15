@@ -90,7 +90,7 @@ export async function start(overrides = {}) {
           b.onLoad(
             {
               filter:
-                /public\/(platform\.(js|html)|platform-editor\.html|admin(-i18n)?\.(js|html|css))$/,
+                /public\/(platform\.(js|html)|platform-editor\.html|admin(-i18n)?\.(js|html|css)|storefront\.(js|html)|favicon\.svg)$/,
             },
             async (args) => ({
               contents: 'export default ' + JSON.stringify(await readFile(args.path, 'utf8')),
@@ -199,6 +199,7 @@ export async function start(overrides = {}) {
           '/demo/*',
           '/templates/*',
           '/shop/*',
+          '/s/*',
           '/media/*',
           '/admin',
           '/admin/*',

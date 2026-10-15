@@ -62,7 +62,7 @@ try {
   );
   const shotDir = process.env.BROWSER_SCREENSHOT_DIR;
   if (shotDir) await mkdir(shotDir, { recursive: true });
-  for (const theme of ['fashion', 'home', 'beauty']) {
+  for (const theme of ['minimal', 'fashion', 'home', 'beauty']) {
     for (const width of [390, 1280]) {
       await page.setViewportSize({ width, height: 1000 });
       await page.goto(origin + '/templates/' + theme);
@@ -107,6 +107,16 @@ try {
   await page.getByRole('button', { name: 'Настроить Telegram-бота' }).waitFor();
   await page.getByRole('button', { name: 'Настроить Telegram-бота' }).click();
   await page.locator('#notice').filter({ hasText: 'Бот настроен' }).waitFor();
+  await page.getByRole('button', { name: 'Универсальный', exact: true }).click();
+  await page.locator('#template-photo-0').setInputFiles(imageFile);
+  await page.locator('#notice').filter({ hasText: 'Фото загружено' }).waitFor();
+  await page.getByRole('button', { name: 'Сохранить фото шаблона', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Фото шаблона сохранены' }).waitFor();
+  const templateImage = (await req('/api/templates/minimal')).body.products[0].photos[0];
+  assert.ok(templateImage.startsWith('/media/'));
+  await page.getByRole('button', { name: 'Универсальный', exact: true }).click();
+  await page.waitForFunction(() => document.querySelector('.template-photo')?.naturalWidth > 0);
+  await page.getByRole('button', { name: 'Все магазины', exact: false }).click();
   await page.locator('#new-template').selectOption('fashion');
   assert.equal(await page.locator('#seed-products').isChecked(), true);
   assert.equal(await page.locator('#template-preview').getAttribute('href'), '/templates/fashion');
@@ -119,6 +129,7 @@ try {
   assert.equal(seeded.store.settings.theme, 'fashion');
   assert.equal(seeded.products.length, 6);
   assert.ok(seeded.products.every((p) => p.prices.EUR > 0));
+  await page.locator('#seed-products').uncheck();
   await page.locator('#new-name').fill('Browser factory');
   await page.locator('#new-slug').fill('browser-factory');
   await page.getByRole('button', { name: 'Создать демо', exact: true }).click();
@@ -312,6 +323,10 @@ try {
     const photo = document.querySelector('.card img');
     return !logo.hidden && logo.naturalWidth > 0 && photo?.naturalWidth > 0;
   });
+  const favicon = await page.locator('#store-favicon').getAttribute('href');
+  assert.ok(favicon.startsWith('/media/'));
+  assert.equal(favicon, await page.locator('#hero-logo').getAttribute('src'));
+  assert.equal(favicon, await page.locator('#store-touch-icon').getAttribute('href'));
   assert.ok(await page.locator('.card-name').filter({ hasText: 'Новая кепка' }).count());
   await page.locator('.card').filter({ hasText: 'Новая кепка' }).click();
   await page.getByRole('button', { name: 'В корзину', exact: true }).click();
@@ -371,13 +386,20 @@ try {
   await page.goto(origin + '/admin?store=' + shop.id);
   await page.getByRole('heading', { name: 'Всё под рукой' }).waitFor();
   await page.getByRole('button', { name: 'Заказы', exact: true }).click();
+  await page.locator('[data-order] .order-photo').first().waitFor();
   await page.locator('[data-order]').first().click();
+  await page.waitForFunction(
+    () => document.querySelector('.order-lines .order-photo')?.naturalWidth > 0,
+  );
   await page.getByRole('button', { name: 'Принять', exact: true }).click();
   await page.getByText('В обработке', { exact: true }).waitFor();
   if (shotDir) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: shotDir + '/admin-order-mobile.png' });
   }
+  await page.goto(origin + '/admin?tgWebAppStartParam=s_' + shop.slug);
+  await page.waitForURL(origin + '/s/' + shop.slug);
+  await page.locator('.card-name').first().waitFor();
   assert.deepEqual(errors, []);
   console.log(
     'Browser smoke passed: admin CRUD/settings → public catalog → failed and successful checkout → D1 → order status; demo, XSS and 375/390/1280 layouts.',

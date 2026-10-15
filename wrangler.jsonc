@@ -7,6 +7,9 @@
       "type": "Text",
       "globs": [
         "**/platform.js",
+        "**/storefront.js",
+        "**/storefront.html",
+        "**/favicon.svg",
         "**/admin.js",
         "**/admin-i18n.js",
         "**/admin.css",
@@ -27,6 +30,7 @@
       "/demo/*",
       "/templates/*",
       "/shop/*",
+      "/s/*",
       "/media/*",
       "/admin",
       "/admin/*",

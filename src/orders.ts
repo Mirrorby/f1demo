@@ -83,6 +83,7 @@ export async function placeOrder(env: Env, s: StoreRow, input: unknown, key: str
     return {
       ...i,
       name: p.name,
+      photo: p.photos[0] || '',
       variant: v.label,
       unitMinor,
       version: p.version,
@@ -144,7 +145,7 @@ function receipt(o: OrderRow) {
     status: o.status,
   };
 }
-export function orderView(o: OrderRow) {
+export function orderView(o: OrderRow, products: { id: string; photos: string[] }[] = []) {
   return {
     id: o.id,
     number: o.number,
@@ -153,7 +154,10 @@ export function orderView(o: OrderRow) {
     totalMinor: o.total_minor,
     createdAt: o.created_at,
     customer: JSON.parse(o.customer),
-    items: JSON.parse(o.items),
+    items: (JSON.parse(o.items) as OrderItem[]).map((item) => ({
+      ...item,
+      photo: item.photo ?? products.find((p) => p.id === item.productId)?.photos[0] ?? '',
+    })),
   };
 }
 export async function changeStatus(
