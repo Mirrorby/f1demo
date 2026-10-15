@@ -73,7 +73,7 @@ test('language switching translates untouched defaults and preserves custom copy
   assert.deepEqual(data.store.settings.deliveryMethods, ['Доставка', 'Самовывоз']);
   assert.deepEqual(data.products, products);
   assert.equal(
-    (await platform('stores', 'POST', { name: 'Bad lang', settings: { language: 'de' } })).status,
+    (await platform('stores', 'POST', { name: 'Bad lang', settings: { language: 'xx' } })).status,
     400,
   );
   await db
@@ -111,4 +111,33 @@ test('template photo URLs persist and seed stores; non-HTTPS and credential URLs
   assert.ok(
     (await req('/api/stores/' + created.slug)).body.products.some((p) => p.photos[0] === url),
   );
+});
+
+test('all supported storefront languages persist and translate catalog controls', async () => {
+  const expected = {
+    es: 'Carrito',
+    pt: 'Carrinho',
+    fr: 'Panier',
+    it: 'Carrello',
+    tr: 'Sepet',
+    pl: 'Koszyk',
+    ja: 'カート',
+    de: 'Warenkorb',
+  };
+  for (const [language, cart] of Object.entries(expected)) {
+    const result = await platform('stores', 'POST', {
+      name: 'Localized ' + language,
+      templateId: 'minimal',
+      settings: { language },
+    });
+    assert.equal(result.status, 201, JSON.stringify(result));
+    const data = (await req('/api/stores/' + result.body.slug)).body;
+    assert.equal(data.store.settings.language, language);
+    assert.equal(data.store.settings.texts.btn_cart, cart);
+    const html = (await req('/s/' + result.body.slug)).body;
+    assert.match(html, new RegExp('<html lang="' + language + '">'));
+    assert.ok(html.includes(cart));
+  }
+  const config = (await platform('config')).body;
+  assert.equal(config.features.supportedLanguages.length, 10);
 });

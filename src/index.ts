@@ -9,16 +9,22 @@ import platformEditorPage from '../public/platform-editor.html';
 import storefrontPage from '../public/storefront.html';
 import storefrontScript from '../public/storefront.js';
 import favicon from '../public/favicon.svg';
-import { english, translate } from './language';
-const storefrontMarkup = (language: string = 'ru') =>
-  language !== 'en'
-    ? storefrontPage
-    : storefrontPage
-        .replace('<html lang="ru">', '<html lang="en">')
-        .replace(/>([^<>]+)</g, (all, value: string) => {
-          const text = value.trim();
-          return english[text] ? '>' + value.replace(text, english[text]) + '<' : all;
-        });
+import {
+  english,
+  translate,
+  normalizeLanguage,
+  supportedLanguages,
+  storefrontDictionaries,
+} from './language';
+const storefrontMarkup = (language: string = 'ru') => {
+  const selected = normalizeLanguage(language);
+  return storefrontPage
+    .replace('<html lang="ru">', `<html lang="${selected}">`)
+    .replace(/>([^<>]+)</g, (all, value: string) => {
+      const text = value.trim();
+      return english[text] ? '>' + value.replace(text, translate(text, selected)) + '<' : all;
+    });
+};
 const brandedPanel = (html: string) =>
   html
     .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
@@ -176,7 +182,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     return new Response(
       method === 'HEAD'
         ? null
-        : 'const STOREFRONT_EN = ' + JSON.stringify(english) + ';\n' + storefrontScript,
+        : 'const STOREFRONT_LOCALES = ' +
+            JSON.stringify(storefrontDictionaries) +
+            ';\n' +
+            storefrontScript,
       {
         headers: {
           'Content-Type': 'application/javascript; charset=utf-8',
@@ -274,7 +283,9 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     const t = findTemplate(previewApi[1]);
     requireThat(t, 'Шаблон не найден', 404);
     const id = '00000000-0000-0000-0000-000000000000';
-    const cfg = settings(templateSettings(t, url.searchParams.get('lang') === 'en' ? 'en' : 'ru'));
+    const cfg = settings(
+      templateSettings(t, normalizeLanguage(url.searchParams.get('lang') || 'ru')),
+    );
     const resolved = await resolvedTemplateProducts(env, t, cfg.currencies, cfg.language);
     return json({
       store: {
@@ -368,7 +379,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     if (path === '/api/platform/telegram/setup' && method === 'POST')
       return json(await setupTelegram(env));
     if (path === '/api/platform/config' && method === 'GET')
-      return json({ publicOrigin: origin(env), botUsername: env.BOT_USERNAME });
+      return json({
+        publicOrigin: origin(env),
+        botUsername: env.BOT_USERNAME,
+        features: { priceOnRequest: true, supportedLanguages },
+      });
     if (path === '/api/platform/stores' && method === 'GET') {
       const stores = await stmt(
         env,
@@ -584,7 +599,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (preview) {
     requireThat(findTemplate(preview[1]), 'Шаблон не найден', 404);
     assetPath = '/storefront.html';
-    storefrontLanguage = url.searchParams.get('lang') === 'en' ? 'en' : 'ru';
+    storefrontLanguage = normalizeLanguage(url.searchParams.get('lang') || 'ru');
   }
   const storefront = path.match(/^\/(demo|shop|s)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {

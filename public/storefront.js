@@ -1,6 +1,8 @@
-let language = document.documentElement.lang === 'en' ? 'en' : 'ru';
+let language = document.documentElement.lang || 'ru';
 function ui(value) {
-  return language === 'en' ? STOREFRONT_EN[value] || value : value;
+  return language === 'ru'
+    ? value
+    : (STOREFRONT_LOCALES[language] || STOREFRONT_LOCALES.en)[value] || value;
 }
 /* ════ DEFAULTS ════ */
 const DEFAULTS = {
@@ -70,7 +72,7 @@ async function loadStore() {
     (templatePreview ? '/api/templates/' : '/api/stores/') +
       encodeURIComponent(slug) +
       (templatePreview
-        ? '?lang=' + (new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'ru')
+        ? '?lang=' + encodeURIComponent(new URLSearchParams(location.search).get('lang') || 'ru')
         : ''),
     { cache: 'no-store' },
   );
@@ -78,7 +80,7 @@ async function loadStore() {
   if (!r.ok) throw new Error(data.error || ui('Не удалось загрузить магазин'));
   currentStore = data.store;
   const cfg = currentStore.settings;
-  language = cfg.language === 'en' ? 'en' : 'ru';
+  language = cfg.language === 'ru' || STOREFRONT_LOCALES[cfg.language] ? cfg.language : 'en';
   document.documentElement.lang = language;
   document.documentElement.dataset.theme = cfg.theme || 'minimal';
   const codes = cfg.currencies,
@@ -119,7 +121,7 @@ async function loadStore() {
       price_primary_orig: one,
       price_secondary_orig: two,
       discount_percent: p.discountPercent,
-      has_discount: p.discountPercent > 0,
+      has_discount: !p.priceOnRequest && p.discountPercent > 0,
       avail: {
         available: ui('В наличии'),
         preorder: ui('На заказ'),
@@ -143,7 +145,7 @@ async function loadStore() {
     currentStore.status === 'demo' ? ui('Демо магазина') : ui('Каталог');
   const logo = document.getElementById('hero-logo');
   logo.hidden = !cfg.logo;
-  logo.alt = language === 'en' ? 'Logo' : 'Логотип';
+  logo.alt = ui('Логотип');
   if (cfg.logo) logo.src = cfg.logo;
   const favicon = document.getElementById('store-favicon');
   favicon.href = cfg.logo || '/s/favicon.svg';
@@ -173,9 +175,7 @@ function applySettings() {
   document.getElementById('hero-title').textContent = S.hero_title;
   document.getElementById('hero-subtitle').textContent = S.hero_subtitle;
   document.getElementById('footer-text').textContent = S.footer_text;
-  document.getElementById('hero-wa').href = 'https://wa.me/' + S.whatsapp;
-  document.getElementById('hero-tg').href = 'https://t.me/' + tgUsername(S.telegram);
-  document.getElementById('hero-ig').href = 'https://instagram.com/' + S.instagram;
+  applyContacts();
   const sl = document.getElementById('hero-support-label');
   if (sl) sl.textContent = S.support_label || ui('По всем вопросам пишите нам');
   document.getElementById('lbl-cart').textContent = S.btn_cart;
@@ -184,6 +184,36 @@ function applySettings() {
   document.getElementById('lbl-size-h').textContent = S.label_size;
   document.getElementById('lbl-qty-h').textContent = S.label_qty;
   updateCurBtn();
+}
+
+function applyContacts() {
+  const demo = currentStore.status === 'demo';
+  const placeholder = ui('Контакт будет добавлен');
+  for (const [id, value, url] of [
+    ['hero-wa', S.whatsapp, 'https://wa.me/' + S.whatsapp],
+    ['hero-tg', S.telegram, 'https://t.me/' + tgUsername(S.telegram)],
+    ['hero-ig', S.instagram, 'https://www.instagram.com/' + S.instagram + '/'],
+  ]) {
+    const button = document.getElementById(id);
+    button.hidden = !demo && !value;
+    if (value) {
+      button.href = url;
+      button.removeAttribute('aria-disabled');
+      button.removeAttribute('title');
+      button.removeAttribute('tabindex');
+      button.style.opacity = '';
+      button.style.cursor = '';
+    } else {
+      button.removeAttribute('href');
+      button.setAttribute('aria-disabled', 'true');
+      button.setAttribute('title', placeholder);
+      button.setAttribute('tabindex', '0');
+      button.style.opacity = '0.6';
+      button.style.cursor = 'default';
+    }
+  }
+  document.querySelector('.hero-contacts').hidden =
+    !demo && !S.whatsapp && !S.telegram && !S.instagram;
 }
 // Принимает в настройках username,
 // так и @username или полную ссылку — на выходе всегда чистый username для t.me/
@@ -228,7 +258,7 @@ function toggleCurrency() {
   if (document.getElementById('pm-ov').classList.contains('open') && curP) renderModalPrice(curP);
 }
 function fmt(n) {
-  return Number(n || 0).toLocaleString(language === 'en' ? 'en-US' : 'ru-RU') + ' ' + curSymbol();
+  return Number(n || 0).toLocaleString(language) + ' ' + curSymbol();
 }
 
 /* ════ RENDER ════ */
@@ -293,9 +323,11 @@ function renderGrid() {
       ].join('');
       // Показываем только размеры из колонки Размеры, без остатков
       const szLine = p.variants.map((v) => v.label).join(' · ');
-      const priceBlock = p.has_discount
-        ? `<div class="price-row"><span class="price-old">${fmt(priceOfOrig(p))}</span><span class="price">${fmt(priceOf(p))}</span></div>`
-        : `<div class="price">${fmt(priceOf(p))}</div>`;
+      const priceBlock = p.priceOnRequest
+        ? `<div class="price">${esc(priceRequestLabel())}</div>`
+        : p.has_discount
+          ? `<div class="price-row"><span class="price-old">${fmt(priceOfOrig(p))}</span><span class="price">${fmt(priceOf(p))}</span></div>`
+          : `<div class="price">${fmt(priceOf(p))}</div>`;
       return `
     <div class="card" onclick="openProduct(${p.id})">
       <div class="card-img">
@@ -311,7 +343,7 @@ function renderGrid() {
         <div class="card-foot">
           ${priceBlock}
           <button class="add-btn" ${!ok ? 'disabled' : ''} onclick="event.stopPropagation();openProduct(${p.id})">
-            + ${esc(S.btn_add)}
+            ${p.priceOnRequest ? esc(ui('Подробнее')) : '+ ' + esc(S.btn_add)}
           </button>
         </div>
       </div>
@@ -407,7 +439,9 @@ let curP = null,
   curQty = 1;
 function renderModalPrice(p) {
   const row = document.getElementById('pm-price-row');
-  if (p.has_discount) {
+  if (p.priceOnRequest) {
+    row.innerHTML = `<span class="pm-price">${esc(priceRequestLabel())}</span>`;
+  } else if (p.has_discount) {
     row.innerHTML = `<span class="pm-price-old">${fmt(priceOfOrig(p))}</span><span class="pm-price">${fmt(priceOf(p))}</span><span class="pm-discount-badge">-${p.discount_percent}%</span>`;
   } else {
     row.innerHTML = `<span class="pm-price">${fmt(priceOf(p))}</span>`;
@@ -486,14 +520,21 @@ function chQty(d) {
 function updAddBtn() {
   const btn = document.getElementById('pm-add');
   // Если товар на заказ и размер = "Уточнить вариант" (заглушка) — кнопка активна
-  const ready = !!curSize;
+  const ready = !!curSize && !curP?.priceOnRequest;
   btn.disabled = !ready;
-  btn.textContent = ready ? S.btn_add : S.btn_add_size || ui('Выберите вариант');
+  btn.textContent = curP?.priceOnRequest
+    ? priceRequestLabel()
+    : ready
+      ? S.btn_add
+      : S.btn_add_size || ui('Выберите вариант');
+}
+function priceRequestLabel() {
+  return ui('Цена по запросу');
 }
 
 /* ════ CART ════ */
 function addToCart() {
-  if (!curSize || !curP) return;
+  if (!curSize || !curP || curP.priceOnRequest) return;
   const sizeNote = curSize === ui('Уточнить вариант'); // флаг для пометки в заказе
   const key = curP.id + '|' + curSize;
   const ex = cart.find((x) => x.key === key);
@@ -725,7 +766,7 @@ async function placeOrder() {
     document.getElementById('confirm-order-num').textContent = '#' + result.number;
     document.querySelector('.order-sub').textContent =
       ui('Заказ сохранён. Итого: ') +
-      (result.totalMinor / 100).toLocaleString(language === 'en' ? 'en-US' : 'ru-RU') +
+      (result.totalMinor / 100).toLocaleString(language) +
       ' ' +
       result.currency +
       ui('. Продавец свяжется с вами для подтверждения.');
@@ -842,14 +883,6 @@ async function init() {
   try {
     await loadStore();
     applySettings();
-    for (const [key, value] of [
-      ['hero-wa', S.whatsapp],
-      ['hero-tg', S.telegram],
-      ['hero-ig', S.instagram],
-    ])
-      document.getElementById(key).hidden = !value || currentStore.status === 'demo';
-    document.querySelector('.hero-contacts').hidden =
-      currentStore.status === 'demo' || (!S.whatsapp && !S.telegram && !S.instagram);
     activeCat = S.filter_all || ui('Все');
     renderFilters();
     renderGrid();

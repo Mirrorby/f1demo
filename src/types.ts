@@ -1,5 +1,5 @@
 export interface Settings {
-  language: 'ru' | 'en';
+  language: import('./language').Language;
   theme: 'minimal' | 'fashion' | 'home' | 'beauty';
   description: string;
   accentColor: string;
@@ -34,6 +34,7 @@ export interface ProductData {
   category: string;
   description: string;
   prices: Record<string, number>;
+  priceOnRequest?: boolean;
   discountPercent: number;
   availability: 'available' | 'preorder' | 'unavailable';
   photos: string[];

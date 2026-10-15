@@ -335,7 +335,7 @@ export function templateSettings(t: Template, language: Language = 'ru') {
       support_label: copy.support,
     },
   };
-  if (language === 'en') {
+  if (language !== 'ru') {
     for (const key of ['description', 'heroTitle', 'footerText', 'deliveryHint'] as const)
       result[key] = translate(result[key], language);
     result.deliveryMethods = result.deliveryMethods.map((v) => translate(v, language));
@@ -411,7 +411,7 @@ const descriptions: Record<string, string> = {
 };
 export function templateProducts(t: Template, codes: string[], language: Language = 'ru') {
   const local = (v: string) =>
-    language === 'en' ? translate(v, language).replace(/ мл/g, ' ml').replace(/ см/g, ' cm') : v;
+    language !== 'ru' ? translate(v, language).replace(/ мл/g, ' ml').replace(/ см/g, ' cm') : v;
   return t.samples.map((s, i) => ({
     name: local(s.name),
     category: local(s.category),

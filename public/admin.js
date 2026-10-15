@@ -109,6 +109,7 @@ const base = () => `stores/${store.id}`;
 const siteUrl = () => store.customUrl || location.origin + '/s/' + store.slug;
 const shareUrl = () => store.customUrl || store.shareUrl || siteUrl();
 function money(p) {
+  if (p.priceOnRequest) return 'Цена по запросу';
   return Object.entries(p.prices)
     .filter(([c]) => store.settings.currencies.includes(c))
     .map(([c, v]) => (v / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU') + ' ' + c)
@@ -302,6 +303,7 @@ function editProduct(index) {
   photos = [...(edited?.photos || [])];
   const p = edited || {};
   main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple><label for="photo-url">Ссылка на фото</label><input id="photo-url" type="url" maxlength="1000" placeholder="https://example.com/photo.jpg"><button type="button" data-action="photo-link">Добавить фото по ссылке</button>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
+ <label><input id="price-on-request" type="checkbox" ${p.priceOnRequest ? 'checked' : ''}> Цена по запросу</label>
  ${store.settings.currencies.map((c) => field('price-' + c, 'Цена, ' + c, (p.prices?.[c] ?? 0) / 100, 'number', true)).join('')}
  <details><summary>Дополнительные валюты и характеристики</summary>${[
    'BYN',
@@ -344,7 +346,7 @@ function editProduct(index) {
 }
 function renderSettings() {
   const s = store.settings;
-  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}<label for="store-language">Язык сайта</label><select id="store-language"><option value="ru" ${(s.language || 'ru') === 'ru' ? 'selected' : ''}>Русский</option><option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option></select><p>Язык интерфейса и стандартных текстов. Собственные названия и описания товаров редактируются отдельно.</p>${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
+  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}<label for="store-language">Язык сайта</label><select id="store-language"><option value="ru" ${s.language === 'ru' ? 'selected' : ''}>Русский</option><option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option><option value="es" ${s.language === 'es' ? 'selected' : ''}>Español</option><option value="pt" ${s.language === 'pt' ? 'selected' : ''}>Português</option><option value="fr" ${s.language === 'fr' ? 'selected' : ''}>Français</option><option value="it" ${s.language === 'it' ? 'selected' : ''}>Italiano</option><option value="tr" ${s.language === 'tr' ? 'selected' : ''}>Türkçe</option><option value="pl" ${s.language === 'pl' ? 'selected' : ''}>Polski</option><option value="ja" ${s.language === 'ja' ? 'selected' : ''}>日本語</option><option value="de" ${s.language === 'de' ? 'selected' : ''}>Deutsch</option></select><p>Язык интерфейса и стандартных текстов. Собственные названия и описания товаров редактируются отдельно.</p>${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
     ['minimal', 'Универсальный'],
     ['fashion', 'Одежда и аксессуары'],
     ['home', 'Дом и декор'],
@@ -625,6 +627,7 @@ document.addEventListener('submit', async (event) => {
         discountPercent: Number(val('discount')),
         photos,
         prices,
+        priceOnRequest: document.getElementById('price-on-request').checked,
         variants: [...document.querySelectorAll('.variant')].map((row) => ({
           ...(row.dataset.id ? { id: row.dataset.id } : {}),
           label: row.querySelector('.variant-label').value.trim(),

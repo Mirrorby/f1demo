@@ -68,6 +68,7 @@ export async function placeOrder(env: Env, s: StoreRow, input: unknown, key: str
       v = p?.variants.find((v) => v.id === i.variantId);
     requireThat(p && v, 'Товар или вариант не найден', 409);
     requireThat(p.availability !== 'unavailable', 'Товар недоступен', 409);
+    requireThat(!p.priceOnRequest, 'Сначала уточните цену товара', 409);
     requireThat(
       p.availability === 'preorder' || v.stock === null || v.stock >= i.quantity,
       'Недостаточно товара в наличии',
