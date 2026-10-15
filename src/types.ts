@@ -1,5 +1,5 @@
 export interface Settings {
-  language: 'ru' | 'en';
+  language: import('./language').Language;
   theme: 'minimal' | 'fashion' | 'home' | 'beauty';
   description: string;
   accentColor: string;

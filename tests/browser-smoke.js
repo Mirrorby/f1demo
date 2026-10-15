@@ -412,7 +412,9 @@ try {
   }
   await page.goto(origin + '/demo/' + demo.slug);
   await page.locator('#demo-banner').waitFor();
-  assert.equal(await page.locator('#hero-wa').isVisible(), false);
+  assert.equal(await page.locator('#hero-wa').isVisible(), true);
+  assert.equal(await page.locator('#hero-tg').isVisible(), true);
+  assert.equal(await page.locator('#hero-ig').isVisible(), true);
   // Tenant content must be text, including HTML-like product names and categories.
   const p = (await req('/api/stores/' + shop.slug)).body.products[0];
   await db
@@ -519,7 +521,19 @@ try {
   );
   if (shotDir) await page.screenshot({ path: shotDir + '/english-order.png' });
   // Instagram photos without a known price remain viewable, but cannot enter the cart.
-  for (const language of ['ru', 'en']) {
+  const priceLabels = {
+    ru: 'Цена по запросу',
+    en: 'Price on request',
+    es: 'Precio a consultar',
+    pt: 'Preço sob consulta',
+    fr: 'Prix sur demande',
+    it: 'Prezzo su richiesta',
+    tr: 'Fiyat için iletişime geçin',
+    pl: 'Cena na zapytanie',
+    ja: '価格はお問い合わせください',
+    de: 'Preis auf Anfrage',
+  };
+  for (const language of Object.keys(priceLabels)) {
     const imported = await platform('stores', 'POST', {
       name: 'Photo shop',
       slug: 'photo-shop-' + language,
@@ -537,7 +551,12 @@ try {
     assert.equal(imported.status, 201);
     await page.goto(origin + '/s/' + imported.body.slug);
     await page.locator('.card-name').first().waitFor();
-    const label = language === 'en' ? 'Price on request' : 'Цена по запросу';
+    const label = priceLabels[language];
+    assert.equal(await page.locator('html').getAttribute('lang'), language);
+    for (const id of ['hero-tg', 'hero-wa', 'hero-ig'])
+      assert.equal(await page.locator('#' + id).isVisible(), true);
+    assert.equal(await page.locator('#hero-tg').getAttribute('aria-disabled'), 'true');
+    assert.match(await page.locator('#hero-ig').getAttribute('href'), /instagram.com/);
     assert.equal(await page.locator('#grid .price').innerText(), label);
     await page.locator('.card').first().click();
     assert.equal(await page.locator('#pm-price-row').innerText(), label);

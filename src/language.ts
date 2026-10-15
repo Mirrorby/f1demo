@@ -1,5 +1,25 @@
-export type Language = 'ru' | 'en';
+import extraLocales from './storefront-locales.json';
+export const supportedLanguages = [
+  'ru',
+  'en',
+  'es',
+  'pt',
+  'fr',
+  'it',
+  'tr',
+  'pl',
+  'ja',
+  'de',
+] as const;
+export type Language = (typeof supportedLanguages)[number];
+export function normalizeLanguage(value: string): Language {
+  return supportedLanguages.includes(value as Language) ? (value as Language) : 'ru';
+}
 export const english: Record<string, string> = {
+  'Демонстрация магазина. Реальные заказы отключены.': 'Demo store. Real orders are disabled.',
+  'Контакт будет добавлен': 'Contact will be added',
+  Подробнее: 'Details',
+  'Цена по запросу': 'Price on request',
   Высота: 'Height',
   'Демонстрация магазина. Заказы и сообщения продавцу отключены.':
     'Demo store. Ordering and seller messages are disabled.',
@@ -260,5 +280,18 @@ export const english: Record<string, string> = {
     'A rich cream for evening foot care. Apply to clean, dry skin and gently massage it in.',
 };
 export function translate(value: string, language: Language): string {
-  return language === 'en' ? (english[value] ?? value) : value;
+  if (language === 'ru') return value;
+  const text = english[value] ?? value;
+  return language === 'en'
+    ? text
+    : (extraLocales[language][text as keyof (typeof extraLocales)[typeof language]] ?? text);
 }
+
+export const storefrontDictionaries = Object.fromEntries(
+  supportedLanguages
+    .filter((l) => l !== 'ru')
+    .map((l) => [
+      l,
+      Object.fromEntries(Object.keys(english).map((key) => [key, translate(key, l)])),
+    ]),
+);

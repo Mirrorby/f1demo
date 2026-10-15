@@ -1,3 +1,4 @@
+import { supportedLanguages, translate, type Language } from './language';
 import type { Settings, ProductData, Variant } from './types';
 export class HttpError extends Error {
   constructor(
@@ -77,8 +78,8 @@ const textKeys = [
 ];
 export function settings(input: unknown, storeId?: string): Settings {
   const d = object(input ?? {});
-  const language = d.language ?? 'ru';
-  requireThat(language === 'ru' || language === 'en', 'Неподдерживаемый язык');
+  const language = (d.language ?? 'ru') as Language;
+  requireThat(supportedLanguages.includes(language), 'Неподдерживаемый язык');
   const codes = d.currencies === undefined ? ['BYN'] : strings(d.currencies, 2);
   requireThat(
     codes.length > 0 &&
@@ -88,9 +89,7 @@ export function settings(input: unknown, storeId?: string): Settings {
   );
   const methods =
     d.deliveryMethods === undefined
-      ? language === 'en'
-        ? ['Delivery', 'Pickup']
-        : ['Доставка', 'Самовывоз']
+      ? ['Доставка', 'Самовывоз'].map((v) => translate(v, language))
       : strings(d.deliveryMethods, 6);
   requireThat(
     methods.length > 0 && new Set(methods).size === methods.length,

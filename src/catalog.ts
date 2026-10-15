@@ -1,3 +1,4 @@
+import { normalizeLanguage } from './language';
 import type { Product, ProductRow, StoreRow, Settings, Variant } from './types';
 import { HttpError, object, product, requireThat, settings, text, int } from './validation';
 import {
@@ -97,7 +98,10 @@ export async function createStore(env: Env, input: unknown, origin: string, targ
   requireThat(!d.seedProducts || template, 'Выберите шаблон для примерных товаров');
   const supplied = object(d.settings ?? {});
   const defaults: Partial<Settings> = template
-    ? templateSettings(template, supplied.language === 'en' ? 'en' : 'ru')
+    ? templateSettings(
+        template,
+        normalizeLanguage(typeof supplied.language === 'string' ? supplied.language : 'ru'),
+      )
     : {};
   const cfg = settings(
     {
