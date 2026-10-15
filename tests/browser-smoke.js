@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import { createServer } from 'node:http';
 import { mkdir } from 'node:fs/promises';
 import assert from 'node:assert/strict';
-import { start, stop, mf, db, shop, demo, initData, req, PLATFORM } from './harness.js';
+import { start, stop, mf, db, shop, demo, initData, req, platform, PLATFORM } from './harness.js';
 let browser, server;
 try {
   await start();
@@ -518,6 +518,33 @@ try {
     1,
   );
   if (shotDir) await page.screenshot({ path: shotDir + '/english-order.png' });
+  // Instagram photos without a known price remain viewable, but cannot enter the cart.
+  for (const language of ['ru', 'en']) {
+    const imported = await platform('stores', 'POST', {
+      name: 'Photo shop',
+      slug: 'photo-shop-' + language,
+      settings: { language, instagram: 'photo_shop', currencies: ['USD'] },
+      products: [
+        {
+          name: 'Silver ring',
+          description: 'Original product caption',
+          prices: { USD: 0 },
+          priceOnRequest: true,
+          photos: ['https://images.example.com/ring.png'],
+        },
+      ],
+    });
+    assert.equal(imported.status, 201);
+    await page.goto(origin + '/s/' + imported.body.slug);
+    await page.locator('.card-name').first().waitFor();
+    const label = language === 'en' ? 'Price on request' : 'Цена по запросу';
+    assert.equal(await page.locator('#grid .price').innerText(), label);
+    await page.locator('.card').first().click();
+    assert.equal(await page.locator('#pm-price-row').innerText(), label);
+    assert.equal(await page.locator('#pm-desc').innerText(), 'Original product caption');
+    assert.equal(await page.locator('#pm-add').isDisabled(), true);
+    if (shotDir) await page.screenshot({ path: shotDir + '/photo-demo-' + language + '.png' });
+  }
   assert.deepEqual(errors, []);
   console.log(
     'Browser smoke passed: admin CRUD/settings → public catalog → failed and successful checkout → D1 → order status; demo, XSS and 375/390/1280 layouts.',

@@ -136,6 +136,10 @@ export function product(
 ): { data: ProductData; variants: Variant[] } {
   const d = object(input);
   const prices: Record<string, number> = {};
+  requireThat(
+    d.priceOnRequest === undefined || typeof d.priceOnRequest === 'boolean',
+    'Недопустимый режим цены',
+  );
   const rawPrices =
     d.prices ??
     (d.price !== undefined
@@ -194,6 +198,7 @@ export function product(
       category: text(d.category, 100) || 'Прочее',
       description: text(d.description, 5000),
       prices,
+      priceOnRequest: d.priceOnRequest === true,
       discountPercent: d.discountPercent === undefined ? 0 : int(d.discountPercent, 0, 99),
       availability: availability as ProductData['availability'],
       photos,

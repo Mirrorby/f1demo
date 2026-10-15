@@ -119,7 +119,7 @@ async function loadStore() {
       price_primary_orig: one,
       price_secondary_orig: two,
       discount_percent: p.discountPercent,
-      has_discount: p.discountPercent > 0,
+      has_discount: !p.priceOnRequest && p.discountPercent > 0,
       avail: {
         available: ui('В наличии'),
         preorder: ui('На заказ'),
@@ -293,9 +293,11 @@ function renderGrid() {
       ].join('');
       // Показываем только размеры из колонки Размеры, без остатков
       const szLine = p.variants.map((v) => v.label).join(' · ');
-      const priceBlock = p.has_discount
-        ? `<div class="price-row"><span class="price-old">${fmt(priceOfOrig(p))}</span><span class="price">${fmt(priceOf(p))}</span></div>`
-        : `<div class="price">${fmt(priceOf(p))}</div>`;
+      const priceBlock = p.priceOnRequest
+        ? `<div class="price">${esc(priceRequestLabel())}</div>`
+        : p.has_discount
+          ? `<div class="price-row"><span class="price-old">${fmt(priceOfOrig(p))}</span><span class="price">${fmt(priceOf(p))}</span></div>`
+          : `<div class="price">${fmt(priceOf(p))}</div>`;
       return `
     <div class="card" onclick="openProduct(${p.id})">
       <div class="card-img">
@@ -311,7 +313,7 @@ function renderGrid() {
         <div class="card-foot">
           ${priceBlock}
           <button class="add-btn" ${!ok ? 'disabled' : ''} onclick="event.stopPropagation();openProduct(${p.id})">
-            + ${esc(S.btn_add)}
+            ${p.priceOnRequest ? esc(currentStore.settings.language === 'en' ? 'Details' : 'Подробнее') : '+ ' + esc(S.btn_add)}
           </button>
         </div>
       </div>
@@ -407,7 +409,9 @@ let curP = null,
   curQty = 1;
 function renderModalPrice(p) {
   const row = document.getElementById('pm-price-row');
-  if (p.has_discount) {
+  if (p.priceOnRequest) {
+    row.innerHTML = `<span class="pm-price">${esc(priceRequestLabel())}</span>`;
+  } else if (p.has_discount) {
     row.innerHTML = `<span class="pm-price-old">${fmt(priceOfOrig(p))}</span><span class="pm-price">${fmt(priceOf(p))}</span><span class="pm-discount-badge">-${p.discount_percent}%</span>`;
   } else {
     row.innerHTML = `<span class="pm-price">${fmt(priceOf(p))}</span>`;
@@ -486,14 +490,21 @@ function chQty(d) {
 function updAddBtn() {
   const btn = document.getElementById('pm-add');
   // Если товар на заказ и размер = "Уточнить вариант" (заглушка) — кнопка активна
-  const ready = !!curSize;
+  const ready = !!curSize && !curP?.priceOnRequest;
   btn.disabled = !ready;
-  btn.textContent = ready ? S.btn_add : S.btn_add_size || ui('Выберите вариант');
+  btn.textContent = curP?.priceOnRequest
+    ? priceRequestLabel()
+    : ready
+      ? S.btn_add
+      : S.btn_add_size || ui('Выберите вариант');
+}
+function priceRequestLabel() {
+  return currentStore.settings.language === 'en' ? 'Price on request' : 'Цена по запросу';
 }
 
 /* ════ CART ════ */
 function addToCart() {
-  if (!curSize || !curP) return;
+  if (!curSize || !curP || curP.priceOnRequest) return;
   const sizeNote = curSize === ui('Уточнить вариант'); // флаг для пометки в заказе
   const key = curP.id + '|' + curSize;
   const ex = cart.find((x) => x.key === key);

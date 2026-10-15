@@ -34,6 +34,7 @@ export interface ProductData {
   category: string;
   description: string;
   prices: Record<string, number>;
+  priceOnRequest?: boolean;
   discountPercent: number;
   availability: 'available' | 'preorder' | 'unavailable';
   photos: string[];

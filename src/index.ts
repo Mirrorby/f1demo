@@ -368,7 +368,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     if (path === '/api/platform/telegram/setup' && method === 'POST')
       return json(await setupTelegram(env));
     if (path === '/api/platform/config' && method === 'GET')
-      return json({ publicOrigin: origin(env), botUsername: env.BOT_USERNAME });
+      return json({
+        publicOrigin: origin(env),
+        botUsername: env.BOT_USERNAME,
+        features: { priceOnRequest: true },
+      });
     if (path === '/api/platform/stores' && method === 'GET') {
       const stores = await stmt(
         env,

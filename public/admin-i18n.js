@@ -2,6 +2,7 @@
 (() => {
   'use strict';
   const en = {
+    'Цена по запросу': 'Price on request',
     'Язык сайта': 'Website language',
     'Ссылка на фото': 'Photo URL',
     'Добавить фото по ссылке': 'Add photo from URL',

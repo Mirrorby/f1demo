@@ -109,6 +109,7 @@ const base = () => `stores/${store.id}`;
 const siteUrl = () => store.customUrl || location.origin + '/s/' + store.slug;
 const shareUrl = () => store.customUrl || store.shareUrl || siteUrl();
 function money(p) {
+  if (p.priceOnRequest) return 'Цена по запросу';
   return Object.entries(p.prices)
     .filter(([c]) => store.settings.currencies.includes(c))
     .map(([c, v]) => (v / 100).toLocaleString(window.DelokayI18n?.locale() || 'ru-RU') + ' ' + c)
@@ -302,6 +303,7 @@ function editProduct(index) {
   photos = [...(edited?.photos || [])];
   const p = edited || {};
   main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple><label for="photo-url">Ссылка на фото</label><input id="photo-url" type="url" maxlength="1000" placeholder="https://example.com/photo.jpg"><button type="button" data-action="photo-link">Добавить фото по ссылке</button>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
+ <label><input id="price-on-request" type="checkbox" ${p.priceOnRequest ? 'checked' : ''}> Цена по запросу</label>
  ${store.settings.currencies.map((c) => field('price-' + c, 'Цена, ' + c, (p.prices?.[c] ?? 0) / 100, 'number', true)).join('')}
  <details><summary>Дополнительные валюты и характеристики</summary>${[
    'BYN',
@@ -625,6 +627,7 @@ document.addEventListener('submit', async (event) => {
         discountPercent: Number(val('discount')),
         photos,
         prices,
+        priceOnRequest: document.getElementById('price-on-request').checked,
         variants: [...document.querySelectorAll('.variant')].map((row) => ({
           ...(row.dataset.id ? { id: row.dataset.id } : {}),
           label: row.querySelector('.variant-label').value.trim(),
