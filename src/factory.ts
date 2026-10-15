@@ -27,12 +27,18 @@ export async function deleteDemo(env: Env, s: StoreRow, input: unknown) {
     'Демо содержит счета и сохраняется для истории платежей',
     409,
   );
+  requireThat(
+    !(await stmt(env, 'SELECT id FROM store_domains WHERE store_id=? LIMIT 1', s.id).first()),
+    'Сначала отключите домены этого магазина',
+    409,
+  );
   try {
     await env.DB.batch([
       storeMutationGuard(env, s),
       stmt(
         env,
-        "INSERT INTO mutation_guards(ok) SELECT CASE WHEN EXISTS(SELECT 1 FROM stores WHERE id=? AND status='demo') AND NOT EXISTS(SELECT 1 FROM orders WHERE store_id=?) THEN 1 ELSE 0 END",
+        "INSERT INTO mutation_guards(ok) SELECT CASE WHEN EXISTS(SELECT 1 FROM stores WHERE id=? AND status='demo') AND NOT EXISTS(SELECT 1 FROM orders WHERE store_id=?) AND NOT EXISTS(SELECT 1 FROM store_domains WHERE store_id=?) THEN 1 ELSE 0 END",
+        s.id,
         s.id,
         s.id,
       ),

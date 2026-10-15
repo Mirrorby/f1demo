@@ -8,6 +8,10 @@ export let mf, db, shop, demo, second, catalog, secondCatalog;
 export const TRIBUTE = 'local-test-tribute-secret';
 export const tributeOrders = new Map();
 let tributeFails = false;
+let domainService = null;
+export function mockDomainService(handler) {
+  domainService = handler;
+}
 let productOverrides = {};
 export function mockProduct(value = {}) {
   productOverrides = value;
@@ -79,7 +83,11 @@ export function orderFor(p = catalog.products.find((p) => p.name === 'Bag'), qua
 export const checkout = (data, key = crypto.randomUUID(), slug = shop.slug) =>
   req(`/api/stores/${slug}/orders`, 'POST', data, { 'Idempotency-Key': key });
 export async function start(overrides = {}) {
-  const extraBindings = Object.hasOwn(overrides, 'TRIBUTE_PRODUCT_URL') ? overrides : {};
+  const extraBindings =
+    Object.hasOwn(overrides, 'TRIBUTE_PRODUCT_URL') ||
+    Object.hasOwn(overrides, 'CUSTOM_DOMAINS_API_TOKEN')
+      ? overrides
+      : {};
   const result = await build({
     entryPoints: ['src/index.ts'],
     external: ['cloudflare:workers'],
@@ -111,7 +119,7 @@ export async function start(overrides = {}) {
       modules: true,
       script: result.outputFiles[0].text,
       compatibilityDate: '2026-10-06',
-      compatibilityFlags: ['nodejs_compat'],
+      compatibilityFlags: ['nodejs_compat', 'global_fetch_strictly_public'],
       cronTriggers: ['*/10 * * * *'],
       d1Databases: { DB: 'engine' },
       serviceBindings: { TEST_BRIDGE: { name: 'engine', entrypoint: 'CatalogTributeBridge' } },
@@ -128,6 +136,8 @@ export async function start(overrides = {}) {
       },
       outboundService: async (request) => {
         const url = new URL(request.url);
+        if (domainService && url.hostname !== 'api.telegram.org' && url.hostname !== 'tribute.tg')
+          return domainService(request);
         if (url.hostname === 'tribute.tg') {
           let data;
           if (url.pathname.startsWith('/api/v1/products')) {
@@ -194,21 +204,7 @@ export async function start(overrides = {}) {
       assets: {
         directory: 'public',
         binding: 'ASSETS',
-        run_worker_first: [
-          '/api/*',
-          '/demo/*',
-          '/templates/*',
-          '/shop/*',
-          '/s/*',
-          '/media/*',
-          '/admin',
-          '/admin/*',
-          '/platform',
-          '/platform/*',
-          '/platform.html',
-          '/platform-editor.html',
-          '/',
-        ],
+        run_worker_first: true,
         routerConfig: { has_user_worker: true },
       },
     }),

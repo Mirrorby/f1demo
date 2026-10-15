@@ -14,6 +14,17 @@ const brandedPanel = (html: string) =>
     .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
     .replace('</head>', `<style id="delokay-theme-inline">${adminStyle}</style></head>`)
     .replace('</body>', `<script id="delokay-language-inline">${adminI18nScript}</script></body>`);
+import {
+  addDomain,
+  checkDomain,
+  checkDomainConfig,
+  domainConfig,
+  domainUrl,
+  incomingDomain,
+  listDomains,
+  removeDomain,
+  saveDomainConfig,
+} from './domains';
 import { digitalWebhook } from './tribute-digital';
 import {
   createInvoice,
@@ -112,6 +123,42 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
+  const customDomain = await incomingDomain(request, env);
+  if (customDomain instanceof Response) return customDomain;
+  if (customDomain) {
+    const s = await stmt(
+      env,
+      'SELECT * FROM stores WHERE id=?',
+      customDomain.store_id,
+    ).first<StoreRow>();
+    requireThat(s, 'Магазин не найден', 404);
+    const ownApi = '/api/stores/' + s.slug;
+    const allowed =
+      path === '/' ||
+      path === ownApi ||
+      path === ownApi + '/orders' ||
+      path === '/s/app.js' ||
+      path === '/s/favicon.svg' ||
+      path === '/storefront.css' ||
+      /^\/template-assets\/[a-z0-9-]+\.svg$/.test(path) ||
+      path.startsWith('/media/' + s.id + '/');
+    requireThat(allowed, 'Страница не найдена', 404);
+    if (path === '/' && (method === 'GET' || method === 'HEAD'))
+      return new Response(
+        method === 'HEAD'
+          ? null
+          : storefrontPage.replace('<body>', '<body data-store-slug="' + s.slug + '">'),
+        {
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+            'Referrer-Policy': 'strict-origin-when-cross-origin',
+          },
+        },
+      );
+  }
+
   if (path === '/s/app.js' && (method === 'GET' || method === 'HEAD'))
     return new Response(method === 'HEAD' ? null : storefrontScript, {
       headers: {
@@ -238,6 +285,27 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   }
   if (path.startsWith('/api/platform/')) {
     await platformAuth(request, env);
+    if (path === '/api/platform/domains/config') {
+      if (method === 'GET') return json(await domainConfig(env));
+      if (method === 'PUT') return json(await saveDomainConfig(env, await jsonBody(request)));
+    }
+    if (path === '/api/platform/domains/config/check' && method === 'POST')
+      return json(await checkDomainConfig(env));
+    if (path === '/api/platform/domains' && method === 'GET') return json(await listDomains(env));
+    const domainRoute = path.match(
+      /^\/api\/platform\/stores\/([a-f0-9-]{36})\/domains(?:\/([a-f0-9-]{36})(?:\/(check))?)?$/,
+    );
+    if (domainRoute) {
+      const [, storeId, domainId, action] = domainRoute;
+      if (!domainId && method === 'GET') return json(await listDomains(env, storeId));
+      if (!domainId && method === 'POST')
+        return json(await addDomain(env, storeId, await jsonBody(request)), 201);
+      if (domainId && action === 'check' && method === 'POST')
+        return json(await checkDomain(env, storeId, domainId));
+      if (domainId && !action && method === 'DELETE')
+        return json(await removeDomain(env, storeId, domainId));
+    }
+
     const templateRoute = path.match(/^\/api\/platform\/templates\/([a-z]+)(?:\/(images))?$/);
     if (templateRoute) {
       const t = findTemplate(templateRoute[1]);
@@ -379,7 +447,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           s.id,
           s.id,
         ).first();
-        return json({ ...publicStore(s, env.BOT_USERNAME), stats });
+        return json({
+          ...publicStore(s, env.BOT_USERNAME),
+          customUrl: await domainUrl(env, s.id),
+          stats,
+        });
       }
       if (section === 'products' && !id && method === 'GET') return json(await catalog(env, s.id));
       if (section === 'products' && !id && method === 'POST')

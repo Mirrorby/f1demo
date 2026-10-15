@@ -212,7 +212,7 @@ export async function jsonBody(request: Request, max = 512000): Promise<unknown>
     throw new HttpError(400, 'Некорректный JSON');
   }
 }
-export async function limitedBytes(request: Request, max: number): Promise<Uint8Array> {
+export async function limitedBytes(request: Request | Response, max: number): Promise<Uint8Array> {
   requireThat(
     Number(request.headers.get('content-length') || 0) <= max,
     'Слишком большой запрос',

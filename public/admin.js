@@ -106,8 +106,8 @@ async function api(path, method = 'GET', data, contentType = 'application/json')
   return result;
 }
 const base = () => `stores/${store.id}`;
-const siteUrl = () => location.origin + '/s/' + store.slug;
-const shareUrl = () => store.shareUrl || siteUrl();
+const siteUrl = () => store.customUrl || location.origin + '/s/' + store.slug;
+const shareUrl = () => store.customUrl || store.shareUrl || siteUrl();
 function money(p) {
   return Object.entries(p.prices)
     .filter(([c]) => store.settings.currencies.includes(c))

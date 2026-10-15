@@ -107,6 +107,23 @@ try {
   await page.getByRole('button', { name: 'Настроить Telegram-бота' }).waitFor();
   await page.getByRole('button', { name: 'Настроить Telegram-бота' }).click();
   await page.locator('#notice').filter({ hasText: 'Бот настроен' }).waitFor();
+  const domainStore = page.locator(`section[data-store-id="${shop.id}"]`);
+  await domainStore.locator('.domain-panel > summary').click();
+  await domainStore
+    .locator('form[data-domain-store] [name=hostname]')
+    .fill('www.browser-client.com');
+  await domainStore.getByRole('button', { name: 'Добавить домен', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Домен добавлен' }).waitFor();
+  await domainStore.locator('.domain-panel > summary').click();
+  await domainStore.getByRole('button', { name: 'Подключить / проверить', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Сначала настройте' }).waitFor();
+  await domainStore.locator('.domain-panel > summary').click();
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  if (shotDir)
+    await page.screenshot({ path: shotDir + '/client-domain-mobile.png', fullPage: true });
+  page.once('dialog', (dialog) => dialog.accept());
+  await domainStore.getByRole('button', { name: 'Отключить домен', exact: true }).click();
+  await page.locator('#notice').filter({ hasText: 'Домен отключён' }).waitFor();
   await page.getByRole('button', { name: 'Универсальный', exact: true }).click();
   await page.locator('#template-photo-0').setInputFiles(imageFile);
   await page.locator('#notice').filter({ hasText: 'Фото загружено' }).waitFor();
@@ -400,6 +417,37 @@ try {
   await page.goto(origin + '/admin?tgWebAppStartParam=s_' + shop.slug);
   await page.waitForURL(origin + '/s/' + shop.slug);
   await page.locator('.card-name').first().waitFor();
+  // Test public root routing on a real alternate origin; DNS/SSL are tested with a provider fixture separately.
+  const bound = await req(
+    '/api/platform/stores/' + shop.id + '/domains',
+    'POST',
+    { hostname: 'www.browser-client.com' },
+    { Authorization: 'Bearer ' + PLATFORM },
+  );
+  await db
+    .prepare("UPDATE store_domains SET status='active' WHERE id=?")
+    .bind(bound.body[0].id)
+    .run();
+  await page.route('https://www.browser-client.com/**', async (route) => {
+    const request = route.request();
+    const response = await mf.dispatchFetch(request.url(), {
+      method: request.method(),
+      headers: request.headers(),
+      body: request.postDataBuffer() || undefined,
+      redirect: 'manual',
+    });
+    await route.fulfill({
+      status: response.status,
+      headers: Object.fromEntries(response.headers),
+      body: Buffer.from(await response.arrayBuffer()),
+    });
+  });
+  await page.goto('https://www.browser-client.com/');
+  await page.locator('#hero-title').filter({ hasText: 'Тестовый магазин' }).waitFor();
+  await page.waitForFunction(() => document.getElementById('hero-logo').naturalWidth > 0);
+  assert.equal(await page.locator('body').getAttribute('data-store-slug'), shop.slug);
+  assert.ok(await page.locator('.card-name').filter({ hasText: 'Новая кепка' }).count());
+  if (shotDir) await page.screenshot({ path: shotDir + '/client-domain-storefront.png' });
   assert.deepEqual(errors, []);
   console.log(
     'Browser smoke passed: admin CRUD/settings → public catalog → failed and successful checkout → D1 → order status; demo, XSS and 375/390/1280 layouts.',

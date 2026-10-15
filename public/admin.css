@@ -1179,3 +1179,40 @@ body.delokay-app .order-lines li {
 .share-link {
   overflow-wrap: anywhere;
 }
+
+.domain-panel {
+  margin-top: 20px;
+}
+.domain-row h4 {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.domain-dns {
+  overflow-x: auto;
+}
+.domain-dns table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.domain-dns th,
+.domain-dns td {
+  border-bottom: 1px solid var(--border, #dde1eb);
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.domain-dns th:first-child {
+  width: 60px;
+}
+.domain-dns small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted, #64748b);
+}
+.domain-error {
+  color: #a13c32;
+  overflow-wrap: anywhere;
+}

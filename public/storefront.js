@@ -57,7 +57,7 @@ function esc(v) {
 }
 let currentStore = null,
   submitting = false;
-const slug = location.pathname.split('/')[2];
+const slug = document.body.dataset.storeSlug || location.pathname.split('/')[2];
 const templatePreview = location.pathname.startsWith('/templates/');
 async function loadStore() {
   const r = await fetch(
