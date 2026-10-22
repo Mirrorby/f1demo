@@ -1,4 +1,5 @@
 import type { Settings } from './types';
+import { templateContent } from './template-content';
 import { translate, type Language } from './language';
 import { requireThat, imageUrl, object, int } from './validation';
 
@@ -333,6 +334,7 @@ export function templateSettings(t: Template, language: Language = 'ru') {
       tg_msg_header: 'Здравствуйте! Хочу оформить заказ:',
       tg_msg_footer: 'Подтвердите, пожалуйста, наличие и условия получения. Спасибо!',
       support_label: copy.support,
+      ...templateContent(t.id, language),
       ...(t.id === 'fashion'
         ? {
             about_title: 'О магазине',

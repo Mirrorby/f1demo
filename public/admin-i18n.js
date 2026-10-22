@@ -2,6 +2,26 @@
 (() => {
   'use strict';
   const en = {
+    'Информация для покупателей': 'Information for customers',
+    'Заполните факты о своём магазине. Укажите реальные условия доставки, оплаты и возврата. Пустые поля скрывают соответствующий блок.':
+      'Add facts about your store and your actual delivery, payment and return terms. Empty fields hide the corresponding section.',
+    'О магазине: заголовок': 'About: heading',
+    'О магазине: текст': 'About: text',
+    'Помощь с выбором: заголовок': 'Choosing products: heading',
+    'Помощь с выбором: текст': 'Choosing products: text',
+    'Как оформить заказ?: заголовок': 'Ordering: heading',
+    'Как оформить заказ?: текст': 'Ordering: text',
+    'Доставка и оплата: заголовок': 'Delivery and payment: heading',
+    'Доставка и оплата: текст': 'Delivery and payment: text',
+    'Обмен и возврат: заголовок': 'Exchanges and returns: heading',
+    'Обмен и возврат: текст': 'Exchanges and returns: text',
+    'FAQ: заголовок': 'FAQ: heading',
+    'Вопрос 1': 'Question 1',
+    'Ответ 1': 'Answer 1',
+    'Вопрос 2': 'Question 2',
+    'Ответ 2': 'Answer 2',
+    'Вопрос 3': 'Question 3',
+    'Ответ 3': 'Answer 3',
     'Аккаунт и оформление': 'Account and design',
     'Демо и редактирование': 'Demo and editing',
     'Оплата и запуск': 'Payment and launch',

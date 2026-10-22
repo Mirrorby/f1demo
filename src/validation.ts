@@ -1,5 +1,6 @@
 import { supportedLanguages, translate, type Language } from './language';
 import type { Settings, ProductData, Variant } from './types';
+import { informationKeys } from './template-content';
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -56,6 +57,7 @@ export function imageUrl(v: unknown, storeId?: string): string {
 }
 export const currencies = ['BYN', 'RUB', 'KZT', 'USD', 'EUR'];
 const textKeys = [
+  ...informationKeys,
   'about_title',
   'about_body',
   'sizing_title',

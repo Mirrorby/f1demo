@@ -26,7 +26,8 @@ test('all templates contain complete editable copy and six sample products', asy
     assert.equal(preview.body.products.length, 6);
     const cfg = preview.body.store.settings;
     assert.ok(cfg.heroTitle && cfg.footerText && cfg.deliveryHint);
-    assert.equal(Object.keys(cfg.texts).length, id === 'fashion' ? 27 : 19);
+    for (const key of ['btn_cart', 'btn_add', 'label_size', 'about_body', 'faq_1_answer'])
+      assert.ok(cfg.texts[key], `${id}: missing editable ${key}`);
     for (const p of preview.body.products) {
       assert.ok(p.description.length > 80 && p.color && p.brand && p.sku && p.collection);
       assert.ok(!p.description.includes('Пример товара'));

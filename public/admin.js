@@ -314,7 +314,7 @@ async function show(next = tab) {
       orders = await api(base() + `/orders?offset=${orderOffset}&status=${orderFilter}`);
       if (seq !== generation) return;
       renderOrdersList();
-    } else if (tab === 'settings') renderSettings();
+    } else if (tab === 'settings') await renderSettings(seq);
     else if (tab === 'site')
       main.innerHTML = `<div class="row between page-heading"><div><h2>Мой сайт</h2><p class="section-caption">Ссылка на витрину</p></div></div>
         <div class="card site-overview"><div class="row between"><h3 data-no-i18n>${esc(store.name)}</h3><span class="badge">${storeState()}</span></div>
@@ -389,8 +389,21 @@ function editProduct(index) {
   document.getElementById('discount').step = '1';
   renderPhotos();
 }
-function renderSettings() {
-  const s = store.settings;
+async function renderSettings(seq) {
+  const selected = store;
+  let defaults = {};
+  if (selected.status === 'demo') {
+    const response = await fetch(
+      '/api/templates/' +
+        encodeURIComponent(selected.settings.theme || 'minimal') +
+        '?lang=' +
+        encodeURIComponent(selected.settings.language || 'ru'),
+    );
+    if (!response.ok) throw new Error('Не удалось загрузить шаблоны');
+    defaults = (await response.json()).store.settings.texts;
+  }
+  if (seq !== generation || selected.id !== store.id) return;
+  const s = { ...selected.settings, texts: { ...defaults, ...selected.settings.texts } };
   main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}<label for="store-language">Язык сайта</label><select id="store-language"><option value="ru" ${s.language === 'ru' ? 'selected' : ''}>Русский</option><option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option><option value="es" ${s.language === 'es' ? 'selected' : ''}>Español</option><option value="pt" ${s.language === 'pt' ? 'selected' : ''}>Português</option><option value="fr" ${s.language === 'fr' ? 'selected' : ''}>Français</option><option value="it" ${s.language === 'it' ? 'selected' : ''}>Italiano</option><option value="tr" ${s.language === 'tr' ? 'selected' : ''}>Türkçe</option><option value="pl" ${s.language === 'pl' ? 'selected' : ''}>Polski</option><option value="ja" ${s.language === 'ja' ? 'selected' : ''}>日本語</option><option value="de" ${s.language === 'de' ? 'selected' : ''}>Deutsch</option></select><p>Язык интерфейса и стандартных текстов. Собственные названия и описания товаров редактируются отдельно.</p>${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
     ['minimal', 'Универсальный'],
     ['fashion', 'Одежда и аксессуары'],
@@ -423,19 +436,36 @@ function renderSettings() {
     ['tg_msg_footer', 'Конец сообщения Telegram'],
     ['filter_all', 'Все категории'],
     ['support_label', 'Подпись к контактам'],
-    ['about_title', 'О магазине: заголовок'],
-    ['about_body', 'О магазине: текст'],
-    ['sizing_title', 'Как выбрать размер?: заголовок'],
-    ['sizing_body', 'Как выбрать размер?: текст'],
-    ['ordering_title', 'Как оформить заказ?: заголовок'],
-    ['ordering_body', 'Как оформить заказ?: текст'],
-    ['shipping_title', 'Доставка и оплата: заголовок'],
-    ['shipping_body', 'Доставка и оплата: текст'],
   ]
     .map(([k, label]) => field('text-' + k, label, s.texts[k] || ''))
     .join(
       '',
-    )}</details></div><div class="actions form-actions"><button class="primary" type="submit">Сохранить настройки</button></div></form>`;
+    )}</details></div><div class="card"><h3>Информация для покупателей</h3><p>Заполните факты о своём магазине. Укажите реальные условия доставки, оплаты и возврата. Пустые поля скрывают соответствующий блок.</p>${[
+    ['about_title', 'О магазине: заголовок'],
+    ['about_body', 'О магазине: текст'],
+    ['sizing_title', 'Помощь с выбором: заголовок'],
+    ['sizing_body', 'Помощь с выбором: текст'],
+    ['ordering_title', 'Как оформить заказ?: заголовок'],
+    ['ordering_body', 'Как оформить заказ?: текст'],
+    ['shipping_title', 'Доставка и оплата: заголовок'],
+    ['shipping_body', 'Доставка и оплата: текст'],
+    ['returns_title', 'Обмен и возврат: заголовок'],
+    ['returns_body', 'Обмен и возврат: текст'],
+    ['faq_title', 'FAQ: заголовок'],
+    ['faq_1_question', 'Вопрос 1'],
+    ['faq_1_answer', 'Ответ 1'],
+    ['faq_2_question', 'Вопрос 2'],
+    ['faq_2_answer', 'Ответ 2'],
+    ['faq_3_question', 'Вопрос 3'],
+    ['faq_3_answer', 'Ответ 3'],
+  ]
+    .map(
+      ([key, label]) =>
+        `<label for="text-${key}">${label}</label><textarea id="text-${key}" data-information="true" data-no-i18n maxlength="500" rows="3">${esc(s.texts[key] || '')}</textarea>`,
+    )
+    .join(
+      '',
+    )}</div><div class="actions form-actions"><button class="primary" type="submit">Сохранить настройки</button></div></form>`;
 }
 function showOrder(o) {
   const c = o.customer;
@@ -740,7 +770,7 @@ document.addEventListener('submit', async (event) => {
         texts: { ...store.settings.texts },
       };
       for (const el of document.querySelectorAll('[id^=text-]')) {
-        if (el.value.trim()) s.texts[el.id.slice(5)] = el.value.trim();
+        if (el.value.trim() || el.dataset.information) s.texts[el.id.slice(5)] = el.value.trim();
         else delete s.texts[el.id.slice(5)];
       }
       await api(base() + '/settings', 'PUT', {
