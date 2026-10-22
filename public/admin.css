@@ -1248,10 +1248,40 @@ body.delokay-app .order-lines li {
 }
 .demo-template-card label {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  cursor: pointer;
+}
+.demo-template-choice {
+  display: flex;
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  margin-top: 0;
+  color: var(--text);
+  font-weight: 700;
+}
+.demo-template-card label {
+  margin: 0;
+}
+.demo-template-preview {
+  display: block;
+  height: 260px;
+  overflow: hidden;
+  border: 1px solid var(--border, #dce0eb);
+  border-radius: 10px;
+  background: #f7f8fc;
+  pointer-events: none;
+}
+.demo-template-preview iframe {
+  display: block;
+  width: 200%;
+  max-width: none;
+  height: 520px;
+  border: 0;
+  transform: scale(0.5);
+  transform-origin: top left;
+  pointer-events: none;
 }
 .demo-template-card,
 .demo-job {
