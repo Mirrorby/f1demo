@@ -1508,3 +1508,797 @@ button {
     gap: 24px;
   }
 }
+
+/* Original retail compositions. Shared catalog controls and checkout remain in storefront.css. */
+.shop-masthead {
+  max-width: 1320px;
+  margin: auto;
+  padding: 24px 5%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.shop-masthead a {
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+.shop-masthead .shop-wordmark {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  overflow-wrap: anywhere;
+}
+.hero {
+  display: grid;
+  position: relative;
+  max-width: 1320px;
+  margin: auto;
+  gap: 32px;
+}
+.hero::before {
+  display: none;
+}
+.hero-inner {
+  min-width: 0;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+.hero-visual {
+  position: relative;
+  min-width: 0;
+}
+.hero-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero-visual figure {
+  margin: 0;
+  overflow: hidden;
+}
+.hero-title {
+  overflow-wrap: anywhere;
+}
+.hero .hero-subtitle {
+  max-width: 480px;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.hero .hero-contact-btns {
+  gap: 8px;
+}
+.hero .hero-link {
+  padding: 8px 12px;
+  font-size: 11px;
+}
+.collection-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 36px;
+  padding: 16px 22px;
+  margin-top: 26px;
+  border: 1px solid var(--text);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 48px;
+}
+.layout-placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: 80px;
+  color: var(--muted);
+  background: var(--surface2);
+}
+.container {
+  max-width: 1220px;
+  padding: 0 5%;
+}
+.collection-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px;
+  padding: 48px 0 28px;
+  border-top: 1px solid var(--border);
+}
+.collection-heading h2 {
+  font-size: clamp(28px, 4vw, 48px);
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.1;
+  margin: 8px 0 0;
+}
+.section-kicker {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+}
+.collection-count {
+  font-size: 36px;
+  font-weight: 300;
+  color: var(--dim);
+}
+.collection-tiles {
+  max-width: 1220px;
+  padding: 24px 5%;
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.collection-tiles button {
+  min-width: 0;
+  padding: 24px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.collection-tiles button span:nth-child(2) {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.tile-number {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Fashion: a magazine cover, offset editorial cards, sharp typography. */
+[data-theme='fashion'] .shop-masthead {
+  font-family: Georgia, serif;
+}
+[data-theme='fashion'] .shop-wordmark {
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+}
+[data-theme='fashion'] .hero {
+  grid-template-columns: 1fr 1.05fr;
+  text-align: left;
+  padding: 44px 5% 64px;
+  align-items: center;
+  gap: 5%;
+}
+[data-theme='fashion'] .hero-inner {
+  padding: 24px 0;
+}
+[data-theme='fashion'] .hero-title {
+  font-size: clamp(44px, 6vw, 86px);
+  line-height: 0.98;
+  margin: 26px 0;
+}
+[data-theme='fashion'] .hero-badge {
+  letter-spacing: 0.25em;
+  font-size: 10px;
+}
+[data-theme='fashion'] .hero-subtitle {
+  margin-left: 0;
+}
+[data-theme='fashion'] .fashion-cover {
+  height: 560px;
+  background: #e4e1d8;
+  position: relative;
+}
+[data-theme='fashion'] .fashion-cover img {
+  object-fit: contain;
+  padding: 4%;
+}
+[data-theme='fashion'] .fashion-cover figcaption {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  background: var(--page);
+  padding: 10px;
+}
+[data-theme='fashion'] .cover-index {
+  display: block;
+  text-align: right;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  padding-top: 12px;
+}
+[data-theme='fashion'] .collection-cta {
+  background: var(--text);
+  color: var(--page);
+  border-radius: 0;
+}
+[data-theme='fashion'] .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px 24px;
+  align-items: start;
+}
+[data-theme='fashion'] .grid > .card:nth-child(3n + 2) {
+  margin-top: 64px;
+}
+[data-theme='fashion'] .card-img {
+  padding-top: 135%;
+  background: #e9e6df;
+}
+[data-theme='fashion'] .collection-heading h2 {
+  font-family: Georgia, serif;
+  font-size: 56px;
+}
+[data-theme='fashion'] .card-team {
+  letter-spacing: 0.18em;
+  font-size: 10px;
+}
+
+/* Home: overlapping object photographs and a warm, asymmetric catalog. */
+[data-theme='home'] .shop-masthead {
+  border-bottom: 0;
+}
+[data-theme='home'] .hero {
+  grid-template-columns: 1fr 1.2fr;
+  text-align: left;
+  align-items: center;
+  padding: 32px 5% 64px;
+  gap: 5%;
+  background: var(--page);
+}
+[data-theme='home'] .hero-inner {
+  padding-right: 10px;
+}
+[data-theme='home'] .hero-title {
+  font-size: clamp(40px, 5vw, 68px);
+  line-height: 1.08;
+  margin: 24px 0;
+}
+[data-theme='home'] .hero-subtitle {
+  margin-left: 0;
+}
+[data-theme='home'] .hero-contacts {
+  align-items: flex-start;
+}
+[data-theme='home'] .hero-visual {
+  height: 530px;
+  padding: 0 0 60px 12%;
+}
+[data-theme='home'] .home-cover {
+  height: 100%;
+  border-radius: 46% 46% 0 0;
+  background: #dfd4c3;
+}
+[data-theme='home'] .home-cover img {
+  object-fit: contain;
+  padding: 6%;
+}
+[data-theme='home'] .home-detail {
+  position: absolute;
+  left: 0;
+  bottom: 10px;
+  width: 42%;
+  height: 48%;
+  border: 8px solid var(--page);
+  background: #e5dbca;
+}
+[data-theme='home'] .home-detail img {
+  object-fit: contain;
+}
+[data-theme='home'] .home-cover-note {
+  position: absolute;
+  right: 0;
+  bottom: 20px;
+  max-width: 50%;
+  font:
+    italic 20px Georgia,
+    serif;
+}
+[data-theme='home'] .collection-cta {
+  border-radius: 100px;
+  background: var(--text);
+  color: var(--page);
+}
+[data-theme='home'] .collection-tiles button {
+  border-width: 0 0 1px;
+  background: transparent;
+  padding: 20px 0;
+  font:
+    20px Georgia,
+    serif;
+}
+[data-theme='home'] .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+[data-theme='home'] .grid > .card:first-child {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  align-items: center;
+  background: #e9dfcf;
+  box-shadow: none;
+}
+[data-theme='home'] .grid > .card:first-child .card-img {
+  height: 100%;
+  min-height: 300px;
+  padding-top: 0;
+}
+[data-theme='home'] .card {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+[data-theme='home'] .card-img {
+  border-radius: 120px 120px 8px 8px;
+  background: #e9dfcf;
+}
+[data-theme='home'] .card-body {
+  padding: 20px 8px;
+}
+
+/* Beauty: product spotlight, rounded ritual tiles, product list cards. */
+[data-theme='beauty'] {
+  --page: #f7f5ed;
+  --surface: #fffdf5;
+  --surface2: #e8ebd8;
+  --surface3: #e4e6d6;
+  --border: #d7dac7;
+  --text: #333c2a;
+  --muted: #6b735c;
+  --dim: #77806a;
+}
+[data-theme='beauty'] .hero {
+  grid-template-columns: 1.05fr 1fr;
+  padding: 36px 7% 56px;
+  text-align: left;
+  align-items: center;
+  gap: 5%;
+  background: var(--page);
+}
+[data-theme='beauty'] .hero-inner {
+  order: 2;
+}
+[data-theme='beauty'] .hero-visual {
+  order: 1;
+  height: 490px;
+}
+[data-theme='beauty'] .hero-title {
+  font:
+    400 clamp(42px, 5.3vw, 72px)/1.03 Georgia,
+    serif;
+  letter-spacing: -0.05em;
+  margin: 24px 0;
+}
+[data-theme='beauty'] .hero-subtitle {
+  margin-left: 0;
+}
+[data-theme='beauty'] .hero-contacts {
+  align-items: flex-start;
+}
+[data-theme='beauty'] .hero-badge {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 10px;
+}
+[data-theme='beauty'] .beauty-cover {
+  position: absolute;
+  inset: 12% 12% 8%;
+  border-radius: 180px 180px 28px 28px;
+  background: #e1e6ca;
+  transform: rotate(-6deg);
+}
+[data-theme='beauty'] .beauty-cover img {
+  object-fit: contain;
+  padding: 12%;
+  transform: rotate(6deg);
+}
+[data-theme='beauty'] .beauty-orbit {
+  position: absolute;
+  inset: 4%;
+  border: 1px solid #b8c19f;
+  border-radius: 50%;
+  transform: rotate(-28deg);
+}
+[data-theme='beauty'] .beauty-feature {
+  position: absolute;
+  bottom: 2%;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 18px;
+  max-width: 70%;
+  border-radius: 12px;
+}
+[data-theme='beauty'] .beauty-feature span {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+[data-theme='beauty'] .beauty-feature strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+[data-theme='beauty'] .collection-cta {
+  border-radius: 30px;
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--page);
+}
+[data-theme='beauty'] .collection-tiles {
+  gap: 10px;
+}
+[data-theme='beauty'] .collection-tiles button {
+  border-radius: 20px;
+  background: #e9ecdd;
+  min-height: 100px;
+}
+[data-theme='beauty'] .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+[data-theme='beauty'] .grid > .card {
+  display: grid;
+  grid-template-columns: 42% 1fr;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: none;
+}
+[data-theme='beauty'] .card-img {
+  height: 100%;
+  min-height: 240px;
+  padding-top: 0;
+  background: #eef0e2;
+  border-radius: 16px;
+}
+[data-theme='beauty'] .card-body {
+  min-width: 0;
+  padding: 16px;
+}
+[data-theme='beauty'] .card-foot {
+  align-items: start;
+  flex-direction: column;
+  gap: 14px;
+}
+[data-theme='beauty'] .card-name {
+  font:
+    22px Georgia,
+    serif;
+}
+
+/* Universal: compact dark retail hero with a row of featured products. */
+[data-theme='minimal'] .hero {
+  grid-template-columns: 1fr 1fr;
+  padding: 36px 5%;
+  text-align: left;
+  align-items: center;
+  background: #253e35;
+  color: #fafbf6;
+  border-radius: 0 0 28px 28px;
+}
+[data-theme='minimal'] .hero-title {
+  font-size: clamp(32px, 4vw, 56px);
+  line-height: 1.06;
+  letter-spacing: -0.055em;
+}
+[data-theme='minimal'] .hero-subtitle {
+  margin-left: 0;
+  color: #ced9d1;
+}
+[data-theme='minimal'] .hero-badge {
+  color: #dce8d9;
+  background: #ffffff15;
+}
+[data-theme='minimal'] .hero-contacts {
+  align-items: flex-start;
+}
+[data-theme='minimal'] .hero-support-label {
+  color: #ced9d1;
+}
+[data-theme='minimal'] .collection-cta {
+  border-radius: 8px;
+  color: #253e35;
+  background: #d4e5a8;
+  border: 0;
+  margin-top: 16px;
+}
+[data-theme='minimal'] .hero-visual {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+[data-theme='minimal'] .catalog-pick {
+  background: #f2f3eb;
+  color: #253e35;
+  padding: 10px;
+  border-radius: 12px;
+  min-width: 0;
+}
+[data-theme='minimal'] .catalog-pick:nth-child(2) {
+  margin-top: 30px;
+}
+[data-theme='minimal'] .catalog-pick img {
+  aspect-ratio: 3/4;
+  object-fit: contain;
+}
+[data-theme='minimal'] .catalog-pick span {
+  display: block;
+  padding: 10px 2px 2px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+[data-theme='minimal'] .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 700px) {
+  .shop-masthead {
+    padding: 18px 5%;
+  }
+  .shop-masthead .shop-wordmark {
+    font-size: 20px;
+  }
+  .hero .hero-contacts {
+    margin-top: 10px;
+  }
+  .hero .hero-title {
+    font-size: 38px;
+  }
+  .hero .hero-subtitle {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .hero .hero-link {
+    padding: 8px 10px;
+  }
+  .hero .collection-cta {
+    font-size: 12px;
+    padding: 13px 18px;
+    margin-top: 16px;
+  }
+  .collection-heading {
+    padding: 32px 0 20px;
+  }
+  .collection-heading h2 {
+    font-size: 32px;
+  }
+  .collection-count {
+    font-size: 28px;
+  }
+  .collection-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  .collection-tiles button {
+    padding: 16px 12px;
+    font-size: 13px;
+    gap: 8px;
+  }
+  [data-theme='fashion'] .hero {
+    padding: 24px 5% 32px;
+    gap: 20px;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+  }
+  [data-theme='fashion'] .hero-inner {
+    padding: 0;
+    grid-column: 1/-1;
+  }
+  [data-theme='fashion'] .hero-title {
+    font-size: 48px;
+    margin: 14px 0;
+  }
+  [data-theme='fashion'] .hero-visual {
+    grid-column: 1/-1;
+  }
+  [data-theme='fashion'] .fashion-cover {
+    height: 330px;
+  }
+  [data-theme='fashion'] .fashion-cover img {
+    object-fit: contain;
+  }
+  [data-theme='fashion'] .collection-heading h2 {
+    font-size: 38px;
+  }
+  [data-theme='fashion'] .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 14px;
+  }
+  [data-theme='fashion'] .grid > .card:nth-child(3n + 2) {
+    margin-top: 0;
+  }
+  [data-theme='fashion'] .grid > .card:nth-child(even) {
+    margin-top: 38px;
+  }
+  [data-theme='home'] .hero {
+    grid-template-columns: 1fr;
+    padding: 24px 5% 32px;
+    gap: 20px;
+  }
+  [data-theme='home'] .hero-title {
+    font-size: 42px;
+    margin: 16px 0;
+  }
+  [data-theme='home'] .hero-visual {
+    height: 350px;
+    padding-bottom: 36px;
+  }
+  [data-theme='home'] .home-cover-note {
+    font-size: 16px;
+    bottom: 6px;
+  }
+  [data-theme='home'] .collection-tiles button {
+    font-size: 17px;
+  }
+  [data-theme='home'] .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 14px;
+  }
+  [data-theme='home'] .grid > .card:first-child {
+    grid-column: 1/-1;
+    grid-template-columns: 1fr 1fr;
+  }
+  [data-theme='home'] .grid > .card:first-child .card-img {
+    min-height: 240px;
+  }
+  [data-theme='home'] .card-body {
+    padding: 16px 8px;
+  }
+  [data-theme='beauty'] .hero {
+    grid-template-columns: 1fr;
+    padding: 18px 5% 36px;
+    gap: 8px;
+  }
+  [data-theme='beauty'] .hero-inner {
+    order: 1;
+  }
+  [data-theme='beauty'] .hero-title {
+    font-size: 44px;
+    margin: 16px 0;
+  }
+  [data-theme='beauty'] .hero-visual {
+    order: 2;
+    height: 340px;
+  }
+  [data-theme='beauty'] .collection-tiles button {
+    min-height: 76px;
+    border-radius: 14px;
+  }
+  [data-theme='beauty'] .grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  [data-theme='beauty'] .grid > .card {
+    padding: 10px;
+  }
+  [data-theme='beauty'] .card-img {
+    min-height: 200px;
+  }
+  [data-theme='beauty'] .card-name {
+    font-size: 21px;
+  }
+  [data-theme='minimal'] .hero {
+    grid-template-columns: 1fr;
+    padding: 26px 5%;
+    gap: 24px;
+  }
+  [data-theme='minimal'] .hero-title {
+    font-size: 36px;
+  }
+  [data-theme='minimal'] .catalog-pick img {
+    aspect-ratio: 1;
+  }
+  [data-theme='minimal'] .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Gallery cards show the full composition rather than cropping at a large title. */
+[data-preview='thumbnail'] .demo-banner {
+  font-size: 9px;
+  padding: 6px;
+}
+[data-preview='thumbnail'] .shop-masthead {
+  padding: 12px 5%;
+}
+[data-preview='thumbnail'] .shop-wordmark {
+  font-size: 18px;
+}
+[data-preview='thumbnail'] .hero {
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 20px 5%;
+  align-items: center;
+}
+[data-preview='thumbnail'] .hero-inner {
+  grid-column: auto;
+  padding: 0;
+}
+[data-preview='thumbnail'] .hero-title {
+  font-size: 30px;
+  margin: 12px 0;
+}
+[data-preview='thumbnail'] .hero-subtitle {
+  font-size: 11px;
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+[data-preview='thumbnail'] .hero-badge {
+  font-size: 9px;
+  padding: 5px 8px;
+}
+[data-preview='thumbnail'] .hero-contacts {
+  display: none;
+}
+[data-preview='thumbnail'] .hero-visual {
+  grid-column: auto;
+  height: 280px;
+}
+[data-preview='thumbnail'] .collection-cta {
+  font-size: 10px;
+  padding: 10px;
+  gap: 12px;
+  min-height: 36px;
+}
+[data-preview='thumbnail'] .fashion-cover {
+  height: 260px;
+}
+[data-preview='thumbnail'] .fashion-cover figcaption {
+  font-size: 8px;
+  bottom: 10px;
+  left: 10px;
+  padding: 6px;
+}
+[data-preview='thumbnail'] .home-cover-note {
+  font-size: 12px;
+}
+[data-preview='thumbnail'] .beauty-feature {
+  padding: 10px;
+}
+[data-preview='thumbnail'] .beauty-feature strong {
+  font-size: 11px;
+}
+[data-preview='thumbnail'] .collection-heading {
+  padding-top: 20px;
+}
+[data-preview='thumbnail'] .collection-heading h2 {
+  font-size: 28px;
+}
+[data-preview='thumbnail'] .collection-tiles button {
+  padding: 12px;
+  font-size: 12px;
+  min-height: 50px;
+}
+[data-preview='thumbnail'][data-theme='minimal'] .hero {
+  grid-template-columns: 1fr;
+}
+[data-preview='thumbnail'][data-theme='minimal'] .hero-visual {
+  height: auto;
+}
+[data-preview='thumbnail'][data-theme='minimal'] .catalog-pick img {
+  height: 90px;
+}
+[data-preview='thumbnail'][data-theme='minimal'] .hero-title {
+  font-size: 32px;
+}
+[data-preview='thumbnail'][data-theme='minimal'] .hero-subtitle {
+  max-width: none;
+}

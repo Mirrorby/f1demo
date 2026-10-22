@@ -878,11 +878,89 @@ document.getElementById('lb').addEventListener(
   { passive: true },
 );
 
+/* Each template has its own composition; product and checkout data stay shared. */
+function buildStorefrontLayout() {
+  const theme = currentStore.settings.theme || 'minimal';
+  if (templatePreview && new URLSearchParams(location.search).get('thumbnail') === '1')
+    document.documentElement.dataset.preview = 'thumbnail';
+  const copy = (ru, en) => esc(language === 'ru' ? ru : en);
+  const hero = document.querySelector('.hero');
+  const inner = document.querySelector('.hero-inner');
+  const catalog = document.querySelector('.container');
+  catalog.id = 'catalog';
+  const nav = document.createElement('header');
+  nav.className = 'shop-masthead';
+  nav.innerHTML = `<a class="shop-wordmark" href="#">${esc(currentStore.name)}</a><a href="#catalog">${copy('Каталог', 'Shop')} <span aria-hidden="true">↗</span></a>`;
+  hero.before(nav);
+  const photo = (p, cls = '') =>
+    p?.photo
+      ? `<img class="${cls}" src="${esc(p.photo)}" alt="${esc(p.name)}" decoding="async">`
+      : `<span class="layout-placeholder" aria-hidden="true">◈</span>`;
+  const action = `<a class="collection-cta" href="#catalog">${copy('Смотреть коллекцию', 'Explore collection')} <span aria-hidden="true">↗</span></a>`;
+  const visual = document.createElement('div');
+  visual.className = 'hero-visual';
+  if (theme === 'fashion') {
+    visual.innerHTML = `<figure class="fashion-cover">${photo(products[0])}<figcaption>${copy('В деталях — ваш стиль', 'Your style, in the details')}</figcaption></figure><span class="cover-index" aria-hidden="true">01 / ${String(products.length).padStart(2, '0')}</span>`;
+    inner.insertAdjacentHTML('beforeend', action);
+    hero.append(visual);
+  } else if (theme === 'home') {
+    visual.innerHTML = `<figure class="home-cover">${photo(products[0])}</figure><figure class="home-detail">${photo(products[1] || products[0])}</figure><span class="home-cover-note">${copy('Вещи с характером', 'Objects with character')}</span>`;
+    inner.insertAdjacentHTML('beforeend', action);
+    hero.append(visual);
+  } else if (theme === 'beauty') {
+    visual.innerHTML = `<div class="beauty-orbit" aria-hidden="true"></div><figure class="beauty-cover">${photo(products[0])}</figure><div class="beauty-feature"><span>${copy('Знакомство с коллекцией', 'Meet the collection')}</span><strong>${esc(products[0]?.name || currentStore.name)}</strong></div>`;
+    inner.insertAdjacentHTML('beforeend', action);
+    hero.append(visual);
+  } else {
+    visual.innerHTML = products
+      .slice(0, 3)
+      .map(
+        (p) => `<a class="catalog-pick" href="#catalog">${photo(p)}<span>${esc(p.name)}</span></a>`,
+      )
+      .join('');
+    inner.insertAdjacentHTML(
+      'beforeend',
+      `<a class="collection-cta" href="#catalog">${copy('Перейти к покупкам', 'Start shopping')} →</a>`,
+    );
+    hero.append(visual);
+  }
+  const section = document.createElement('div');
+  section.className = 'collection-heading';
+  const headings = {
+    minimal: ['Найдите своё', 'Find your favourites'],
+    fashion: ['Коллекция', 'The collection'],
+    home: ['Для ваших пространств', 'For your spaces'],
+    beauty: ['Ваш ритуал ухода', 'Your care ritual'],
+  };
+  const heading = headings[theme] || headings.minimal;
+  section.innerHTML = `<div><span class="section-kicker">${copy('КАТАЛОГ', 'THE EDIT')}</span><h2>${copy(...heading)}</h2></div><span class="collection-count">${String(products.length).padStart(2, '0')}</span>`;
+  catalog.prepend(section);
+  if (theme === 'beauty' || theme === 'home') {
+    const categories = [...new Set(products.map((p) => p.cat).filter(Boolean))];
+    const tiles = document.createElement('div');
+    tiles.className = 'collection-tiles';
+    categories.slice(0, 4).forEach((category, i) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.innerHTML = `<span class="tile-number">0${i + 1}</span><span>${esc(category)}</span><span aria-hidden="true">↗</span>`;
+      button.addEventListener('click', () => {
+        setF(category);
+        catalog.scrollIntoView({
+          behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        });
+      });
+      tiles.append(button);
+    });
+    if (categories.length) catalog.before(tiles);
+  }
+}
+
 /* ════ BOOT ════ */
 async function init() {
   try {
     await loadStore();
     applySettings();
+    buildStorefrontLayout();
     activeCat = S.filter_all || ui('Все');
     renderFilters();
     renderGrid();

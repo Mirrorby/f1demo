@@ -77,6 +77,15 @@ try {
       );
       assert.equal(await page.locator('.card').count(), 6);
       assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), theme);
+      await page.locator('.shop-masthead').waitFor();
+      assert.equal(await page.locator('.hero-visual').count(), 1);
+      if (theme === 'home' || theme === 'beauty') {
+        const firstCategory = page.locator('.collection-tiles button').first();
+        await firstCategory.click();
+        assert.ok((await page.locator('#grid .card').count()) < 6);
+        await page.locator('#filters .fbtn').first().click();
+        assert.equal(await page.locator('#grid .card').count(), 6);
+      }
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
       if (shotDir)
         await page.screenshot({
