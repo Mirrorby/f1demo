@@ -44,7 +44,7 @@ async function api(env: Env, path: string, data?: unknown) {
   configured(env);
   const r = await fetch('https://tribute.tg/api/v1' + path, {
     method: data === undefined ? 'GET' : 'POST',
-    headers: { 'Api-Key': env.TRIBUTE_API_KEY, 'Content-Type': 'application/json' },
+    headers: { 'Api-Key': env.TRIBUTE_API_KEY!, 'Content-Type': 'application/json' },
     body: data === undefined ? undefined : JSON.stringify(data),
     signal: AbortSignal.timeout(10000),
   });

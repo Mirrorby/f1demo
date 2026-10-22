@@ -133,3 +133,35 @@ test('switching theme preserves products, copy preserves styling and legacy fiel
     );
   }
 });
+
+test('fashion copy is server rendered, editable and escaped; previews stay out of search', async () => {
+  const preview = await req('/templates/fashion?lang=en');
+  assert.equal(preview.status, 200);
+  assert.match(preview.body, /Everyday clothing and accessories/);
+  assert.match(preview.body, /How do I choose a size/);
+  assert.match(preview.body, /name="robots" content="noindex, follow"/);
+  const created = await platform('stores', 'POST', {
+    name: 'Fashion content',
+    templateId: 'fashion',
+    seedProducts: true,
+  });
+  const data = (await req('/api/stores/' + created.body.slug)).body;
+  const saved = await platform('stores/' + created.body.id + '/settings', 'PUT', {
+    name: 'Fashion content',
+    version: 1,
+    settings: {
+      ...data.store.settings,
+      texts: {
+        ...data.store.settings.texts,
+        about_title: '<script>alert(1)</script>',
+        about_body: 'Merchant copy & details',
+      },
+    },
+  });
+  assert.equal(saved.status, 200);
+  const page = await req('/s/' + created.body.slug);
+  assert.match(page.body, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.match(page.body, /Merchant copy &amp; details/);
+  assert.match(page.body, /name="description"/);
+  assert.doesNotMatch(page.body, /<script>alert\(1\)<\/script>/);
+});

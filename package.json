@@ -15,7 +15,13 @@
     "telegram:setup": "node scripts/telegram-setup.js",
     "format": "prettier --write src public scripts/*.js tests *.json wrangler.jsonc README.md docs .github",
     "format:check": "prettier --check src public scripts/*.js tests *.json wrangler.jsonc README.md docs .github",
-    "deploy:cloudflare": "node scripts/cloudflare-deploy.js"
+    "deploy:cloudflare": "node scripts/cloudflare-deploy.js",
+    "dev:staging": "wrangler dev --env staging --local",
+    "build:staging": "wrangler deploy --env staging --dry-run",
+    "deploy:staging": "DEPLOY_TARGET=staging node scripts/cloudflare-deploy.js",
+    "release:list": "node scripts/release.js list",
+    "release:rollback": "node scripts/release.js rollback",
+    "release:backup": "node scripts/release.js backup"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261012.1",

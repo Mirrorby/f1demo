@@ -31,6 +31,35 @@ export async function platformAuth(request: Request, env: Env) {
   );
 }
 export async function telegramAuth(request: Request, env: Env): Promise<string> {
+  if (env.DEPLOYMENT_ENV === 'staging') {
+    requireThat(
+      env.AUTH_VERIFIER && env.AUTH_VERIFIER_ORIGIN,
+      'Проверка Telegram не настроена',
+      503,
+    );
+    const checked = await env.AUTH_VERIFIER.fetch(
+      new Request(new URL('/api/admin/preferences', env.AUTH_VERIFIER_ORIGIN), {
+        headers: { Authorization: request.headers.get('authorization') || '' },
+        signal: AbortSignal.timeout(8000),
+      }),
+    );
+    await checked.body?.cancel();
+    requireThat(
+      checked.status === 200,
+      'Откройте панель заново через Telegram',
+      checked.status === 401 ? 401 : 503,
+    );
+    // The production verifier validates the exact signed payload, its age and user ID.
+    const params = new URLSearchParams((request.headers.get('authorization') || '').slice(4));
+    const user = JSON.parse(params.get('user') || '{}');
+    requireThat(
+      Number.isSafeInteger(user.id) && user.id > 0 && !user.is_bot,
+      'Нет пользователя',
+      401,
+    );
+    return String(user.id);
+  }
+
   requireThat(env.TELEGRAM_BOT_TOKEN, 'Telegram не настроен', 503);
   const raw = request.headers.get('authorization') ?? '';
   requireThat(raw.startsWith('tma ') && raw.length <= 16000, 'Откройте панель через Telegram', 401);

@@ -1,0 +1,15 @@
+{
+  "label": "production-baseline-2026-10-22",
+  "accountId": "6cba2ecdc192570aba36e3a6d2765924",
+  "worker": "catalog-factory",
+  "url": "https://catalog-factory.nikita-karpof.workers.dev",
+  "versionId": "25d5273b-8668-4271-a6df-653cad6b20a4",
+  "deploymentId": "d9aafc50-b83f-4266-b70a-9c4fe1f8e3c6",
+  "deployedAt": "2026-10-19T13:48:26.215063Z",
+  "databaseId": "990ae296-fa45-4392-b80e-c086a233f2c5",
+  "databaseName": "catalog-factory",
+  "bucket": "catalog-factory-images",
+  "sourceBaselineCommit": "dfe5dd7",
+  "sourceBaselineBranch": "stable/pre-self-service-2026-10-22",
+  "note": "Cloudflare version ID is the authoritative production rollback target. The source baseline is a local checkpoint and is not asserted to be an exact source match for the deployed build."
+}

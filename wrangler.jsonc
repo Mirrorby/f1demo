@@ -41,12 +41,18 @@
       "bucket_name": "catalog-factory-images",
     },
   ],
-  "services": [{ "binding": "LEELA_PAYMENTS", "service": "leela-worker" }],
+  "services": [
+    {
+      "binding": "LEELA_PAYMENTS",
+      "service": "leela-worker",
+    },
+  ],
   "vars": {
     "BOT_USERNAME": "",
     "PUBLIC_ORIGIN": "http://localhost:8787",
     "TRIBUTE_SHOP_ID": "",
     "TRIBUTE_PRODUCT_URL": "https://web.tribute.tg/p/H0x",
+    "DEPLOYMENT_ENV": "production",
   },
   "triggers": {
     "crons": ["*/10 * * * *"],
@@ -70,6 +76,45 @@
       "enabled": false,
       "head_sampling_rate": 1,
       "persist": true,
+    },
+  },
+  "env": {
+    "staging": {
+      "name": "catalog-factory-staging",
+      "vars": {
+        "BOT_USERNAME": "delokay_bot",
+        "PUBLIC_ORIGIN": "https://catalog-factory-staging.nikita-karpof.workers.dev",
+        "TRIBUTE_SHOP_ID": "",
+        "TRIBUTE_PRODUCT_URL": "",
+        "DEPLOYMENT_ENV": "staging",
+        "AUTH_VERIFIER_ORIGIN": "https://catalog-factory.nikita-karpof.workers.dev",
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "catalog-factory-staging",
+          "database_id": "31f3247d-d1c6-4767-99d7-7dad609a7d12",
+          "migrations_dir": "migrations",
+        },
+      ],
+      "r2_buckets": [
+        {
+          "binding": "IMAGES",
+          "bucket_name": "catalog-factory-staging-images",
+        },
+      ],
+      "services": [
+        {
+          "binding": "AUTH_VERIFIER",
+          "service": "catalog-factory",
+        },
+      ],
+      "triggers": {
+        "crons": [],
+      },
+      "secrets": {
+        "required": ["PLATFORM_API_KEY"],
+      },
     },
   },
 }

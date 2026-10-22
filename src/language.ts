@@ -16,6 +16,22 @@ export function normalizeLanguage(value: string): Language {
   return supportedLanguages.includes(value as Language) ? (value as Language) : 'ru';
 }
 export const english: Record<string, string> = {
+  'Одежда и аксессуары на каждый день': 'Everyday clothing and accessories',
+  'Футболки, льняные рубашки, свитшоты и сумки. Выберите модель, изучите состав и подберите размер в каталоге.':
+    'T-shirts, linen shirts, sweatshirts and bags. Explore styles, check materials and choose your size in the catalog.',
+  'О магазине': 'About the store',
+  'Как выбрать размер?': 'How do I choose a size?',
+  'Как оформить заказ?': 'How do I place an order?',
+  'Доставка и оплата': 'Delivery and payment',
+  'Одежда и аксессуары для повседневного гардероба: футболки, рубашки, свитшоты и сумки. Сравните модели, состав и доступные размеры в каталоге.':
+    'Everyday clothing and accessories: T-shirts, shirts, sweatshirts and bags. Compare styles, materials and available sizes in the catalog.',
+  'Откройте карточку товара и проверьте доступные размеры и характеристики. Если нужных мерок нет, уточните их у продавца до оформления заказа.':
+    'Open a product to check available sizes and details. If measurements are missing, ask the seller before placing an order.',
+  'Выберите товар, размер и количество, затем добавьте его в корзину. Проверьте состав заказа и заполните контактные данные.':
+    'Choose a product, size and quantity, then add it to your cart. Review your selection and enter your contact details.',
+  'Доступные способы получения указаны при оформлении заказа. Географию доставки, стоимость, сроки и способы оплаты уточняйте у продавца до подтверждения покупки.':
+    'Available delivery methods are shown at checkout. Confirm delivery areas, costs, timing and payment methods with the seller before confirming your purchase.',
+
   'Демонстрация магазина. Реальные заказы отключены.': 'Demo store. Real orders are disabled.',
   'Контакт будет добавлен': 'Contact will be added',
   Подробнее: 'Details',

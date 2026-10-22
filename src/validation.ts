@@ -56,6 +56,15 @@ export function imageUrl(v: unknown, storeId?: string): string {
 }
 export const currencies = ['BYN', 'RUB', 'KZT', 'USD', 'EUR'];
 const textKeys = [
+  'about_title',
+  'about_body',
+  'sizing_title',
+  'sizing_body',
+  'ordering_title',
+  'ordering_body',
+  'shipping_title',
+  'shipping_body',
+
   'btn_cart',
   'btn_add',
   'btn_add_size',

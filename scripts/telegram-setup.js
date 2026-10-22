@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+if (process.env.DEPLOY_TARGET === 'staging' || process.env.DEPLOYMENT_ENV === 'staging')
+  throw new Error('Telegram setup is disabled for staging: the shared bot stays on production.');
 // Reads secrets from environment. Never prints a token or embeds it in arguments.
 import botCommands from '../src/telegram-commands.json' with { type: 'json' };
 import botProfile from '../src/telegram-profile.json' with { type: 'json' };

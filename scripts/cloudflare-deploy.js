@@ -6,6 +6,21 @@ import { parse } from 'jsonc-parser';
 
 export function deploymentConfig(source, values) {
   const config = parse(source);
+  const target = values.DEPLOY_TARGET || 'production';
+  if (!['production', 'staging'].includes(target))
+    throw new Error('DEPLOY_TARGET must be production or staging');
+  if (target === 'staging') {
+    const staging = config.env?.staging;
+    if (!staging) throw new Error('Missing staging configuration');
+    Object.assign(config, staging);
+    // Staging never receives production secrets, database or payment bindings.
+    config.account_id = values.CLOUDFLARE_ACCOUNT_ID || '6cba2ecdc192570aba36e3a6d2765924';
+    if (!values.PLATFORM_API_KEY || values.PLATFORM_API_KEY.length < 32)
+      throw new Error('Set a separate staging PLATFORM_API_KEY');
+    delete config.env;
+    return { config, secrets: { PLATFORM_API_KEY: values.PLATFORM_API_KEY } };
+  }
+  delete config.env;
   const accountId = values.CLOUDFLARE_ACCOUNT_ID?.trim();
   if (!accountId || !/^[a-f0-9]{32}$/i.test(accountId))
     throw new Error('Set CLOUDFLARE_ACCOUNT_ID in Cloudflare Build variables.');
@@ -82,7 +97,7 @@ async function deploy() {
       if (result.error || result.status !== 0)
         throw new Error('Cloudflare command failed. See the build log above.');
     };
-    runner(['d1', 'migrations', 'apply', 'catalog-factory', '--remote']);
+    runner(['d1', 'migrations', 'apply', config.d1_databases[0].database_name, '--remote']);
     runner(['deploy', '--secrets-file', secretsPath]);
   } finally {
     await Promise.all([unlink(configPath).catch(() => {}), unlink(secretsPath).catch(() => {})]);

@@ -2,7 +2,7 @@ name: Verify catalog engine
 on:
   pull_request:
   push:
-    branches: [main, feat/catalog-factory-mvp]
+    branches: [main, develop, release/**, feat/catalog-factory-mvp]
 permissions:
   contents: read
 concurrency:

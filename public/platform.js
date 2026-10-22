@@ -9,6 +9,7 @@ let apiKey = '',
   domains = [],
   domainSettings = null,
   paymentConfig = null;
+let storeQuery = '';
 let editorStoreId = null,
   copyTimer = null,
   templateEditor = null;
@@ -34,9 +35,36 @@ async function request(path, method = 'GET', body) {
   if (!r.ok) throw new Error(data.error || 'Не удалось выполнить запрос');
   return data;
 }
+async function loadStores() {
+  const all = [];
+  for (let offset = 0; ; offset += 200) {
+    const page = await request('stores?offset=' + offset);
+    all.push(...page);
+    if (page.length < 200) return [...new Map(all.map((s) => [s.id, s])).values()];
+  }
+}
+function filterStores() {
+  const query = storeQuery.trim().toLowerCase().replace(/^@/, '');
+  let count = 0;
+  document.querySelectorAll('#store-list [data-store-id]').forEach((card) => {
+    const store = stores.find((s) => s.id === card.dataset.storeId);
+    card.hidden = ![store.name, store.slug, store.settings?.instagram]
+      .join(' ')
+      .toLowerCase()
+      .includes(query);
+    if (!card.hidden) count++;
+  });
+  document.getElementById('store-count').textContent = 'Найдено: ' + count + ' из ' + stores.length;
+  document.getElementById('store-empty').hidden = count > 0 || !stores.length;
+}
+document.addEventListener('input', (event) => {
+  if (event.target.id !== 'store-search') return;
+  storeQuery = event.target.value;
+  filterStores();
+});
 async function refresh() {
   [stores, invoices, domains, domainSettings] = await Promise.all([
-    request('stores'),
+    loadStores(),
     request('payments'),
     request('domains'),
     request('domains/config'),
@@ -57,7 +85,7 @@ async function updateCopies() {
     !editorStoreId &&
     copies.some((job) => job.status === 'completed' && !stores.some((s) => s.id === job.targetId))
   ) {
-    stores = await request('stores');
+    stores = await loadStores();
     render();
   }
   const box = document.getElementById('copy-status');
@@ -185,10 +213,11 @@ function domainPanel(store, index) {
 function render() {
   document.getElementById('logout').hidden = false;
   templateEditor = null;
-  main.innerHTML = `${digitalPaymentPanel()}${domainSetupPanel()}<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
+  main.innerHTML = `<section class="card"><h2>Референсы пользователей</h2><p>Сайты, добавленные при самостоятельном создании демо.</p><button data-action="references">Открыть базу референсов</button></section>${digitalPaymentPanel()}${domainSetupPanel()}<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
  <form id="create-form" class="card"><h2>2. Создать магазин</h2><label for="new-template">Шаблон витрины</label><select id="new-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><p id="template-description"></p><a id="template-preview" href="/templates/minimal" target="_blank" rel="noopener">Открыть предпросмотр шаблона ↗</a><label class="seed-choice"><input id="seed-products" type="checkbox" checked> Добавить примерные товары</label><p>Примерные цены, остатки и иллюстрации замените перед активацией магазина.</p><label for="new-name">Название</label><input id="new-name" required maxlength="200" placeholder="Мой магазин"><label for="new-slug">Slug для ссылки</label><input id="new-slug" required maxlength="80" pattern="[a-z0-9][a-z0-9-]*" placeholder="my-store"><label for="new-description">Описание</label><textarea id="new-description" maxlength="2000"></textarea><label for="new-language">Язык сайта</label><select id="new-language"><option value="ru">Русский</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="fr">Français</option><option value="it">Italiano</option><option value="tr">Türkçe</option><option value="pl">Polski</option><option value="ja">日本語</option><option value="de">Deutsch</option></select><label for="new-currency">Основная валюта</label><select id="new-currency">${['BYN', 'RUB', 'KZT', 'USD', 'EUR'].map((c) => `<option>${c}</option>`).join('')}</select><label for="new-accent">Основной цвет</label><input id="new-accent" type="color" value="#354f46"><button class="primary" type="submit" style="margin-top:16px">Создать демо</button><details><summary>Создать из готового JSON</summary><p>Если поле заполнено, используется JSON вместо полей выше. Формат соответствует API фабрики.</p><textarea id="new-json" aria-label="JSON магазина" placeholder="Вставьте JSON магазина"></textarea></details></form>
  <section class="card"><h2>Фото примеров в шаблонах</h2><p>Загрузите главное фото или вставьте ссылку для каждого примерного товара. Оно появится в предпросмотре и в новых магазинах; существующие магазины сохранят свои фото.</p><div class="actions">${templates.map((t) => `<button data-template-edit="${t.id}">${escapeText(t.title)}</button>`).join('')}</div></section>
- <div id="copy-status" role="status"></div><h2>3. Магазины</h2><div id="store-list">${stores.map((s, i) => `<section class="card" data-store-id="${s.id}"><h3>${escapeText(s.name)}</h3><p>${s.status === 'demo' ? 'Демонстрация' : s.acceptingOrders ? 'Активный магазин' : 'Приём заказов приостановлен'} · ${s.ownerLinked ? 'Владелец подключён' : 'Владелец не подключён'}</p><p><a href="/${s.status === 'demo' ? 'demo' : 'shop'}/${escapeText(s.slug)}" target="_blank" rel="noopener">Открыть сайт</a></p>${s.shareUrl ? `<p>Ссылка для клиента:<br><a class="share-link" href="${escapeText(s.shareUrl)}" target="_blank" rel="noopener">${escapeText(s.shareUrl)}</a></p>` : ''}<label for="owner-${i}">${s.ownerLinked ? 'Telegram ID нового владельца' : 'Числовой Telegram ID владельца'}</label><input id="owner-${i}" inputmode="numeric" placeholder="ID, который показал бот после /start"><button data-invite="${i}" style="margin-top:12px">${s.ownerLinked ? 'Передать магазин' : 'Создать приглашение'}</button><div id="invite-${i}"></div><div class="actions" style="margin-top:16px"><button class="primary" data-edit="${i}">Редактировать магазин</button><button data-copy="${i}">Копировать магазин</button>${s.status === 'demo' ? `<button class="primary" data-activate="${i}" ${s.ownerLinked ? '' : 'disabled'}>Активировать магазин</button>` : ''}${s.status === 'active' ? `<button data-intake="${i}">${s.acceptingOrders ? 'Приостановить заказы' : 'Возобновить заказы'}</button>` : `<button class="danger" data-delete-demo="${i}">Удалить демо</button>`}<button data-export="${i}">Экспорт JSON</button></div>${invoicePanel(s, i)}${domainPanel(s, i)}</section>`).join('') || '<p>Создайте первый магазин.</p>'}</div><button data-action="refresh">Обновить список</button>`;
+ <div id="copy-status" role="status"></div><h2>3. Магазины</h2><label for="store-search">Поиск по аккаунту или названию магазина</label><input id="store-search" type="search" placeholder="@аккаунт, название или адрес демо" value="${escapeText(storeQuery)}"><p id="store-count" role="status"></p><p id="store-empty" hidden>Магазины не найдены.</p><div id="store-list">${stores.map((s, i) => `<section class="card" data-store-id="${s.id}"><h3>${escapeText(s.name)}</h3>${s.settings?.instagram ? `<p>@${escapeText(s.settings.instagram)}</p>` : ''}<p>${s.status === 'demo' ? 'Демонстрация' : s.acceptingOrders ? 'Активный магазин' : 'Приём заказов приостановлен'} · ${s.ownerLinked ? 'Владелец подключён' : 'Владелец не подключён'}</p><p><a href="/${s.status === 'demo' ? 'demo' : 'shop'}/${escapeText(s.slug)}" target="_blank" rel="noopener">Открыть сайт</a></p>${s.shareUrl ? `<p>Ссылка для клиента:<br><a class="share-link" href="${escapeText(s.shareUrl)}" target="_blank" rel="noopener">${escapeText(s.shareUrl)}</a></p>` : ''}<label for="owner-${i}">${s.ownerLinked ? 'Telegram ID нового владельца' : 'Числовой Telegram ID владельца'}</label><input id="owner-${i}" inputmode="numeric" placeholder="ID, который показал бот после /start"><button data-invite="${i}" style="margin-top:12px">${s.ownerLinked ? 'Передать магазин' : 'Создать приглашение'}</button><div id="invite-${i}"></div><div class="actions" style="margin-top:16px"><button class="primary" data-edit="${i}">Редактировать магазин</button><button data-copy="${i}">Копировать магазин</button>${s.status === 'demo' ? `<button class="primary" data-activate="${i}" ${s.ownerLinked ? '' : 'disabled'}>Активировать магазин</button>` : ''}${s.status === 'active' ? `<button data-intake="${i}">${s.acceptingOrders ? 'Приостановить заказы' : 'Возобновить заказы'}</button>` : `<button class="danger" data-delete-demo="${i}">Удалить демо</button>`}<button data-export="${i}">Экспорт JSON</button></div>${invoicePanel(s, i)}${domainPanel(s, i)}</section>`).join('') || '<p>Создайте первый магазин.</p>'}</div><button data-action="refresh">Обновить список</button>`;
+  filterStores();
   document.getElementById('new-template').dispatchEvent(new Event('change', { bubbles: true }));
 }
 document.getElementById('logout').addEventListener('click', () => {
@@ -308,6 +337,12 @@ document.addEventListener('click', async (event) => {
   button.disabled = true;
   notice('');
   try {
+    if (button.dataset.action === 'references') {
+      const refs = await request('references');
+      main.innerHTML = `<button data-action="back">← Все магазины</button><h2>Референсы пользователей</h2>${refs.map((r) => `<section class="card"><a href="${escapeText(r.url)}" target="_blank" rel="noopener noreferrer">${escapeText(r.url)}</a><p>Статус: ${escapeText(r.status)} · Использований: ${r.uses}</p></section>`).join('') || '<p>Пока нет референсов.</p>'}`;
+      return;
+    }
+
     if (button.dataset.action === 'domain-config-check') {
       await request('domains/config/check', 'POST', {});
       notice('Cloudflare настроен: зона, fallback origin и маршрут Worker готовы.');

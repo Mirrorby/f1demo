@@ -51,3 +51,16 @@ test('digital product deployment needs no Shop ID and retains the exact checkout
     deploymentConfig(source, { ...values, TRIBUTE_PRODUCT_URL: 'https://evil.example/p/H0e' }),
   );
 });
+
+test('staging is explicitly selected and cannot inherit production binding values', () => {
+  const { config, secrets } = deploymentConfig(source, {
+    ...values,
+    DEPLOY_TARGET: 'staging',
+    PLATFORM_API_KEY: 'separate-staging-key-with-more-than-32-chars',
+  });
+  assert.equal(config.name, 'catalog-factory-staging');
+  assert.notEqual(config.d1_databases[0].database_id, values.DATABASE_ID);
+  assert.equal(config.r2_buckets[0].bucket_name, 'catalog-factory-staging-images');
+  assert.deepEqual(Object.keys(secrets), ['PLATFORM_API_KEY']);
+  assert.ok(!config.env);
+});

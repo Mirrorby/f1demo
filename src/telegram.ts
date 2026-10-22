@@ -15,6 +15,11 @@ import { changeStatus } from './orders';
 import type { OrderRow, StoreRow, OrderItem, Customer } from './types';
 import { object, requireThat, text } from './validation';
 export async function telegram(env: Env, method: string, payload: unknown) {
+  requireThat(
+    env.DEPLOYMENT_ENV !== 'staging',
+    'Отправка сообщений и настройка бота отключены в тестовой среде',
+    403,
+  );
   requireThat(env.TELEGRAM_BOT_TOKEN, 'Telegram не настроен', 503);
   const result = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`, {
     method: 'POST',
