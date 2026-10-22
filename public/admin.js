@@ -11,6 +11,7 @@ if (document.body.classList.contains('delokay-app')) {
 }
 let platformKey = '';
 function emptyStore() {
+  document.getElementById('store-name').removeAttribute('data-no-i18n');
   document.getElementById('store-name').textContent = 'Ваши инструменты';
   main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">ДОБРО ПОЖАЛОВАТЬ В DELOKAY</span><h2>Начнём с вашего магазина</h2><p>Создайте онлайн-каталог, добавляйте товары и принимайте заказы прямо в Telegram.</p><div class="actions"><button class="primary" data-tab="payments">Начать с каталога →</button></div></section>
     <div class="section-label">Ваши инструменты</div>
@@ -222,6 +223,7 @@ async function reload() {
   if (store.id !== id) return;
   store = next;
   products = ps;
+  document.getElementById('store-name').setAttribute('data-no-i18n', '');
   document.getElementById('store-name').textContent = store.name;
 }
 async function show(next = tab) {
@@ -744,6 +746,7 @@ document.addEventListener('submit', async (event) => {
     }
     store = stores.find((s) => s.id === params.get('store')) || stores[0];
     const picker = document.getElementById('store-picker');
+    picker.setAttribute('data-no-i18n', '');
     picker.hidden = platformMode || stores.length < 2;
     picker.innerHTML = stores
       .map(

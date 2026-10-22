@@ -1,5 +1,6 @@
 import { stmt } from './catalog';
-import { notificationLanguage } from './telegram-i18n';
+import { notificationLanguage, detectLanguage } from './telegram-i18n';
+import paymentCopy from './telegram-payments.json';
 import { telegram } from './telegram';
 import { int, object, requireThat, text } from './validation';
 
@@ -136,7 +137,7 @@ export async function digitalWebhook(env: Env, name: string, input: unknown) {
   return { status: 'ok' };
 }
 export async function digitalMenu(env: Env, user: string, language: string) {
-  const ru = language.startsWith('ru');
+  const t = paymentCopy[detectLanguage(language)];
   const product = await digitalProduct(env);
   const purchases = await digitalPurchases(env, user);
   for (const p of purchases.slice(0, 10)) {
@@ -149,21 +150,13 @@ export async function digitalMenu(env: Env, user: string, language: string) {
         ' ' +
         p.currency.toUpperCase() +
         '\n' +
-        (p.status === 'paid'
-          ? ru
-            ? 'Оплачено'
-            : 'Paid'
-          : ru
-            ? 'Зарегистрирован возврат'
-            : 'Refund reported'),
+        (p.status === 'paid' ? t.paid : t.refund),
     });
   }
   if (!productOrderLinkAvailable(product)) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
-      text: ru
-        ? 'Товар пока недоступен для оплаты.'
-        : 'This product is not available for payment yet.',
+      text: t.unavailable,
     });
     return;
   }
@@ -175,23 +168,12 @@ export async function digitalMenu(env: Env, user: string, language: string) {
       (int(product.amount, 0, Number.MAX_SAFE_INTEGER) / 100).toFixed(2) +
       ' ' +
       text(product.currency, 3, true).toUpperCase() +
-      (product.type === 'custom'
-        ? ru
-          ? '\nТовар на заказ. Продавец отправит результат через Tribute после выполнения заказа и модерации.'
-          : '\nMade to order. The seller will send the result through Tribute after fulfillment and moderation.'
-        : ''),
+      (product.type === 'custom' ? '\n' + t.custom : ''),
     reply_markup: {
       inline_keyboard: [
         [
           {
-            text:
-              product.type === 'custom'
-                ? ru
-                  ? 'Заказать через Tribute'
-                  : 'Order with Tribute'
-                : ru
-                  ? 'Оплатить через Tribute'
-                  : 'Pay with Tribute',
+            text: product.type === 'custom' ? t.order : t.pay,
             url: productPaymentUrl(product, env),
           },
         ],
@@ -219,12 +201,8 @@ export async function flushDigitalNotifications(env: Env) {
           chat_id: p.owner_id,
           text:
             (p.kind === 'paid'
-              ? lang === 'ru'
-                ? '✅ Оплата подтверждена'
-                : '✅ Payment confirmed'
-              : lang === 'ru'
-                ? '↩️ Зарегистрирован возврат'
-                : '↩️ Refund reported') +
+              ? '✅ ' + paymentCopy[lang].confirmed
+              : '↩️ ' + paymentCopy[lang].refund) +
             '\n' +
             p.title +
             '\n' +

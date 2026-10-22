@@ -219,46 +219,97 @@
     'Включены продажи': 'Accepting orders',
     'Редактировать магазин': 'Edit store',
   };
+  Object.assign(en, {
+    'шт.': 'pcs',
+    'Цена,': 'Price,',
+    'Подсказка выбора варианта': 'Option selection hint',
+    'Очистить корзину': 'Clear cart',
+    Количество: 'Quantity',
+    'Выбор параметров': 'Choose options',
+    'Пустая корзина': 'Empty cart message',
+    'Товар добавлен': 'Added to cart message',
+    'Начало сообщения WhatsApp': 'WhatsApp message prefix',
+    'Конец сообщения WhatsApp': 'WhatsApp message suffix',
+    'Начало сообщения Telegram': 'Telegram message prefix',
+    'Конец сообщения Telegram': 'Telegram message suffix',
+    'Цены, фото и варианты товара': 'Product prices, photos and variants',
+    'Логотип также используется как иконка вкладки магазина.':
+      'Your logo is also used as the store tab icon.',
+    'Материал: хлопок\nОбъём: 100 мл': 'Material: cotton\nVolume: 100 ml',
+  });
   const reverse = Object.fromEntries(
     Object.entries(en)
       .reverse()
       .map(([ru, english]) => [english, ru]),
   );
-  const patterns = [
-    [/^Товары · (\d+)$/, (_, n) => 'Products · ' + n],
-    [/^Products · (\d+)$/, (_, n) => 'Товары · ' + n],
-    [/^Заказ №(\d+)$/, (_, n) => 'Order #' + n],
-    [/^Order #(\d+)$/, (_, n) => 'Заказ №' + n],
-    [/^Цена, ([A-Z]{3})$/, (_, c) => 'Price, ' + c],
-    [/^Price, ([A-Z]{3})$/, (_, c) => 'Цена, ' + c],
-    [/^(\d+) шт\.$/, (_, n) => n + ' pcs'],
-    [/^(\d+) pcs$/, (_, n) => n + ' шт.'],
-    [/^Итого: (.*)$/, (_, n) => 'Total: ' + n],
-    [/^Total: (.*)$/, (_, n) => 'Итого: ' + n],
-    [/^Фото (\d+)$/, (_, n) => 'Photo ' + n],
-    [/^Photo (\d+)$/, (_, n) => 'Фото ' + n],
+  const locales = window.DELOKAY_ADMIN_LOCALES || {};
+  const languageNames = {
+    ru: 'Русский',
+    en: 'English',
+    es: 'Español',
+    pt: 'Português',
+    fr: 'Français',
+    it: 'Italiano',
+    tr: 'Türkçe',
+    pl: 'Polski',
+    ja: '日本語',
+    de: 'Deutsch',
+  };
+  const codes = Object.keys(languageNames);
+  const normalize = (value) =>
+    typeof value === 'string' ? value.toLowerCase().split(/[-_]/)[0] : '';
+  const localizedReverse = Object.fromEntries(
+    Object.values(locales).flatMap((dict) =>
+      Object.entries(dict).map(([english, value]) => [value, english]),
+    ),
+  );
+  const dynamic = [
+    ['Products · {n}', /^Товары · (\d+)$/, /^Products · (\d+)$/],
+    ['Order #{n}', /^Заказ №(\d+)$/, /^Order #(\d+)$/],
+    ['Price, {n}', /^Цена, ([A-Z]{3})$/, /^Price, ([A-Z]{3})$/],
+    ['{n} pcs', /^(\d+) шт\.$/, /^(\d+) pcs$/],
+    ['Total: {n}', /^Итого: (.*)$/, /^Total: (.*)$/],
+    ['Photo {n}', /^Фото (\d+)$/, /^Photo (\d+)$/],
+  ];
+  const russianDynamic = [
+    'Товары · {n}',
+    'Заказ №{n}',
+    'Цена, {n}',
+    '{n} шт.',
+    'Итого: {n}',
+    'Фото {n}',
   ];
   const keys = ['aria-label', 'placeholder', 'title'];
   const app = document.body.classList.contains('delokay-app');
   if (!app) return;
   const platformMode = document.body.dataset.mode === 'platform';
-  const manual = !platformMode && localStorage.getItem('delokay_locale');
-  const telegram = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
-  let language = platformMode
-    ? 'ru'
-    : manual === 'ru' || manual === 'en'
-      ? manual
-      : telegram
-        ? /^ru(?:[-_]|$)/i.test(telegram)
-          ? 'ru'
-          : 'en'
-        : 'ru';
+  let manual;
+  try {
+    manual = localStorage.getItem('delokay_locale');
+  } catch {}
+  const requested = normalize(new URLSearchParams(location.search).get('lang'));
+  const telegram = normalize(window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code);
+  let language = codes.includes(requested)
+    ? requested
+    : platformMode
+      ? 'ru'
+      : codes.includes(manual)
+        ? manual
+        : telegram
+          ? codes.includes(telegram)
+            ? telegram
+            : 'en'
+          : 'ru';
+  const textSources = new WeakMap();
+  const attributeSources = new WeakMap();
+  let preferenceTouched = false;
   let observed = false;
   const observer = new MutationObserver((records) => {
     if (!observed) return;
     const parents = new Set();
     for (const record of records) {
-      if (record.type === 'characterData') parents.add(record.target.parentElement);
+      if (record.type === 'attributes') parents.add(record.target);
+      else if (record.type === 'characterData') parents.add(record.target.parentElement);
       else
         for (const node of record.addedNodes)
           parents.add(node.nodeType === 1 ? node : node.parentElement);
@@ -270,16 +321,29 @@
     const match = value.match(/^(\s*)(.*?)(\s*)$/s);
     if (!match || !match[2]) return value;
     let core = match[2];
-    const direct = destination === 'en' ? en : reverse;
-    const alternate = destination === 'en' ? reverse : en;
-    // Exact UI strings only: do not translate arbitrary user-created titles.
-    if (Object.hasOwn(direct, core)) core = direct[core];
-    else if (!Object.hasOwn(alternate, core)) {
-      for (const [i, pattern] of patterns.entries()) {
-        if ((destination === 'en' && i % 2 !== 0) || (destination === 'ru' && i % 2 === 0))
-          continue;
-        if (pattern[0].test(core)) {
-          core = core.replace(pattern[0], pattern[1]);
+    const canonical = Object.hasOwn(en, core)
+      ? en[core]
+      : Object.hasOwn(reverse, core)
+        ? core
+        : localizedReverse[core];
+    if (canonical !== undefined)
+      core =
+        destination === 'ru'
+          ? reverse[canonical] || core
+          : destination === 'en'
+            ? canonical
+            : locales[destination]?.[canonical] || canonical;
+    else {
+      for (const [index, [key, ruPattern, enPattern]] of dynamic.entries()) {
+        const found = core.match(ruPattern) || core.match(enPattern);
+        if (found) {
+          const template =
+            destination === 'ru'
+              ? russianDynamic[index]
+              : destination === 'en'
+                ? key
+                : locales[destination]?.[key] || key;
+          core = template.replace('{n}', found[1]);
           break;
         }
       }
@@ -296,7 +360,11 @@
       for (const key of keys) {
         if (!element.hasAttribute(key)) continue;
         const before = element.getAttribute(key);
-        const after = translateValue(before, language);
+        const sources = attributeSources.get(element) || {};
+        const source = sources[key]?.last === before ? sources[key].source : before;
+        const after = translateValue(source, language);
+        sources[key] = { source, last: after };
+        attributeSources.set(element, sources);
         if (after !== before) element.setAttribute(key, after);
       }
     }
@@ -308,40 +376,91 @@
       if (!parent || parent.closest('[data-no-i18n],script,style,textarea,option[data-no-i18n]'))
         continue;
       const old = node.nodeValue;
-      const newer = translateValue(old, language);
+      const source = textSources.get(node)?.last === old ? textSources.get(node).source : old;
+      const newer = translateValue(source, language);
+      textSources.set(node, { source, last: newer });
       if (old !== newer) node.nodeValue = newer;
     }
   }
-  function set(languageCode) {
-    if (!['ru', 'en'].includes(languageCode)) return;
+  function set(languageCode, persist = true) {
+    if (!codes.includes(languageCode)) return;
+    if (persist) preferenceTouched = true;
     language = languageCode;
     document.documentElement.lang = language;
-    if (!platformMode) localStorage.setItem('delokay_locale', language);
+    if (!platformMode) {
+      try {
+        localStorage.setItem('delokay_locale', language);
+      } catch {}
+    }
     translate(document.body);
     refreshSwitch();
+    if (persist && !platformMode && window.Telegram?.WebApp?.initData) {
+      fetch('/api/admin/preferences', {
+        method: 'PUT',
+        headers: {
+          Authorization: 'tma ' + window.Telegram.WebApp.initData,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ language }),
+      })
+        .then((r) => {
+          if (!r.ok) throw new Error('Language preference failed');
+        })
+        .catch(() => {
+          const notice = document.getElementById('notice');
+          if (notice) {
+            notice.textContent = translateValue('Request failed', language);
+            notice.hidden = false;
+          }
+        });
+    }
   }
   function refreshSwitch() {
-    const btn = document.getElementById('locale-switch');
-    if (btn) {
-      btn.textContent = language === 'ru' ? '🇷🇺 RU' : '🇬🇧 EN';
-      btn.title = language === 'ru' ? 'Switch to English' : 'Переключить на русский';
-      btn.setAttribute(
-        'aria-label',
-        language === 'ru' ? 'Switch to English' : 'Переключить на русский',
-      );
+    let picker = document.getElementById('locale-picker');
+    if (!picker) {
+      const button = document.getElementById('locale-switch');
+      if (!button) return;
+      picker = document.createElement('select');
+      picker.id = 'locale-picker';
+      picker.setAttribute('data-no-i18n', '');
+      picker.setAttribute('aria-label', 'Language');
+      picker.innerHTML = codes
+        .map((code) => '<option value="' + code + '">' + languageNames[code] + '</option>')
+        .join('');
+      picker.addEventListener('change', (event) => set(event.target.value));
+      button.replaceWith(picker);
+    }
+    picker.value = language;
+    picker.setAttribute('aria-label', translateValue('Interface language', language));
+    document.title =
+      'Delokay — ' + translateValue(platformMode ? 'STORE EDITOR' : 'Store management', language);
+    const stores = document.getElementById('store-picker');
+    if (stores) {
+      stores.setAttribute('data-no-i18n', '');
+      stores.setAttribute('aria-label', translateValue('Select a store', language));
     }
   }
   document.documentElement.lang = language;
-  document.addEventListener('click', (event) => {
-    if (event.target.closest('#locale-switch')) {
-      event.preventDefault();
-      set(language === 'ru' ? 'en' : 'ru');
-    }
-  });
   observed = true;
-  observer.observe(document.body, { subtree: true, childList: true, characterData: true });
+  observer.observe(document.body, {
+    subtree: true,
+    childList: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: keys,
+  });
   translate(document.body);
   refreshSwitch();
+  if (!platformMode && window.Telegram?.WebApp?.initData && !codes.includes(requested)) {
+    fetch('/api/admin/preferences', {
+      headers: { Authorization: 'tma ' + window.Telegram.WebApp.initData },
+    })
+      .then((r) => (r.ok ? r.json() : {}))
+      .then((pref) => {
+        if (!preferenceTouched && codes.includes(pref.language)) set(pref.language, false);
+      })
+      .catch(() => {});
+  }
   window.DelokayI18n = {
     get language() {
       return language;
@@ -349,6 +468,18 @@
     set,
     translate,
     t: (v) => translateValue(v, language),
-    locale: () => (language === 'ru' ? 'ru-RU' : 'en-US'),
+    locale: () =>
+      ({
+        ru: 'ru-RU',
+        en: 'en-US',
+        es: 'es-ES',
+        pt: 'pt-BR',
+        fr: 'fr-FR',
+        it: 'it-IT',
+        tr: 'tr-TR',
+        pl: 'pl-PL',
+        ja: 'ja-JP',
+        de: 'de-DE',
+      })[language],
   };
 })();

@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import { createServer } from 'node:http';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { start, stop, mf, db, shop, demo, initData, req, platform, PLATFORM } from './harness.js';
 let browser, server;
@@ -565,6 +565,56 @@ try {
     if (shotDir) await page.screenshot({ path: shotDir + '/photo-demo-' + language + '.png' });
   }
   assert.deepEqual(errors, []);
+  // Every editor locale translates controls and preserves customer/product content.
+  const editorLocales = JSON.parse(await readFile('src/admin-locales.json', 'utf8'));
+  await page.goto(origin + '/admin?store=' + shop.id + '&lang=ja');
+  await page.locator('#locale-picker').waitFor();
+  await page.getByRole('button', { name: editorLocales.ja.Products, exact: true }).waitFor();
+  await page.evaluate(() => {
+    const item = document.createElement('div');
+    item.id = 'locale-user-data';
+    item.setAttribute('data-no-i18n', '');
+    item.textContent = 'Новый — Products — Description';
+    document.body.append(item);
+    const input = document.createElement('input');
+    input.id = 'locale-user-input';
+    input.value = 'Описание клиента';
+    document.body.append(input);
+  });
+  for (const code of ['ru', 'en', ...Object.keys(editorLocales), 'ru']) {
+    const pending = page.waitForResponse(
+      (r) => r.url().endsWith('/api/admin/preferences') && r.request().method() === 'PUT',
+    );
+    await page.locator('#locale-picker').selectOption(code);
+    assert.equal((await pending).status(), 200);
+    assert.equal(await page.locator('html').getAttribute('lang'), code);
+    const expected =
+      code === 'ru' ? 'Заказы' : code === 'en' ? 'Orders' : editorLocales[code].Orders;
+    assert.equal((await page.locator('nav [data-tab="orders"]').innerText()).trim(), expected);
+    assert.equal(
+      await page.locator('#locale-user-data').innerText(),
+      'Новый — Products — Description',
+    );
+    assert.equal(await page.locator('#locale-user-input').inputValue(), 'Описание клиента');
+    const dynamic = await page.evaluate(() => window.DelokayI18n.t('Заказ №42'));
+    assert.equal(
+      dynamic,
+      code === 'ru'
+        ? 'Заказ №42'
+        : code === 'en'
+          ? 'Order #42'
+          : editorLocales[code]['Order #{n}'].replace('{n}', '42'),
+    );
+    assert.equal(
+      (
+        await db
+          .prepare('SELECT language FROM telegram_preferences WHERE user_id=?')
+          .bind('111')
+          .first()
+      ).language,
+      code,
+    );
+  }
   console.log(
     'Browser smoke passed: admin CRUD/settings → public catalog → failed and successful checkout → D1 → order status; demo, XSS and 375/390/1280 layouts.',
   );

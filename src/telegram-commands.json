@@ -42,5 +42,181 @@
       "command": "language",
       "description": "Choose language"
     }
+  ],
+  "es": [
+    {
+      "command": "start",
+      "description": "👋 ¡Bienvenido de nuevo!"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Abrir Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "💳 Pagos"
+    },
+    {
+      "command": "help",
+      "description": "❓ Ayuda"
+    },
+    {
+      "command": "language",
+      "description": "Elige el idioma:"
+    }
+  ],
+  "pt": [
+    {
+      "command": "start",
+      "description": "👋 Bem-vindo de volta!"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Abrir Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "💳 Pagamentos"
+    },
+    {
+      "command": "help",
+      "description": "❓ Ajuda"
+    },
+    {
+      "command": "language",
+      "description": "Escolha o idioma:"
+    }
+  ],
+  "fr": [
+    {
+      "command": "start",
+      "description": "👋 Bon retour !"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Ouvrir Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "💳 Paiements"
+    },
+    {
+      "command": "help",
+      "description": "❓ Aide"
+    },
+    {
+      "command": "language",
+      "description": "Choisissez la langue :"
+    }
+  ],
+  "it": [
+    {
+      "command": "start",
+      "description": "👋 Bentornato!"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Apri Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "💳 Pagamenti"
+    },
+    {
+      "command": "help",
+      "description": "❓ Aiuto"
+    },
+    {
+      "command": "language",
+      "description": "Scegli la lingua:"
+    }
+  ],
+  "de": [
+    {
+      "command": "start",
+      "description": "👋 Willkommen zurück!"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Delokay öffnen"
+    },
+    {
+      "command": "pay",
+      "description": "💳 Zahlungen"
+    },
+    {
+      "command": "help",
+      "description": "❓ Hilfe"
+    },
+    {
+      "command": "language",
+      "description": "Wähle die Sprache:"
+    }
+  ],
+  "pl": [
+    {
+      "command": "start",
+      "description": "👋 Witaj ponownie!"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Otwórz Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "💳 Płatności"
+    },
+    {
+      "command": "help",
+      "description": "❓ Pomoc"
+    },
+    {
+      "command": "language",
+      "description": "Wybierz język:"
+    }
+  ],
+  "tr": [
+    {
+      "command": "start",
+      "description": "👋 Tekrar hoş geldiniz!"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Delokay’ı aç"
+    },
+    {
+      "command": "pay",
+      "description": "💳 Ödemeler"
+    },
+    {
+      "command": "help",
+      "description": "❓ Yardım"
+    },
+    {
+      "command": "language",
+      "description": "Arayüz dilini seçin:"
+    }
+  ],
+  "ja": [
+    {
+      "command": "start",
+      "description": "👋 おかえりなさい！"
+    },
+    {
+      "command": "shop",
+      "description": "🚀 Delokayを開く"
+    },
+    {
+      "command": "pay",
+      "description": "💳 お支払い"
+    },
+    {
+      "command": "help",
+      "description": "❓ ヘルプ"
+    },
+    {
+      "command": "language",
+      "description": "表示言語を選んでください："
+    }
   ]
 }

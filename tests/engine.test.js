@@ -447,11 +447,13 @@ test('browser factory routes require the platform key and do not expose secrets'
   const shops = await platform('stores', 'GET');
   assert.ok(shops.body.find((s) => s.id === shop.id).ownerLinked);
   assert.ok(!JSON.stringify(shops.body).includes('owner_id'));
+  const beforeSetup = notifications.length;
   const setup = await platform('telegram/setup', 'POST', {});
+  assert.ok(notifications.length - beforeSetup <= 50, 'Telegram setup exceeds Worker subrequest limit');
   assert.equal(setup.status, 200, JSON.stringify(setup));
   assert.equal(setup.body.webhookUrl, 'https://store.example/api/telegram/webhook');
-  const commands = notifications.filter((n) => n.path.endsWith('/setMyCommands')).slice(-6);
-  assert.equal(commands.length, 6);
+  const commands = notifications.filter((n) => n.path.endsWith('/setMyCommands')).slice(-22);
+  assert.equal(commands.length, 22);
   assert.deepEqual(
     new Set(commands.map((n) => n.payload.scope.type)),
     new Set(['default', 'all_private_chats']),
@@ -465,8 +467,8 @@ test('browser factory routes require the platform key and do not expose secrets'
           'Payments and purchases',
     ),
   );
-  const profiles = notifications.filter((n) => n.path.endsWith('/setMyDescription')).slice(-3);
-  assert.equal(profiles.length, 3);
+  const profiles = notifications.filter((n) => n.path.endsWith('/setMyDescription')).slice(-11);
+  assert.equal(profiles.length, 11);
   assert.ok(
     profiles.some(
       (n) => n.payload.language_code === 'ru' && n.payload.description.includes('Меньше рутины'),

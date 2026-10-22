@@ -133,7 +133,7 @@ try {
   await mini.getByRole('button', { name: 'More', exact: true }).click();
   await mini.getByRole('button', { name: 'Payments', exact: true }).click();
   await mini.getByRole('heading', { name: 'Service payments', exact: true }).waitFor();
-  await mini.locator('#locale-switch').click();
+  await mini.locator('#locale-picker').selectOption('ru');
   await mini.getByRole('heading', { name: 'Оплата услуг', exact: true }).waitFor();
   await mini.reload();
   await mini.getByRole('button', { name: 'Главная', exact: true }).waitFor();

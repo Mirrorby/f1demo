@@ -9,7 +9,8 @@ import {
 } from './tribute-digital';
 import { equalSecret, digest } from './auth';
 import { stmt } from './catalog';
-import { notificationLanguage } from './telegram-i18n';
+import { notificationLanguage, detectLanguage } from './telegram-i18n';
+import paymentCopy from './telegram-payments.json';
 import { telegram, origin } from './telegram';
 import { HttpError, int, object, requireThat, text, limitedBytes } from './validation';
 import type { StoreRow } from './types';
@@ -382,28 +383,18 @@ export async function paymentMenu(env: Env, user: string, language: string) {
     await digitalMenu(env, user, language);
     return;
   }
-  const ru = language.startsWith('ru');
+  const t = paymentCopy[detectLanguage(language)];
   const invoices = await listInvoices(env, undefined, user);
   if (!invoices.length) {
     await telegram(env, 'sendMessage', {
       chat_id: user,
-      text: ru ? 'Для вас пока нет счетов на оплату.' : 'You have no invoices yet.',
+      text: t.noInvoices,
     });
     return;
   }
   for (const i of invoices.slice(0, 10)) {
     const status =
-      i.status === 'paid'
-        ? ru
-          ? 'Оплачено'
-          : 'Paid'
-        : i.status === 'refund_reported'
-          ? ru
-            ? 'Зарегистрирован возврат'
-            : 'Refund reported'
-          : ru
-            ? 'Ожидает оплаты'
-            : 'Awaiting payment';
+      i.status === 'paid' ? t.paid : i.status === 'refund_reported' ? t.refund : t.pending;
     await telegram(env, 'sendMessage', {
       chat_id: user,
       text:
@@ -419,9 +410,7 @@ export async function paymentMenu(env: Env, user: string, language: string) {
       ...(i.paymentUrl && i.status === 'pending'
         ? {
             reply_markup: {
-              inline_keyboard: [
-                [{ text: ru ? 'Оплатить через Tribute' : 'Pay with Tribute', url: i.paymentUrl }],
-              ],
+              inline_keyboard: [[{ text: t.pay, url: i.paymentUrl }]],
             },
           }
         : {}),
@@ -457,12 +446,8 @@ export async function flushPaymentNotifications(env: Env) {
           chat_id: n.owner_id,
           text:
             (n.kind === 'paid'
-              ? lang === 'ru'
-                ? '✅ Оплата подтверждена'
-                : '✅ Payment confirmed'
-              : lang === 'ru'
-                ? '↩️ Зарегистрирован возврат'
-                : '↩️ Refund reported') +
+              ? '✅ ' + paymentCopy[lang].confirmed
+              : '↩️ ' + paymentCopy[lang].refund) +
             '\n' +
             n.title +
             '\n' +

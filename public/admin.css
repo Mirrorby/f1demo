@@ -859,7 +859,8 @@ body.delokay-app .header-controls {
   gap: 8px;
   padding-bottom: 2px;
 }
-body.delokay-app #locale-switch {
+body.delokay-app #locale-switch,
+body.delokay-app #locale-picker {
   min-height: 36px;
   height: 36px;
   min-width: 70px;

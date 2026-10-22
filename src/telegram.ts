@@ -1,7 +1,14 @@
 import { paymentMenu } from './tribute';
 import botCommands from './telegram-commands.json';
 import botProfile from './telegram-profile.json';
-import { copy, userLanguage, setLanguage, notificationLanguage } from './telegram-i18n';
+import {
+  copy,
+  userLanguage,
+  setLanguage,
+  notificationLanguage,
+  botLanguages,
+  type BotLanguage,
+} from './telegram-i18n';
 import { digest, equalSecret } from './auth';
 import { stmt, ownedStore, storeMutationGuard } from './catalog';
 import { changeStatus } from './orders';
@@ -66,7 +73,7 @@ async function claim(env: Env, token: string, user: string) {
   await stmt(env, 'UPDATE owner_invites SET used_at=unixepoch() WHERE token_hash=?', hash).run();
   return result;
 }
-async function menu(env: Env, user: string, lang: 'ru' | 'en', greeting = true) {
+async function menu(env: Env, user: string, lang: BotLanguage, greeting = true) {
   const t = copy[lang];
   const stores = await stmt(
     env,
@@ -81,7 +88,7 @@ async function menu(env: Env, user: string, lang: 'ru' | 'en', greeting = true) 
         : t.welcome + t.noStore + '\n\n' + t.telegramId + user,
       reply_markup: {
         inline_keyboard: [
-          [{ text: t.dashboard, web_app: { url: origin(env) + '/admin' } }],
+          [{ text: t.dashboard, web_app: { url: origin(env) + '/admin?lang=' + lang } }],
           [
             { text: t.payments, callback_data: 'menu:pay' },
             { text: t.helpButton, callback_data: 'menu:help' },
@@ -97,33 +104,54 @@ async function menu(env: Env, user: string, lang: 'ru' | 'en', greeting = true) 
       text: store.name + '\n' + `https://t.me/${env.BOT_USERNAME}?startapp=s_${store.slug}`,
       reply_markup: {
         inline_keyboard: [
-          [{ text: t.store, web_app: { url: origin(env) + `/admin?store=${store.id}` } }],
+          [
+            {
+              text: t.store,
+              web_app: { url: origin(env) + `/admin?store=${store.id}&lang=${lang}` },
+            },
+          ],
           [{ text: t.payments, callback_data: 'menu:pay' }],
         ],
       },
     });
   }
 }
-async function help(env: Env, user: string, lang: 'ru' | 'en') {
+async function help(env: Env, user: string, lang: BotLanguage) {
   await telegram(env, 'sendMessage', {
     chat_id: user,
     text: copy[lang].help,
     reply_markup: {
-      inline_keyboard: [[{ text: copy[lang].dashboard, web_app: { url: origin(env) + '/admin' } }]],
+      inline_keyboard: [
+        [{ text: copy[lang].dashboard, web_app: { url: origin(env) + '/admin?lang=' + lang } }],
+      ],
     },
   });
 }
-async function languageMenu(env: Env, user: string, lang: 'ru' | 'en') {
+async function languageMenu(env: Env, user: string, lang: BotLanguage) {
   await telegram(env, 'sendMessage', {
     chat_id: user,
     text: copy[lang].chooseLanguage,
     reply_markup: {
-      inline_keyboard: [
-        [
-          { text: '🇷🇺 Русский', callback_data: 'lang:ru' },
-          { text: '🇬🇧 English', callback_data: 'lang:en' },
-        ],
-      ],
+      inline_keyboard: botLanguages.reduce<{ text: string; callback_data: string }[][]>(
+        (rows, code, i) => {
+          const names: Record<BotLanguage, string> = {
+            ru: 'Русский',
+            en: 'English',
+            es: 'Español',
+            pt: 'Português',
+            fr: 'Français',
+            it: 'Italiano',
+            tr: 'Türkçe',
+            pl: 'Polski',
+            ja: '日本語',
+            de: 'Deutsch',
+          };
+          if (i % 2 === 0) rows.push([]);
+          rows[rows.length - 1].push({ text: names[code], callback_data: 'lang:' + code });
+          return rows;
+        },
+        [],
+      ),
     },
   });
 }
@@ -150,8 +178,8 @@ export async function webhook(request: Request, env: Env, input: unknown) {
     );
     const data = text(q.data, 64);
     const user = String(from.id);
-    if (data.startsWith('lang:') && ['lang:ru', 'lang:en'].includes(data)) {
-      const lang = data.slice(5) as 'ru' | 'en';
+    if (data.startsWith('lang:') && botLanguages.some((lang) => data === 'lang:' + lang)) {
+      const lang = data.slice(5) as BotLanguage;
       await setLanguage(env, user, lang);
       await telegram(env, 'answerCallbackQuery', {
         callback_query_id: text(q.id, 200, true),
@@ -184,7 +212,7 @@ export async function webhook(request: Request, env: Env, input: unknown) {
         access,
       );
     } catch (e) {
-      answer = e instanceof Error ? e.message : 'Ошибка';
+      answer = copy[lang].orderNotFound;
     }
     await telegram(env, 'answerCallbackQuery', {
       callback_query_id: text(q.id, 200, true),
@@ -267,7 +295,9 @@ export async function flushNotifications(env: Env, onlyOrder?: string) {
             [
               {
                 text: t.openOrder,
-                web_app: { url: origin(env) + `/admin?store=${o.store_id}&order=${o.id}` },
+                web_app: {
+                  url: origin(env) + `/admin?store=${o.store_id}&order=${o.id}&lang=${lang}`,
+                },
               },
               { text: t.cancel, callback_data: 'x:' + o.id },
             ],
@@ -293,10 +323,22 @@ export async function flushNotifications(env: Env, onlyOrder?: string) {
 }
 
 export async function setupTelegramProfile(env: Env) {
-  for (const language of ['', 'ru', 'en']) {
-    const profile = botProfile[language === 'ru' ? 'ru' : 'en'];
+  // The brand is identical in every language. Keep the complete setup below
+  // the Free-plan limit of 50 external subrequests per invocation.
+  await telegram(env, 'setMyName', { name: 'Delokay', language_code: '' });
+  for (const language of ['', ...botLanguages]) {
+    const profile =
+      language === '' || language === 'en' || language === 'ru'
+        ? botProfile[language === 'ru' ? 'ru' : 'en']
+        : {
+            name: 'Delokay',
+            short_description: copy[language as BotLanguage].welcome
+              .split('\n\n')
+              .slice(0, 2)
+              .join(' '),
+            description: copy[language as BotLanguage].welcome,
+          };
     for (const [method, field, value] of [
-      ['setMyName', 'name', profile.name],
       ['setMyShortDescription', 'short_description', profile.short_description],
       ['setMyDescription', 'description', profile.description],
     ] as const)
@@ -305,11 +347,11 @@ export async function setupTelegramProfile(env: Env) {
 }
 export async function setupTelegramCommands(env: Env) {
   for (const type of ['default', 'all_private_chats'])
-    for (const language of ['', 'ru', 'en'])
+    for (const language of ['', ...botLanguages])
       await telegram(env, 'setMyCommands', {
         scope: { type },
         language_code: language,
-        commands: language === 'ru' ? botCommands.ru : botCommands.en,
+        commands: botCommands[(language || 'en') as keyof typeof botCommands],
       });
 }
 export async function setupTelegram(env: Env) {

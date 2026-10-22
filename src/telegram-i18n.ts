@@ -1,7 +1,10 @@
+import locales from './telegram-locales.json';
 import { stmt } from './catalog';
-export type BotLanguage = 'ru' | 'en';
+export const botLanguages = ['ru', 'en', 'es', 'pt', 'fr', 'it', 'tr', 'pl', 'ja', 'de'] as const;
+export type BotLanguage = (typeof botLanguages)[number];
 export function detectLanguage(code: unknown): BotLanguage {
-  return typeof code === 'string' && /^ru(?:[-_]|$)/i.test(code) ? 'ru' : 'en';
+  const base = typeof code === 'string' ? code.toLowerCase().split(/[-_]/)[0] : '';
+  return botLanguages.includes(base as BotLanguage) ? (base as BotLanguage) : 'en';
 }
 export async function userLanguage(
   env: Env,
@@ -39,9 +42,10 @@ export async function notificationLanguage(env: Env, user: string): Promise<BotL
     'SELECT language FROM telegram_preferences WHERE user_id=?',
     user,
   ).first<{ language: BotLanguage }>();
-  return row?.language === 'en' ? 'en' : 'ru';
+  return row ? detectLanguage(row.language) : 'ru';
 }
 export const copy = {
+  ...locales,
   ru: {
     welcome:
       '👋 Привет! Добро пожаловать в Delokay.\n\nМеньше рутины. Больше дела. ✨\n\nМы создаём простые инструменты для управления бизнесом. 🛍 Каталоги — наш первый инструмент: товары, заказы и магазин в Telegram.',

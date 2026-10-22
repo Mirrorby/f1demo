@@ -1,0 +1,1 @@
+ALTER TABLE telegram_bot_setup ADD COLUMN revision INTEGER NOT NULL DEFAULT 0;

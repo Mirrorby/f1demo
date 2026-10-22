@@ -1,7 +1,10 @@
+import { botLanguages, setLanguage } from './telegram-i18n';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import platformScript from '../public/platform.js';
 import adminScript from '../public/admin.js';
 import adminI18nScript from '../public/admin-i18n.js';
+import adminLocales from './admin-locales.json';
+const adminLocaleScript = 'window.DELOKAY_ADMIN_LOCALES=' + JSON.stringify(adminLocales) + ';';
 import adminStyle from '../public/admin.css';
 import adminPage from '../public/admin.html';
 import platformPage from '../public/platform.html';
@@ -28,8 +31,12 @@ const storefrontMarkup = (language: string = 'ru') => {
 const brandedPanel = (html: string) =>
   html
     .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
+    .replace(/<script defer src="\/admin-locales\.js[^"]*"><\/script>/, '')
     .replace('</head>', `<style id="delokay-theme-inline">${adminStyle}</style></head>`)
-    .replace('</body>', `<script id="delokay-language-inline">${adminI18nScript}</script></body>`);
+    .replace(
+      '</body>',
+      `<script id="delokay-language-inline">${adminLocaleScript}\n${adminI18nScript}</script></body>`,
+    );
 import {
   addDomain,
   checkDomain,
@@ -218,9 +225,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         'X-Content-Type-Options': 'nosniff',
       },
     });
-  if (['/admin-i18n.js', '/admin.css'].includes(path) && (method === 'GET' || method === 'HEAD'))
+  if (
+    ['/admin-i18n.js', '/admin-locales.js', '/admin.css'].includes(path) &&
+    (method === 'GET' || method === 'HEAD')
+  )
     return new Response(
-      method === 'HEAD' ? null : path.endsWith('.css') ? adminStyle : adminI18nScript,
+      method === 'HEAD'
+        ? null
+        : path.endsWith('.css')
+          ? adminStyle
+          : path === '/admin-locales.js'
+            ? adminLocaleScript
+            : adminI18nScript,
       {
         headers: {
           'Content-Type': path.endsWith('.css')
@@ -451,6 +467,27 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
     const isPlatform = path.startsWith('/api/platform/');
     const owner = isPlatform ? null : await telegramAuth(request, env);
+    if (path === '/api/admin/preferences') {
+      if (method === 'GET')
+        return json(
+          (await stmt(
+            env,
+            'SELECT language,manual FROM telegram_preferences WHERE user_id=?',
+            owner,
+          ).first()) || {},
+        );
+      if (method === 'PUT') {
+        const data = object(await jsonBody(request));
+        requireThat(
+          typeof data.language === 'string' &&
+            botLanguages.includes(data.language as (typeof botLanguages)[number]),
+          'Неизвестный язык',
+        );
+        await setLanguage(env, owner!, data.language as (typeof botLanguages)[number]);
+        return json({ ok: true });
+      }
+      throw new HttpError(405, 'Метод не поддерживается');
+    }
     if (path === '/api/admin/payments/config' && method === 'GET')
       return json(await tributeConfig(env));
     if (path === '/api/admin/payments' && method === 'GET')
@@ -650,13 +687,13 @@ export default {
       (async () => {
         const configured = await stmt(
           env,
-          'SELECT username FROM telegram_bot_setup WHERE id=1',
-        ).first<{ username: string }>();
-        if (configured?.username === env.BOT_USERNAME) return;
+          'SELECT username,revision FROM telegram_bot_setup WHERE id=1',
+        ).first<{ username: string; revision: number }>();
+        if (configured?.username === env.BOT_USERNAME && configured.revision >= 2) return;
         await setupTelegram(env);
         await stmt(
           env,
-          'INSERT INTO telegram_bot_setup(id,username,configured_at) VALUES(1,?,unixepoch()) ON CONFLICT(id) DO UPDATE SET username=excluded.username,configured_at=excluded.configured_at',
+          'INSERT INTO telegram_bot_setup(id,username,configured_at,revision) VALUES(1,?,unixepoch(),2) ON CONFLICT(id) DO UPDATE SET username=excluded.username,configured_at=excluded.configured_at,revision=excluded.revision',
           env.BOT_USERNAME,
         ).run();
       })().catch(() =>

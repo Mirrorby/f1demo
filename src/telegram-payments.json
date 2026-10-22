@@ -1,0 +1,112 @@
+{
+  "ru": {
+    "noInvoices": "Для вас пока нет счетов на оплату.",
+    "paid": "Оплачено",
+    "refund": "Зарегистрирован возврат",
+    "pending": "Ожидает оплаты",
+    "pay": "Оплатить через Tribute",
+    "order": "Заказать через Tribute",
+    "unavailable": "Товар пока недоступен для оплаты.",
+    "custom": "Товар на заказ. Продавец отправит результат через Tribute после выполнения заказа и модерации.",
+    "confirmed": "Оплата подтверждена"
+  },
+  "en": {
+    "noInvoices": "You have no invoices yet.",
+    "paid": "Paid",
+    "refund": "Refund reported",
+    "pending": "Awaiting payment",
+    "pay": "Pay with Tribute",
+    "order": "Order with Tribute",
+    "unavailable": "This product is not available for payment yet.",
+    "custom": "Made to order. The seller will send the result through Tribute after fulfillment and moderation.",
+    "confirmed": "Payment confirmed"
+  },
+  "es": {
+    "noInvoices": "Todavía no tienes facturas.",
+    "paid": "Pagado",
+    "refund": "Reembolso registrado",
+    "pending": "Pendiente de pago",
+    "pay": "Pagar con Tribute",
+    "order": "Pedir con Tribute",
+    "unavailable": "Este producto aún no está disponible para el pago.",
+    "custom": "Producto por encargo. El vendedor entregará el resultado a través de Tribute tras completar y revisar el pedido.",
+    "confirmed": "Pago confirmado"
+  },
+  "pt": {
+    "noInvoices": "Você ainda não tem faturas.",
+    "paid": "Pago",
+    "refund": "Reembolso registrado",
+    "pending": "Aguardando pagamento",
+    "pay": "Pagar com Tribute",
+    "order": "Encomendar com Tribute",
+    "unavailable": "Este produto ainda não está disponível para pagamento.",
+    "custom": "Produto sob encomenda. O vendedor enviará o resultado pelo Tribute após a conclusão e revisão do pedido.",
+    "confirmed": "Pagamento confirmado"
+  },
+  "fr": {
+    "noInvoices": "Vous n’avez pas encore de factures.",
+    "paid": "Payé",
+    "refund": "Remboursement enregistré",
+    "pending": "En attente de paiement",
+    "pay": "Payer avec Tribute",
+    "order": "Commander avec Tribute",
+    "unavailable": "Ce produit n’est pas encore disponible au paiement.",
+    "custom": "Produit sur commande. Le vendeur livrera le résultat via Tribute après réalisation et validation.",
+    "confirmed": "Paiement confirmé"
+  },
+  "it": {
+    "noInvoices": "Non hai ancora fatture.",
+    "paid": "Pagato",
+    "refund": "Rimborso registrato",
+    "pending": "In attesa di pagamento",
+    "pay": "Paga con Tribute",
+    "order": "Ordina con Tribute",
+    "unavailable": "Questo prodotto non è ancora disponibile per il pagamento.",
+    "custom": "Prodotto su ordinazione. Il venditore invierà il risultato tramite Tribute dopo il completamento e la verifica.",
+    "confirmed": "Pagamento confermato"
+  },
+  "de": {
+    "noInvoices": "Du hast noch keine Rechnungen.",
+    "paid": "Bezahlt",
+    "refund": "Erstattung erfasst",
+    "pending": "Zahlung ausstehend",
+    "pay": "Mit Tribute bezahlen",
+    "order": "Mit Tribute bestellen",
+    "unavailable": "Dieses Produkt kann noch nicht bezahlt werden.",
+    "custom": "Auf Bestellung. Der Verkäufer liefert das Ergebnis nach Fertigstellung und Prüfung über Tribute.",
+    "confirmed": "Zahlung bestätigt"
+  },
+  "pl": {
+    "noInvoices": "Nie masz jeszcze faktur.",
+    "paid": "Opłacone",
+    "refund": "Zarejestrowano zwrot",
+    "pending": "Oczekuje na płatność",
+    "pay": "Zapłać przez Tribute",
+    "order": "Zamów przez Tribute",
+    "unavailable": "Ten produkt nie jest jeszcze dostępny do opłacenia.",
+    "custom": "Produkt na zamówienie. Sprzedawca dostarczy rezultat przez Tribute po realizacji i weryfikacji zamówienia.",
+    "confirmed": "Płatność potwierdzona"
+  },
+  "tr": {
+    "noInvoices": "Henüz faturanız yok.",
+    "paid": "Ödendi",
+    "refund": "İade kaydedildi",
+    "pending": "Ödeme bekleniyor",
+    "pay": "Tribute ile öde",
+    "order": "Tribute ile sipariş ver",
+    "unavailable": "Bu ürün henüz ödeme için uygun değil.",
+    "custom": "Sipariş üzerine hazırlanır. Satıcı, tamamlanma ve inceleme sonrasında sonucu Tribute üzerinden gönderir.",
+    "confirmed": "Ödeme onaylandı"
+  },
+  "ja": {
+    "noInvoices": "請求書はまだありません。",
+    "paid": "支払い済み",
+    "refund": "返金を記録しました",
+    "pending": "支払い待ち",
+    "pay": "Tributeで支払う",
+    "order": "Tributeで注文する",
+    "unavailable": "この商品はまだお支払いできません。",
+    "custom": "受注制作の商品です。完成と審査の後、販売者がTributeで成果物をお送りします。",
+    "confirmed": "お支払いを確認しました"
+  }
+}

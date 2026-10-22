@@ -45,7 +45,12 @@ export async function req(path, method = 'GET', data, headers = {}) {
   const r = await mf.dispatchFetch('http://localhost' + path, {
     method,
     redirect: 'manual',
-    headers: { ...(data === undefined ? {} : { 'Content-Type': 'application/json' }), ...headers },
+    // workerd may close a rejected POST before consuming its body; do not reuse that test socket.
+    headers: {
+      Connection: 'close',
+      ...(data === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...headers,
+    },
     body: data === undefined ? undefined : JSON.stringify(data),
   });
   const raw = await r.text();
