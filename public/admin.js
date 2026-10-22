@@ -27,7 +27,7 @@ async function showCreate(seq) {
     ready: 'Готово',
     failed: 'Ошибка подготовки · повторите создание',
   };
-  main.innerHTML = `<h2>Создать магазин</h2><p class="section-caption">Сначала проверьте демо и отредактируйте его. Заказы подключаются отдельно после оплаты.</p>
+  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Демо и редактирование</li><li>Оплата и запуск</li></ol><p class="section-caption">Сначала проверьте демо и отредактируйте его. Заказы подключаются отдельно после оплаты.</p>
   <section class="card"><h3>Тестовый режим</h3><p>Импорт Instagram и создание дизайна по ссылке пока недоступны. Сейчас мы создадим редактируемое демо с примерными товарами выбранного шаблона. Ссылку на понравившийся сайт сохраним как референс.</p></section>
   <p class="section-caption">До трёх бесплатных демо на аккаунт.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
   <h3>Выберите оформление</h3><div class="demo-template-grid">${templates.map((t, i) => `<div class="demo-template-card"><label><input type="radio" name="demo-template" value="${esc(t.id)}" ${i === 0 ? 'checked' : ''}> ${esc(t.title)}</label><p>${esc(t.description)}</p><a href="/templates/${esc(t.id)}" target="_blank" rel="noopener">Посмотреть пример ↗</a></div>`).join('')}</div>
@@ -35,7 +35,7 @@ async function showCreate(seq) {
   <label for="demo-language">Язык сайта</label><select id="demo-language"><option value="ru">Русский</option><option value="en">English</option></select>
   <label for="demo-currency">Валюта</label><select id="demo-currency">${['BYN', 'RUB', 'USD', 'EUR', 'KZT'].map((c) => `<option>${c}</option>`).join('')}</select>
   <button class="primary" type="submit">Создать тестовое демо</button></section></form>
-  <section class="card"><h3>Мои демо</h3>${jobs.length ? jobs.map((j) => `<div class="demo-job"><strong data-no-i18n>@${esc(j.instagram)}</strong><p>${esc(statuses[j.status] || j.status)}</p>${j.slug ? `<button data-open-demo="${esc(j.store_id)}">Редактировать</button> <a href="/s/${esc(j.slug)}" target="_blank" rel="noopener">Посмотреть сайт ↗</a>` : ''}</div>`).join('') : '<p>Здесь появятся ваши демо.</p>'}<button type="button" data-tab="create">Обновить статусы</button></section>`;
+  <section class="card"><h3>Мои демо</h3>${jobs.length ? jobs.map((j) => `<div class="demo-job"><strong data-no-i18n>@${esc(j.instagram)}</strong><p>${esc(statuses[j.status] || j.status)}</p>${j.slug ? `<div class="actions"><button data-open-demo="${esc(j.store_id)}">Редактировать</button><a href="/s/${esc(j.slug)}" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>` : ''}</div>`).join('') : '<p>Здесь появятся ваши демо.</p>'}<button type="button" data-tab="create">Обновить статусы</button></section>`;
 }
 async function openDemo(id) {
   stores = await api('stores');

@@ -58,6 +58,17 @@ function filterStores() {
   document.getElementById('store-empty').hidden = count > 0 || !stores.length;
 }
 document.addEventListener('input', (event) => {
+  if (event.target.id === 'reference-search') {
+    const query = event.target.value.trim().toLowerCase();
+    let count = 0;
+    document.querySelectorAll('[data-reference-url]').forEach((card) => {
+      card.hidden = !card.dataset.referenceUrl.toLowerCase().includes(query);
+      if (!card.hidden) count++;
+    });
+    document.getElementById('reference-count').textContent = 'Найдено: ' + count;
+    document.getElementById('reference-empty').hidden = count > 0;
+    return;
+  }
   if (event.target.id !== 'store-search') return;
   storeQuery = event.target.value;
   filterStores();
@@ -339,7 +350,8 @@ document.addEventListener('click', async (event) => {
   try {
     if (button.dataset.action === 'references') {
       const refs = await request('references');
-      main.innerHTML = `<button data-action="back">← Все магазины</button><h2>Референсы пользователей</h2>${refs.map((r) => `<section class="card"><a href="${escapeText(r.url)}" target="_blank" rel="noopener noreferrer">${escapeText(r.url)}</a><p>Статус: ${escapeText(r.status)} · Использований: ${r.uses}</p></section>`).join('') || '<p>Пока нет референсов.</p>'}`;
+      const labels = { reference: 'Добавлен', preparing: 'Изучается', available: 'Готов' };
+      main.innerHTML = `<button data-action="back">← Все магазины</button><h2>Референсы пользователей</h2><p>Общая база ссылок. Сохранённый референс ещё не является готовым шаблоном. Показаны до 200 последних записей.</p><label for="reference-search">Найти сайт</label><input id="reference-search" type="search" placeholder="Домен или часть ссылки"><p id="reference-count" role="status">Найдено: ${refs.length}</p>${refs.map((r) => `<section class="card" data-reference-url="${escapeText(r.url)}"><a href="${escapeText(r.url)}" target="_blank" rel="noopener noreferrer">${escapeText(r.url)}</a><p>Статус: ${escapeText(labels[r.status] || r.status)} · Использований: ${Number(r.uses) || 0}</p></section>`).join('')}<p id="reference-empty" ${refs.length ? 'hidden' : ''}>Референсы не найдены.</p>`;
       return;
     }
 

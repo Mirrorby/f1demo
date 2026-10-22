@@ -2,6 +2,9 @@
 (() => {
   'use strict';
   const en = {
+    'Аккаунт и оформление': 'Account and design',
+    'Демо и редактирование': 'Demo and editing',
+    'Оплата и запуск': 'Payment and launch',
     'Создайте свой магазин': 'Create your store',
     'Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.':
       'Add your Instagram, choose a design and prepare your catalog for launch.',

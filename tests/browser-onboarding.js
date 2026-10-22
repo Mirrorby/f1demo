@@ -38,6 +38,21 @@ try {
   );
   await page.goto('http://127.0.0.1:' + server.address().port + '/admin?lang=ru');
   await page.getByRole('button', { name: 'Создать магазин', exact: true }).click();
+  for (const width of [320, 360, 390, 520]) {
+    await page.setViewportSize({ width, height: 844 });
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+      `Create form overflows at ${width}px`,
+    );
+    const currency = await page.locator('#demo-currency').boundingBox();
+    const submit = await page.locator('#demo-form button[type="submit"]').boundingBox();
+    assert.ok(
+      submit.y >= currency.y + currency.height + 12,
+      `Submit button touches currency field at ${width}px`,
+    );
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('#demo-instagram').fill('@browser_shop');
   await page.locator('input[name="demo-template"][value="fashion"]').check();
   await page.locator('#demo-reference').fill('https://example.com/design');

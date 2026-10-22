@@ -93,6 +93,8 @@ input,
 select,
 textarea {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 44px;
   padding: 11px 12px;
   border: 1px solid #8885;
@@ -1224,6 +1226,15 @@ body.delokay-app .order-lines li {
   gap: 12px;
   margin-bottom: 24px;
 }
+.demo-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+  padding-left: 20px;
+  margin-bottom: 24px;
+  color: var(--muted);
+  line-height: 1.6;
+}
 .demo-template-card {
   border: 1px solid var(--border, #dce0eb);
   border-radius: 16px;
@@ -1231,7 +1242,51 @@ body.delokay-app .order-lines li {
 }
 .demo-template-card input[type='radio'] {
   width: auto;
+  min-height: 0;
+  flex: none;
   display: inline;
+}
+.demo-template-card label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 0;
+}
+.demo-template-card,
+.demo-job {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#demo-form h3 {
+  margin-top: 24px;
+}
+#demo-form button[type='submit'] {
+  width: 100%;
+  margin-top: 20px;
+}
+.demo-job .actions {
+  align-items: center;
+  gap: 12px;
+}
+body.delokay-app button {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  height: auto;
+}
+@media (max-width: 520px) {
+  body.delokay-app .row:has(> input, > select, > textarea) {
+    flex-wrap: wrap;
+  }
+  body.delokay-app .row > input,
+  body.delokay-app .row > select,
+  body.delokay-app .row > textarea {
+    flex: 1 1 160px;
+  }
+  body.delokay-app .quick-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .demo-template-card:has(input:checked) {
   border-color: #5865e8;
