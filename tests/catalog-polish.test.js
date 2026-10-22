@@ -26,7 +26,7 @@ test('all templates contain complete editable copy and six sample products', asy
     assert.equal(preview.body.products.length, 6);
     const cfg = preview.body.store.settings;
     assert.ok(cfg.heroTitle && cfg.footerText && cfg.deliveryHint);
-    assert.equal(Object.keys(cfg.texts).length, 19);
+    assert.equal(Object.keys(cfg.texts).length, id === 'fashion' ? 27 : 19);
     for (const p of preview.body.products) {
       assert.ok(p.description.length > 80 && p.color && p.brand && p.sku && p.collection);
       assert.ok(!p.description.includes('Пример товара'));

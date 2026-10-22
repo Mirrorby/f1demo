@@ -2,6 +2,38 @@
 (() => {
   'use strict';
   const en = {
+    'Создайте свой магазин': 'Create your store',
+    'Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.':
+      'Add your Instagram, choose a design and prepare your catalog for launch.',
+    'Создать магазин': 'Create store',
+    'Создать ещё магазин': 'Create another store',
+    'Instagram аккаунт': 'Instagram account',
+    'Выберите оформление': 'Choose a design',
+    'Посмотреть пример ↗': 'View example ↗',
+    'Сайт, который вам нравится (необязательно)': 'A website you like (optional)',
+    'Пока используем выбранный выше шаблон. Ссылка сохраняется в общей базе референсов Delokay.':
+      'For now, the template selected above is used. The link is saved in Delokay’s shared reference library.',
+    'Сначала проверьте демо и отредактируйте его. Заказы подключаются отдельно после оплаты.':
+      'Review and edit your demo first. Orders are activated separately after payment.',
+    'Тестовый режим': 'Test mode',
+    'Импорт Instagram и создание дизайна по ссылке пока недоступны. Сейчас мы создадим редактируемое демо с примерными товарами выбранного шаблона. Ссылку на понравившийся сайт сохраним как референс.':
+      'Instagram import and design generation from a link are not available yet. We will create an editable demo with sample products from your chosen template and save your website link as a reference.',
+    'До трёх бесплатных демо на аккаунт.': 'Up to three free demos per account.',
+    'Создать тестовое демо': 'Create test demo',
+    'Мои демо': 'My demos',
+    'Готовим тестовое демо': 'Preparing test demo',
+    'Тестовое демо · импорт Instagram пока недоступен':
+      'Test demo · Instagram import is not available yet',
+    'Импорт выполняется': 'Import in progress',
+    'Ошибка подготовки · повторите создание': 'Preparation failed · try creating again',
+    'Здесь появятся ваши демо.': 'Your demos will appear here.',
+    'Обновить статусы': 'Refresh statuses',
+    'Готовим демо…': 'Preparing demo…',
+    'Тестовое демо: товары и цены примерные. Импорт Instagram пока недоступен.':
+      'Test demo: products and prices are examples. Instagram import is not available yet.',
+    'Демо ещё готовится. Обновите статусы.': 'Your demo is still being prepared. Refresh statuses.',
+    'Не удалось загрузить шаблоны': 'Could not load templates',
+
     'Цена по запросу': 'Price on request',
     'Язык сайта': 'Website language',
     'Ссылка на фото': 'Photo URL',

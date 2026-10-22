@@ -83,7 +83,13 @@ export function variantStatements(env: Env, storeId: string, id: string, variant
     ),
   );
 }
-export async function createStore(env: Env, input: unknown, origin: string, targetId?: string) {
+export async function createStore(
+  env: Env,
+  input: unknown,
+  origin: string,
+  targetId?: string,
+  completion: D1PreparedStatement[] = [],
+) {
   const d = object(input);
   requireThat(d.status === undefined || d.status === 'demo', 'Новый магазин создаётся как демо');
   const name = text(d.name, 200, true),
@@ -173,6 +179,7 @@ export async function createStore(env: Env, input: unknown, origin: string, targ
         id,
         JSON.stringify(variants),
       ),
+      ...completion,
     ]);
   } catch (e) {
     if (files.length) await env.IMAGES.delete(files.map((f) => f.target));

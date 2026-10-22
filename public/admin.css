@@ -1217,3 +1217,32 @@ body.delokay-app .order-lines li {
   color: #a13c32;
   overflow-wrap: anywhere;
 }
+
+.demo-template-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.demo-template-card {
+  border: 1px solid var(--border, #dce0eb);
+  border-radius: 16px;
+  padding: 16px;
+}
+.demo-template-card input[type='radio'] {
+  width: auto;
+  display: inline;
+}
+.demo-template-card:has(input:checked) {
+  border-color: #5865e8;
+  box-shadow: 0 0 0 1px #5865e8;
+}
+.demo-job {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border, #dce0eb);
+}
+@media (max-width: 520px) {
+  .demo-template-grid {
+    grid-template-columns: 1fr;
+  }
+}

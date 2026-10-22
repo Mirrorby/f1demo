@@ -1,3 +1,5 @@
+import { createDemo, listDemoJobs } from './onboarding';
+import { enrichStorefront } from './storefront-content';
 import { botLanguages, setLanguage } from './telegram-i18n';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import platformScript from '../public/platform.js';
@@ -403,7 +405,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     if (path === '/api/platform/stores' && method === 'GET') {
       const stores = await stmt(
         env,
-        'SELECT * FROM stores ORDER BY created_at DESC,id LIMIT 200',
+        'SELECT * FROM stores ORDER BY created_at DESC,id LIMIT 200 OFFSET ?',
+        int(Number(url.searchParams.get('offset') ?? 0), 0, 1000000),
       ).all<StoreRow>();
       return json(
         stores.results.map((s) => ({
@@ -467,6 +470,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
     const isPlatform = path.startsWith('/api/platform/');
     const owner = isPlatform ? null : await telegramAuth(request, env);
+    if (path === '/api/admin/demo-jobs' && method === 'GET')
+      return json(await listDemoJobs(env, owner!));
+    if (path === '/api/admin/demo-jobs' && method === 'POST')
+      return json(await createDemo(env, owner!, await jsonBody(request), origin(env)), 201);
+    if (path === '/api/platform/references' && method === 'GET')
+      return json(
+        (
+          await env.DB.prepare(
+            'SELECT r.*, (SELECT COUNT(*) FROM demo_build_jobs j WHERE j.reference_id=r.id) AS uses FROM site_references r ORDER BY created_at DESC LIMIT 200',
+          ).all()
+        ).results,
+      );
     if (path === '/api/admin/preferences') {
       if (method === 'GET')
         return json(
@@ -632,15 +647,24 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path === '/platform' || path === '/platform/') assetPath = '/platform.html';
   if (path === '/platform/editor') assetPath = '/platform-editor.html';
   let storefrontLanguage = 'ru';
+  let pageName = '';
+  let pageSettings = {};
+  let pageDemo = true;
   const preview = path.match(/^\/templates\/([a-z]+)\/?$/);
   if (preview) {
     requireThat(findTemplate(preview[1]), 'Шаблон не найден', 404);
     assetPath = '/storefront.html';
     storefrontLanguage = normalizeLanguage(url.searchParams.get('lang') || 'ru');
+    const template = findTemplate(preview[1])!;
+    pageSettings = templateSettings(template, normalizeLanguage(storefrontLanguage));
+    pageName = translate(template.name, normalizeLanguage(storefrontLanguage));
   }
   const storefront = path.match(/^\/(demo|shop|s)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {
     const s = await storeBySlug(env, storefront[2]);
+    pageSettings = JSON.parse(s.settings);
+    pageName = s.name;
+    pageDemo = s.status === 'demo';
     storefrontLanguage = JSON.parse(s.settings).language || 'ru';
     const kind = s.status === 'demo' ? 'demo' : 'shop';
     if (storefront[1] !== kind && storefront[1] !== 's')
@@ -648,14 +672,19 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     assetPath = '/storefront.html';
   }
   if (assetPath === '/storefront.html')
-    return new Response(method === 'HEAD' ? null : storefrontMarkup(storefrontLanguage), {
-      headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        'X-Content-Type-Options': 'nosniff',
-        'Referrer-Policy': 'strict-origin-when-cross-origin',
+    return new Response(
+      method === 'HEAD'
+        ? null
+        : enrichStorefront(storefrontMarkup(storefrontLanguage), pageName, pageSettings, pageDemo),
+      {
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-cache',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+        },
       },
-    });
+    );
   const assetUrl = new URL(request.url);
   assetUrl.pathname = assetPath;
   const response = await env.ASSETS.fetch(
