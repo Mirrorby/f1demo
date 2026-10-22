@@ -186,10 +186,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return new Response(
         method === 'HEAD'
           ? null
-          : storefrontMarkup(JSON.parse(s.settings).language).replace(
-              '<body>',
-              '<body data-store-slug="' + s.slug + '">',
-            ),
+          : enrichStorefront(
+              storefrontMarkup(JSON.parse(s.settings).language),
+              s.name,
+              JSON.parse(s.settings),
+              s.status === 'demo',
+            ).replace('<body>', '<body data-store-slug="' + s.slug + '">'),
         {
           headers: {
             'Content-Type': 'text/html; charset=utf-8',

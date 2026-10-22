@@ -237,6 +237,11 @@ test('client domain serves its store at root, allows checkout, and blocks other 
   const html = await client(domain.hostname, '/');
   assert.equal(html.status, 200);
   assert.ok(html.body.includes('data-store-slug="' + shop.slug + '"'));
+  const sharedPage = await req('/s/' + shop.slug);
+  assert.equal(
+    html.body.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1],
+    sharedPage.body.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1],
+  );
   const data = await client(domain.hostname, '/api/stores/' + shop.slug);
   assert.equal(data.body.store.id, shop.id);
   assert.equal((await client(domain.hostname, '/api/stores/' + second.slug)).status, 404);
