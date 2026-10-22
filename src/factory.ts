@@ -99,6 +99,9 @@ export async function startCopy(env: Env, s: StoreRow, input: unknown) {
   }
   const cfg = JSON.parse(s.settings) as Settings;
   cfg.logo = image(cfg.logo);
+  for (const background of Object.values(cfg.backgrounds || {})) {
+    if (background) background.image = image(background.image);
+  }
   const products = (await catalog(env, s.id)).map((p) => ({
     ...p,
     id: undefined,

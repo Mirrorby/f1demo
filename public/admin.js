@@ -389,6 +389,66 @@ function editProduct(index) {
   document.getElementById('discount').step = '1';
   renderPhotos();
 }
+function backgroundEditors(settings) {
+  return `<div class="card"><h3>Фон сайта и блоков</h3><p>Выберите цвет или своё фото. Режим «Как в шаблоне» возвращает исходное оформление блока. После изменений сохраните настройки.</p>${[
+    ['page', 'Вся страница'],
+    ['hero', 'Первый экран'],
+    ['catalog', 'Область каталога'],
+    ['cards', 'Карточки товаров'],
+    ['information', 'Информационные блоки'],
+    ['footer', 'Подвал сайта'],
+  ]
+    .map(([key, title]) => {
+      const bg = settings.backgrounds?.[key] || {
+        mode: 'template',
+        color: '#f7f8fc',
+        image: '',
+        tone: 'auto',
+        overlay: 60,
+      };
+      return `<details class="background-editor" data-background-editor="${key}"><summary>${title}</summary><label for="bg-${key}-mode">Режим фона</label><select id="bg-${key}-mode" data-background-mode>${[
+        ['template', 'Как в шаблоне'],
+        ['color', 'Свой цвет'],
+        ['image', 'Своё фото'],
+      ]
+        .map(
+          ([value, label]) =>
+            `<option value="${value}" ${bg.mode === value ? 'selected' : ''}>${label}</option>`,
+        )
+        .join('')}</select>
+    <div data-background-color ${bg.mode === 'template' ? 'hidden' : ''}><label for="bg-${key}-color">Цвет фона</label><input id="bg-${key}-color" type="color" value="${esc(bg.color)}"></div>
+    <div data-background-image ${bg.mode === 'image' ? '' : 'hidden'}><label for="bg-${key}-image">Фото по ссылке</label><input id="bg-${key}-image" type="text" inputmode="url" maxlength="1000" placeholder="https://example.com/background.jpg" value="${esc(bg.image)}" ${bg.mode === 'image' ? 'required' : ''}><label for="bg-${key}-upload">Загрузить фото фона</label><input id="bg-${key}-upload" data-background-upload="${key}" type="file" accept="image/jpeg,image/png,image/webp"><label for="bg-${key}-overlay">Подложка для читаемости (%)</label><input id="bg-${key}-overlay" type="number" min="0" max="80" step="1" value="${bg.overlay}"></div>
+    <div data-background-tone ${bg.mode === 'template' ? 'hidden' : ''}><label for="bg-${key}-tone">Текст поверх фона</label><select id="bg-${key}-tone">${[
+      ['auto', 'Автоматически'],
+      ['light', 'Светлый'],
+      ['dark', 'Тёмный'],
+    ]
+      .map(
+        ([value, label]) =>
+          `<option value="${value}" ${bg.tone === value ? 'selected' : ''}>${label}</option>`,
+      )
+      .join(
+        '',
+      )}</select></div><div class="background-swatch" data-background-swatch hidden></div></details>`;
+    })
+    .join('')}</div>`;
+}
+function updateBackgroundEditor(panel) {
+  const key = panel.dataset.backgroundEditor;
+  const mode = document.getElementById('bg-' + key + '-mode').value;
+  panel.querySelector('[data-background-color]').hidden = mode === 'template';
+  panel.querySelector('[data-background-image]').hidden = mode !== 'image';
+  panel.querySelector('[data-background-tone]').hidden = mode === 'template';
+  const image = document.getElementById('bg-' + key + '-image');
+  image.required = mode === 'image';
+  const swatch = panel.querySelector('[data-background-swatch]');
+  swatch.hidden = mode === 'template';
+  swatch.style.backgroundColor = document.getElementById('bg-' + key + '-color').value;
+  swatch.style.backgroundImage =
+    mode === 'image' && /^(https:\/\/|\/media\/|\/template-assets\/)/.test(image.value.trim())
+      ? `url(${JSON.stringify(image.value.trim())})`
+      : 'none';
+}
 async function renderSettings(seq) {
   const selected = store;
   let defaults = {};
@@ -416,7 +476,7 @@ async function renderSettings(seq) {
     )
     .join(
       '',
-    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"><p>Логотип также используется как иконка вкладки магазина.</p></div><div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
+    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"><p>Логотип также используется как иконка вкладки магазина.</p></div>${backgroundEditors(s)}<div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
     ['btn_cart', 'Кнопка корзины'],
     ['btn_add', 'Добавить в корзину'],
     ['btn_add_size', 'Подсказка выбора варианта'],
@@ -466,6 +526,7 @@ async function renderSettings(seq) {
     .join(
       '',
     )}</div><div class="actions form-actions"><button class="primary" type="submit">Сохранить настройки</button></div></form>`;
+  document.querySelectorAll('[data-background-editor]').forEach(updateBackgroundEditor);
 }
 function showOrder(o) {
   const c = o.customer;
@@ -496,7 +557,7 @@ function showOrder(o) {
       <div class="row between order-summary"><strong>Итого</strong><strong>${(o.totalMinor / 100).toLocaleString(locale)} ${esc(o.currency)}</strong></div></section>
     ${buttons[o.status].length ? `<div class="actions order-actions">${buttons[o.status].map(([status, label]) => `<button data-status="${status}" data-order-id="${o.id}" class="${status === 'cancelled' ? 'danger' : 'primary'}">${label}</button>`).join('')}</div>` : ''}`;
 }
-async function uploadImage(file) {
+async function uploadImage(file, destination = base()) {
   if (
     !file ||
     !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
@@ -515,7 +576,7 @@ async function uploadImage(file) {
   if (!blob || blob.size > 3 * 1024 * 1024) throw new Error('Изображение слишком большое');
   // WebKit can fall back to PNG when its canvas encoder does not support WebP.
   // Use the actual Blob type so the server's signature validation still matches.
-  return (await api(base() + '/images', 'POST', blob, blob.type)).url;
+  return (await api(destination + '/images', 'POST', blob, blob.type)).url;
 }
 document.addEventListener('click', async (event) => {
   const button = event.target.closest('button');
@@ -633,6 +694,33 @@ document.addEventListener('input', (event) => {
 document.addEventListener('change', async (event) => {
   const el = event.target;
   try {
+    const panel = el.closest('[data-background-editor]');
+    if (panel && el.dataset.backgroundUpload === undefined) updateBackgroundEditor(panel);
+    if (el.dataset.backgroundUpload !== undefined) {
+      if (!el.files.length) return;
+      const selectedGeneration = generation,
+        destination = base();
+      const form = el.closest('form'),
+        save = form.querySelector('[type=submit]');
+      const uploads = [...form.querySelectorAll('input[type=file]')];
+      save.disabled = true;
+      uploads.forEach((input) => (input.disabled = true));
+      notice('Загружаем фото фона…');
+      try {
+        const url = await uploadImage(el.files[0], destination);
+        if (selectedGeneration !== generation || !panel.isConnected) return;
+        document.getElementById('bg-' + el.dataset.backgroundUpload + '-image').value = url;
+        document.getElementById('bg-' + el.dataset.backgroundUpload + '-mode').value = 'image';
+        updateBackgroundEditor(panel);
+        notice('Фон загружен. Сохраните настройки.');
+      } finally {
+        if (form.isConnected) {
+          save.disabled = false;
+          uploads.forEach((input) => (input.disabled = false));
+        }
+      }
+      return;
+    }
     if (el.id === 'store-picker') {
       store = stores.find((s) => s.id === el.value);
       generation++;
@@ -754,6 +842,21 @@ document.addEventListener('submit', async (event) => {
         language: val('store-language'),
         accentColor: val('accent'),
         logo: val('logo'),
+        backgrounds: Object.fromEntries(
+          [...document.querySelectorAll('[data-background-editor]')].map((panel) => {
+            const key = panel.dataset.backgroundEditor;
+            return [
+              key,
+              {
+                mode: val('bg-' + key + '-mode'),
+                color: val('bg-' + key + '-color'),
+                image: val('bg-' + key + '-image'),
+                tone: val('bg-' + key + '-tone'),
+                overlay: Number(val('bg-' + key + '-overlay')),
+              },
+            ];
+          }),
+        ),
         whatsapp: val('whatsapp'),
         telegram: val('telegram'),
         instagram: val('instagram'),

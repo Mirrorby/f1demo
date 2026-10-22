@@ -1,4 +1,14 @@
+export interface Background {
+  mode: 'template' | 'color' | 'image';
+  color: string;
+  image: string;
+  tone: 'auto' | 'light' | 'dark';
+  overlay: number;
+}
 export interface Settings {
+  backgrounds?: Partial<
+    Record<'page' | 'hero' | 'catalog' | 'cards' | 'information' | 'footer', Background>
+  >;
   language: import('./language').Language;
   theme: 'minimal' | 'fashion' | 'home' | 'beauty';
   description: string;

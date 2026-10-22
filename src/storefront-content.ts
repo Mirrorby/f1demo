@@ -1,5 +1,6 @@
 import type { Settings } from './types';
 import { templateContent } from './template-content';
+import { backgroundStyles } from './backgrounds';
 const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/g,
@@ -78,7 +79,7 @@ export function enrichStorefront(
     .replace(/<title>Catalog<\/title>/, `<title>${escapeHtml(name)}</title>`)
     .replace(
       '</head>',
-      `<meta name="description" content="${escapeHtml(cfg.description || '')}"><script type="application/ld+json">${structured}</script>${demo ? '<meta name="robots" content="noindex, follow">' : ''}</head>`,
+      `<meta name="description" content="${escapeHtml(cfg.description || '')}"><script type="application/ld+json">${structured}</script><style id="store-backgrounds">${backgroundStyles(cfg)}</style>${demo ? '<meta name="robots" content="noindex, follow">' : ''}</head>`,
     )
     .replace(
       /(<h1[^>]*id="hero-title"[^>]*>)[^<]*(<\/h1>)/,

@@ -1226,6 +1226,27 @@ body.delokay-app .order-lines li {
   gap: 12px;
   margin-bottom: 24px;
 }
+.background-editor {
+  padding: 16px 0;
+  border-top: 1px solid var(--border, #dce0eb);
+}
+.background-editor summary {
+  cursor: pointer;
+  min-height: 36px;
+  line-height: 1.6;
+  font-weight: 650;
+}
+.background-editor [hidden] {
+  display: none !important;
+}
+.background-swatch {
+  height: 120px;
+  border-radius: 12px;
+  margin-top: 16px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border, #dce0eb);
+}
 .demo-steps {
   display: flex;
   flex-wrap: wrap;

@@ -371,10 +371,33 @@ try {
   await page.locator('#store-title').fill('Тестовый магазин');
   await page.locator('#logo-upload').setInputFiles(imageFile);
   await page.locator('#notice').filter({ hasText: 'Логотип загружен' }).waitFor();
+  await page.locator('[data-background-editor="page"] summary').click();
+  await page.locator('#bg-page-mode').selectOption('color');
+  await page.locator('#bg-page-color').fill('#e4edf3');
+  await page.locator('[data-background-editor="hero"] summary').click();
+  await page.locator('#bg-hero-mode').selectOption('image');
+  await page.locator('#bg-hero-upload').setInputFiles(imageFile);
+  await page.locator('#notice').filter({ hasText: 'Фон загружен' }).waitFor();
+  assert.match(await page.locator('#bg-hero-image').inputValue(), /\/media\//);
+  await page.locator('[data-background-editor="footer"] summary').click();
+  await page.locator('#bg-footer-mode').selectOption('image');
+  await page.locator('#bg-footer-image').fill('https://images.example.com/background.png');
   await page.getByRole('button', { name: 'Сохранить настройки' }).click();
   await page.locator('#store-name').filter({ hasText: 'Тестовый магазин' }).waitFor();
   await page.goto(origin + '/shop/' + shop.slug);
   await page.locator('#hero-title').filter({ hasText: 'Тестовый магазин' }).waitFor();
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.body).backgroundColor),
+    'rgb(228, 237, 243)',
+  );
+  assert.match(
+    await page.locator('.hero').evaluate((el) => getComputedStyle(el).backgroundImage),
+    /\/media\//,
+  );
+  assert.match(
+    await page.locator('.footer').evaluate((el) => getComputedStyle(el).backgroundImage),
+    /background.png/,
+  );
   await page.waitForFunction(() => {
     const logo = document.getElementById('hero-logo');
     const photo = document.querySelector('.card img');

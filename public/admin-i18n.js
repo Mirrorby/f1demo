@@ -2,6 +2,29 @@
 (() => {
   'use strict';
   const en = {
+    'Фон сайта и блоков': 'Page and section backgrounds',
+    'Выберите цвет или своё фото. Режим «Как в шаблоне» возвращает исходное оформление блока. После изменений сохраните настройки.':
+      'Choose a colour or your own photo. “Use template” restores the section’s original background. Save settings after making changes.',
+    'Вся страница': 'Page background',
+    'Первый экран': 'Hero section',
+    'Область каталога': 'Catalog area',
+    'Карточки товаров': 'Product cards',
+    'Информационные блоки': 'Information sections',
+    'Подвал сайта': 'Footer',
+    'Режим фона': 'Background mode',
+    'Как в шаблоне': 'Use template',
+    'Свой цвет': 'Custom colour',
+    'Своё фото': 'Custom photo',
+    'Цвет фона': 'Background colour',
+    'Фото по ссылке': 'Photo URL',
+    'Загрузить фото фона': 'Upload a background photo',
+    'Подложка для читаемости (%)': 'Readability overlay (%)',
+    'Текст поверх фона': 'Text colour',
+    Автоматически: 'Automatic',
+    Светлый: 'Light',
+    Тёмный: 'Dark',
+    'Загружаем фото фона…': 'Uploading background photo…',
+    'Фон загружен. Сохраните настройки.': 'Background uploaded. Save settings.',
     'Информация для покупателей': 'Information for customers',
     'Заполните факты о своём магазине. Укажите реальные условия доставки, оплаты и возврата. Пустые поля скрывают соответствующий блок.':
       'Add facts about your store and your actual delivery, payment and return terms. Empty fields hide the corresponding section.',

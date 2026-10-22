@@ -1,6 +1,7 @@
 import { supportedLanguages, translate, type Language } from './language';
 import type { Settings, ProductData, Variant } from './types';
 import { informationKeys } from './template-content';
+import { backgroundTargets } from './backgrounds';
 export class HttpError extends Error {
   constructor(
     public status: number,
@@ -121,7 +122,31 @@ export function settings(input: unknown, storeId?: string): Settings {
     requireThat(textKeys.includes(k), 'Неизвестный текст витрины');
     texts[k] = text(v, 500);
   }
+  const backgrounds: NonNullable<Settings['backgrounds']> = {};
+  for (const [key, raw] of Object.entries(object(d.backgrounds ?? {}))) {
+    requireThat(
+      backgroundTargets.some((target) => target === key),
+      'Неизвестный блок фона',
+    );
+    const bg = object(raw);
+    const mode = text(bg.mode) || 'template';
+    requireThat(['template', 'color', 'image'].includes(mode), 'Недопустимый режим фона');
+    const color = text(bg.color, 7) || '#f7f8fc';
+    requireThat(/^#[a-f0-9]{6}$/i.test(color), 'Недопустимый цвет фона');
+    const image = imageUrl(bg.image, storeId);
+    requireThat(mode !== 'image' || image, 'Добавьте фото для фона');
+    const tone = text(bg.tone) || 'auto';
+    requireThat(['auto', 'light', 'dark'].includes(tone), 'Недопустимый цвет текста');
+    backgrounds[key as keyof typeof backgrounds] = {
+      mode: mode as 'template' | 'color' | 'image',
+      color,
+      image: image.startsWith('https:') ? new URL(image).href : image,
+      tone: tone as 'auto' | 'light' | 'dark',
+      overlay: bg.overlay === undefined ? 60 : int(bg.overlay, 0, 80),
+    };
+  }
   return {
+    ...(d.backgrounds === undefined ? {} : { backgrounds }),
     language,
     theme: theme as Settings['theme'],
     description: text(d.description, 2000),
