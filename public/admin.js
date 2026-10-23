@@ -14,6 +14,25 @@ function emptyStore() {
   document.getElementById('store-name').textContent = 'Мой кабинет';
   main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">DELOKAY</span><h2>Создайте свой магазин</h2><p>Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.</p><button class="primary" data-tab="create">Создать магазин</button></section>`;
 }
+function importStatus(job) {
+  const tasks = JSON.parse(job.collector_tasks || '[]');
+  const labels = {
+    pending: 'Ожидает отправки · нажмите проверить',
+    queued: 'В очереди',
+    running: 'Собираем данные',
+    ready: 'Данные собраны',
+    needs_review: 'Данные собраны частично · проверьте перед применением',
+    restricted: 'Instagram ограничил доступ. Демо можно заполнить вручную.',
+    failed: 'Не удалось собрать данные',
+    interrupted: 'Сбор прерван перезапуском сервиса',
+  };
+  return tasks
+    .map(
+      (t) =>
+        `<p>${t.kind === 'instagram' ? 'Instagram' : 'Сайт-референс'}: ${esc(labels[t.status] || t.status)}${t.kind === 'website' && t.summary?.reference?.title ? ' — ' + esc(t.summary.reference.title) : ''}</p>`,
+    )
+    .join('');
+}
 async function showCreate(seq) {
   main.innerHTML = '<p>Загрузка…</p>';
   const [response, jobs] = await Promise.all([fetch('/api/templates'), api('demo-jobs')]);
@@ -22,20 +41,20 @@ async function showCreate(seq) {
   if (seq !== generation) return;
   const statuses = {
     preparing: 'Готовим тестовое демо',
-    awaiting_import: 'Тестовое демо · импорт Instagram пока недоступен',
+    awaiting_import: 'Редактируемое демо · данные ещё не импортированы',
     running: 'Импорт выполняется',
     ready: 'Готово',
     failed: 'Ошибка подготовки · повторите создание',
   };
   main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Демо и редактирование</li><li>Оплата и запуск</li></ol><p class="section-caption">Сначала проверьте демо и отредактируйте его. Заказы подключаются отдельно после оплаты.</p>
-  <section class="card"><h3>Тестовый режим</h3><p>Импорт Instagram и создание дизайна по ссылке пока недоступны. Сейчас мы создадим редактируемое демо с примерными товарами выбранного шаблона. Ссылку на понравившийся сайт сохраним как референс.</p></section>
+  <section class="card"><h3>Тестовый режим</h3><p>Создадим редактируемое демо и попробуем собрать данные Instagram. Результат появится ниже: собранные товары можно применить отдельно. Если Instagram ограничит доступ, демо останется с примерными товарами. Сайт по ссылке анализируется для базы референсов; оформление пока берётся из выбранного шаблона.</p></section>
   <p class="section-caption">До трёх бесплатных демо на аккаунт.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
   <h3>Выберите оформление</h3><div class="demo-template-grid">${templates.map((t, i) => `<div class="demo-template-card"><label for="demo-template-${esc(t.id)}"><span class="demo-template-preview" aria-hidden="true"><iframe src="/templates/${esc(t.id)}?thumbnail=1&lang=${document.documentElement.lang === 'en' ? 'en' : 'ru'}" title="${esc(t.title)}" loading="lazy" tabindex="-1" inert></iframe></span><span class="demo-template-choice"><input id="demo-template-${esc(t.id)}" type="radio" name="demo-template" value="${esc(t.id)}" ${i === 0 ? 'checked' : ''}> <span>${esc(t.title)}</span></span></label><p>${esc(t.description)}</p><a href="/templates/${esc(t.id)}" target="_blank" rel="noopener">Посмотреть пример ↗</a></div>`).join('')}</div>
   <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Пока используем выбранный выше шаблон. Ссылка сохраняется в общей базе референсов Delokay.</p>
   <label for="demo-language">Язык сайта</label><select id="demo-language"><option value="ru">Русский</option><option value="en">English</option></select>
   <label for="demo-currency">Валюта</label><select id="demo-currency">${['BYN', 'RUB', 'USD', 'EUR', 'KZT'].map((c) => `<option>${c}</option>`).join('')}</select>
   <button class="primary" type="submit">Создать тестовое демо</button></section></form>
-  <section class="card"><h3>Мои демо</h3>${jobs.length ? jobs.map((j) => `<div class="demo-job"><strong data-no-i18n>@${esc(j.instagram)}</strong><p>${esc(statuses[j.status] || j.status)}</p>${j.slug ? `<div class="actions"><button data-open-demo="${esc(j.store_id)}">Редактировать</button><a href="/s/${esc(j.slug)}" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>` : ''}</div>`).join('') : '<p>Здесь появятся ваши демо.</p>'}<button type="button" data-tab="create">Обновить статусы</button></section>`;
+  <section class="card"><h3>Мои демо</h3>${jobs.length ? jobs.map((j) => `<div class="demo-job"><strong data-no-i18n>@${esc(j.instagram)}</strong><p>${esc(statuses[j.status] || j.status)}</p>${importStatus(j)}${j.sample_content ? `<button data-sync-import="${esc(j.id)}">Проверить сбор данных</button>${JSON.parse(j.collector_tasks || '[]').some((t) => t.kind === 'instagram' && ['ready', 'needs_review'].includes(t.status)) ? `<button data-apply-import="${esc(j.id)}" data-store-id="${esc(j.store_id)}">Применить данные Instagram</button>` : ''}` : ''}${j.slug ? `<div class="actions"><button data-open-demo="${esc(j.store_id)}">Редактировать</button><a href="/s/${esc(j.slug)}" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>` : ''}</div>`).join('') : '<p>Здесь появятся ваши демо.</p>'}<button type="button" data-tab="create">Обновить статусы</button></section>`;
 }
 async function openDemo(id) {
   stores = await api('stores');
@@ -51,7 +70,9 @@ async function openDemo(id) {
     )
     .join('');
   await show('home');
-  notice('Тестовое демо: товары и цены примерные. Импорт Instagram пока недоступен.');
+  notice(
+    'Если данные Instagram ещё не применены, товары и цены в демо примерные. Статус сбора доступен в разделе «Создать магазин».',
+  );
 }
 
 function paymentButton(url, label) {
@@ -290,7 +311,7 @@ async function show(next = tab) {
       if (seq !== generation) return;
       main.innerHTML = `<section class="card hero-card">
       <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
-      <h2>Всё под рукой</h2>${store.demoJob?.sample_content ? '<p>Тестовое демо: товары и цены примерные. Импорт Instagram пока недоступен.</p>' : ''}${!platformMode ? '<button data-tab="create">Создать ещё магазин</button>' : ''}
+      <h2>Всё под рукой</h2>${store.demoJob?.sample_content ? '<p>Если данные Instagram ещё не применены, товары и цены в демо примерные. Статус сбора доступен в разделе «Создать магазин».</p>' : ''}${!platformMode ? '<button data-tab="create">Создать ещё магазин</button>' : ''}
       <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>
       <div class="actions"><button class="primary" data-action="add">Добавить товар</button></div>
     </section>
@@ -582,6 +603,36 @@ document.addEventListener('click', async (event) => {
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   try {
+    if (button.dataset.syncImport) {
+      button.disabled = true;
+      try {
+        await api(`demo-jobs/${button.dataset.syncImport}/sync`, 'POST', {});
+        await show('create');
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
+    if (button.dataset.applyImport) {
+      if (
+        !confirm(
+          'Заменить название, описание, логотип и товары этого демо данными Instagram? Проверьте товары после импорта.',
+        )
+      )
+        return;
+      button.disabled = true;
+      try {
+        const current = await api(`stores/${button.dataset.storeId}`);
+        await api(`demo-jobs/${button.dataset.applyImport}/apply`, 'POST', {
+          version: current.version,
+        });
+        await openDemo(button.dataset.storeId);
+        notice('Данные Instagram применены. Проверьте товары, тексты и фотографии.');
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
     if (button.dataset.openDemo) {
       await openDemo(button.dataset.openDemo);
       return;

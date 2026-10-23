@@ -90,7 +90,8 @@ export const checkout = (data, key = crypto.randomUUID(), slug = shop.slug) =>
 export async function start(overrides = {}) {
   const extraBindings =
     Object.hasOwn(overrides, 'TRIBUTE_PRODUCT_URL') ||
-    Object.hasOwn(overrides, 'CUSTOM_DOMAINS_API_TOKEN')
+    Object.hasOwn(overrides, 'CUSTOM_DOMAINS_API_TOKEN') ||
+    Object.hasOwn(overrides, 'IMPORT_API_TOKEN')
       ? overrides
       : {};
   const result = await build({

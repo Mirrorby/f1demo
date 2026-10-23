@@ -18,7 +18,13 @@ export function deploymentConfig(source, values) {
     if (!values.PLATFORM_API_KEY || values.PLATFORM_API_KEY.length < 32)
       throw new Error('Set a separate staging PLATFORM_API_KEY');
     delete config.env;
-    return { config, secrets: { PLATFORM_API_KEY: values.PLATFORM_API_KEY } };
+    return {
+      config,
+      secrets: {
+        PLATFORM_API_KEY: values.PLATFORM_API_KEY,
+        ...(values.IMPORT_API_TOKEN ? { IMPORT_API_TOKEN: values.IMPORT_API_TOKEN } : {}),
+      },
+    };
   }
   delete config.env;
   const accountId = values.CLOUDFLARE_ACCOUNT_ID?.trim();

@@ -1,3 +1,4 @@
+import { applyCollector, syncCollector } from './collector';
 import { createDemo, listDemoJobs } from './onboarding';
 import { enrichStorefront } from './storefront-content';
 import { botLanguages, setLanguage } from './telegram-i18n';
@@ -490,6 +491,28 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return json(await listDemoJobs(env, owner!));
     if (path === '/api/admin/demo-jobs' && method === 'POST')
       return json(await createDemo(env, owner!, await jsonBody(request), origin(env)), 201);
+    const collectorMatch = path.match(/^\/api\/admin\/demo-jobs\/([a-f0-9-]{36})\/(sync|apply)$/);
+    if (collectorMatch && method === 'POST') {
+      if (collectorMatch[2] === 'apply')
+        return json(await applyCollector(env, owner!, collectorMatch[1], await jsonBody(request)));
+      await syncCollector(env, owner!, collectorMatch[1]);
+      return json({
+        job: (await listDemoJobs(env, owner!)).find((j) => j.id === collectorMatch[1]),
+      });
+    }
+    const platformCollector = path.match(/^\/api\/platform\/demo-jobs\/([a-f0-9-]{36})\/sync$/);
+    if (platformCollector && method === 'POST') {
+      const job = await stmt(
+        env,
+        'SELECT owner_id FROM demo_build_jobs WHERE id=?',
+        platformCollector[1],
+      ).first<{ owner_id: string }>();
+      requireThat(job, 'Задание не найдено', 404);
+      await syncCollector(env, job.owner_id, platformCollector[1]);
+      return json({
+        job: (await listDemoJobs(env, job.owner_id)).find((j) => j.id === platformCollector[1]),
+      });
+    }
     if (path === '/api/platform/references' && method === 'GET')
       return json(
         (

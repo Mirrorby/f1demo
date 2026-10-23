@@ -1,3 +1,4 @@
+import { syncCollector } from './collector';
 import { createStore, stmt } from './catalog';
 import { findTemplate } from './templates';
 import { currencies, object, requireThat, text, HttpError } from './validation';
@@ -75,7 +76,7 @@ export async function listDemoJobs(env: Env, owner: string) {
   return (
     await stmt(
       env,
-      'SELECT j.id,j.instagram,j.template_id,j.store_id,j.status,j.sample_content,j.created_at,s.slug,r.url reference_url FROM demo_build_jobs j LEFT JOIN stores s ON s.id=j.store_id LEFT JOIN site_references r ON r.id=j.reference_id WHERE j.owner_id=? ORDER BY j.created_at DESC LIMIT 3',
+      `SELECT j.id,j.instagram,j.template_id,j.store_id,j.status,j.sample_content,j.created_at,s.slug,r.url reference_url, (SELECT json_group_array(json_object('kind',t.kind,'status',t.status,'summary',json(t.summary))) FROM collector_tasks t WHERE t.job_id=j.id) collector_tasks FROM demo_build_jobs j LEFT JOIN stores s ON s.id=j.store_id LEFT JOIN site_references r ON r.id=j.reference_id WHERE j.owner_id=? ORDER BY j.created_at DESC LIMIT 3`,
       owner,
     ).all()
   ).results;
@@ -110,8 +111,10 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
     if (
       job.status !== 'failed' &&
       !(job.status === 'preparing' && job.lease_until < Date.now() / 1000)
-    )
+    ) {
+      await syncCollector(env, owner, job.id);
       return { job: (await listDemoJobs(env, owner)).find((j) => j.id === job!.id) };
+    }
     const lease = await stmt(
       env,
       "UPDATE demo_build_jobs SET status='preparing',lease_until=unixepoch()+120 WHERE id=? AND (status='failed' OR (status='preparing' AND lease_until<unixepoch()))",
@@ -191,5 +194,6 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
     ).run();
     throw error;
   }
+  await syncCollector(env, owner, job.id);
   return { job: (await listDemoJobs(env, owner)).find((j) => j.id === job!.id) };
 }
