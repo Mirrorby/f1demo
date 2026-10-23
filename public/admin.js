@@ -680,6 +680,7 @@ document.addEventListener('click', async (event) => {
     }
     if(button.dataset.action==='product-order'){renderProductOrder();return;}
     if(button.dataset.moveProduct){
+      const sortGeneration=++generation;
       button.disabled=true;
       try {
         const ids=products.map(p=>p.id),from=ids.indexOf(button.dataset.moveProduct);
@@ -687,7 +688,7 @@ document.addEventListener('click', async (event) => {
         if(from<0||to<0||to>=ids.length)return;
         ids.splice(to,0,ids.splice(from,1)[0]);
         await api(base()+'/product-order','PUT',{version:store.version,ids});
-        await reload();renderProductOrder();
+        await reload();if(sortGeneration===generation)renderProductOrder();
       } finally {button.disabled=false;}
       return;
     }
@@ -1056,6 +1057,7 @@ document.addEventListener('touchend',event=>{
   if(t.clientX-start.x>=70&&Math.abs(t.clientY-start.y)<50&&Date.now()-start.time<900){event.preventDefault();void goBack();}
 },{passive:false});
 function renderProductOrder(){
+  generation++;
   rememberScreen({kind:'sort',tab:'products',storeId:store?.id||null});
   main.innerHTML='<h2>Порядок товаров</h2><p>Первый товар будет титульным в каталоге. Изменения сохраняются сразу.</p>'+products.map((p,i)=>'<section class="card"><strong>'+esc(p.name)+'</strong>'+(i===0?'<p>Титульный товар</p>':'')+'<div class="actions"><button data-move-product="'+esc(p.id)+'" data-direction="first" '+(i===0?'disabled':'')+'>На первое место</button><button aria-label="Поднять товар" data-move-product="'+esc(p.id)+'" data-direction="up" '+(i===0?'disabled':'')+'>↑</button><button aria-label="Опустить товар" data-move-product="'+esc(p.id)+'" data-direction="down" '+(i===products.length-1?'disabled':'')+'>↓</button></div></section>').join('');
 }
@@ -1063,11 +1065,20 @@ function renderProductOrder(){
 const activityQueue=[];
 let activityTimer=null,activitySending=false;
 const privateField=/password|passwd|secret|token|session|cookie|authorization|platform.?key|wallet|private.?key/i;
+function clientEventId(){
+  try{
+    if(typeof crypto.randomUUID==='function')return crypto.randomUUID();
+    const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+    const s=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+    return s.slice(0,8)+'-'+s.slice(8,12)+'-'+s.slice(12,16)+'-'+s.slice(16,20)+'-'+s.slice(20);
+  }catch{return null;}
+}
 function trackActivity(event,target,details={}){
   if(platformMode||!tg?.initData||privateField.test(target))return;
   const clean={};
   for(const [key,value] of Object.entries(details))if(!privateField.test(key))clean[key]=String(value??'').slice(0,5000);
-  activityQueue.push({id:crypto.randomUUID(),event,screen:typeof tab==='string'?tab:'home',target:String(target).slice(0,120),details:clean});
+  const id=clientEventId();if(!id)return;
+  activityQueue.push({id,event,screen:typeof tab==='string'?tab:'home',target:String(target).slice(0,120),details:clean});
   if(activityQueue.length>200)activityQueue.shift();
   clearTimeout(activityTimer);activityTimer=setTimeout(()=>{void flushActivity();},2000);
 }
@@ -1085,7 +1096,7 @@ document.addEventListener('click',event=>{
   const el=event.target.closest('button,a,input[type=radio],input[type=checkbox]');
   if(!el)return;
   const target=el.id||el.dataset.action||el.dataset.tab||el.name||el.textContent.trim().slice(0,80);
-  trackActivity('click',target,{label:el.textContent.trim().slice(0,120)});
+  trackActivity('click',target,{label:el.textContent.trim().slice(0,120),storeId:el.dataset.openDemo||store?.id||'',productId:el.dataset.moveProduct||(el.dataset.edit!==undefined?products[Number(el.dataset.edit)]?.id:'')||'',direction:el.dataset.direction||''});
 },{capture:true});
 document.addEventListener('input',event=>{
   const form=event.target.closest('form');if(form)form.dataset.dirty='1';

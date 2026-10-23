@@ -23,3 +23,10 @@ test('published admin script parses and swipe/back button share real screen hist
   await listeners.back();await Promise.resolve();
   assert.equal(shown.at(-1),'home');
 });
+
+test('activity identifiers support WebViews without randomUUID without blocking navigation',()=>{
+  const a=script.indexOf('function clientEventId()'),b=script.indexOf('function trackActivity(',a);
+  const ctx={Uint8Array,crypto:{getRandomValues:bytes=>{bytes.fill(10);return bytes;}}};
+  vm.runInNewContext(script.slice(a,b)+';globalThis.identifier=clientEventId();',ctx);
+  assert.match(ctx.identifier,/^[a-f0-9-]{36}$/);
+});
