@@ -145,7 +145,14 @@ test('explicit apply archives photos, keeps design and owner, does not activate 
   assert.equal(ps.body[0].priceOnRequest, true);
   assert.ok(ps.body[0].photos[0].startsWith('/media/' + job.store_id + '/'));
   assert.equal((await admin(930, `demo-jobs/${job.id}/apply`, 'POST', { version: 2 })).status, 409);
+  await db
+    .prepare("UPDATE collector_tasks SET status='running',checked_at=0 WHERE kind='website'")
+    .run();
   await admin(930, `demo-jobs/${job.id}/sync`, 'POST', {});
+  assert.equal(
+    (await db.prepare("SELECT status FROM collector_tasks WHERE kind='website'").first()).status,
+    'ready',
+  );
   assert.equal((await admin(930, 'demo-jobs')).body[0].sample_content, 0);
   assert.equal(submissions, 2);
 });

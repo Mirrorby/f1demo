@@ -68,8 +68,9 @@ async function jobFor(env: Env, owner: string, id: string) {
 }
 export async function syncCollector(env: Env, owner: string, id: string) {
   const job = await jobFor(env, owner, id);
-  if (!collectorEnabled(env) || !job.sample_content) return;
+  if (!collectorEnabled(env)) return;
   for (const kind of ['instagram', ...(job.reference_id ? ['website'] : [])]) {
+    if (kind === 'instagram' && !job.sample_content) continue;
     await stmt(
       env,
       'INSERT INTO collector_tasks(job_id,kind) VALUES(?,?) ON CONFLICT DO NOTHING',
