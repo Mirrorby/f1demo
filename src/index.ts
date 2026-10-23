@@ -156,6 +156,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     requireThat(env.IMPORT_API_TOKEN && env.IMPORT_API_TOKEN.length>=32,'Сборщик не настроен',503);
     requireThat(await equalSecret(request.headers.get('authorization')||'','Bearer '+env.IMPORT_API_TOKEN),'Нет доступа',401);
     await processAutoDemos(env);
+    await cleanupMedia(env);
     return json({ok:true});
   }
   if (env.DEPLOYMENT_ENV === 'staging') {

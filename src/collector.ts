@@ -130,6 +130,7 @@ export async function syncCollector(env: Env, owner: string, id: string) {
       const summary = JSON.stringify({
         status,
         products: result.products,
+        collection: result.progress,
         profile: result.profile,
         issues: result.issues,
         error: result.error,

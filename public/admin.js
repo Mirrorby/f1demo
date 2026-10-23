@@ -15,11 +15,17 @@ function emptyStore() {
   main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">DELOKAY</span><h2>Создайте свой магазин</h2><p>Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.</p><button class="primary" data-tab="create">Создать магазин</button></section>`;
 }
 let demoPollTimer=null, pendingDemoId=null;
+function collectionNote(job){
+  if(job.status==='ready'||job.status==='failed')return '';
+  const value=JSON.parse(job.collector_tasks||'[]').find(t=>t.kind==='instagram')?.summary?.collection;
+  if(!value)return '';
+  return '<p>'+esc(value.phase==='saving_photos'?'Сохраняем фотографии: '+Number(value.files||0):'Найдено фотопубликаций за период: '+Number(value.posts||0))+'</p>';
+}
 function renderDemoJobs(jobs) {
   const target=document.getElementById('demo-jobs');
   if(!target)return;
   const labels={preparing:'Подключаем Instagram',running:'Собираем демо',awaiting_import:'Ожидаем данные Instagram',ready:'Демо готово',failed:'Не удалось создать демо'};
-  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>':'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
+  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+collectionNote(j)+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>':'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
 }
 function scheduleDemoPoll(jobs) {
   clearTimeout(demoPollTimer);
@@ -68,9 +74,7 @@ async function openDemo(id) {
     )
     .join('');
   await show('home');
-  notice(
-    'Если данные Instagram ещё не применены, товары и цены в демо примерные. Статус сбора доступен в разделе «Создать магазин».',
-  );
+  notice(store.demoJob?.sample_content ? 'Это ранее созданное демо с примерными товарами.' : 'Демо заполнено данными Instagram. Тексты можно редактировать.');
 }
 
 function paymentButton(url, label) {
