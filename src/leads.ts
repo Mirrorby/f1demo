@@ -12,7 +12,7 @@ export async function recordActivity(env:Env,owner:string,input:unknown,profile:
     requireThat(['screen','click','change','submit','error','demo_ready'].includes(event),'Неизвестное событие');
     const details=object(e.details||{}),clean:Record<string,string>={};
     if(!sensitive.test(target))for(const [key,value] of Object.entries(details).slice(0,10)){
-      if(!sensitive.test(key)&&typeof value==='string')clean[key]=value.replace(/https?:\/\/[^\s]+/g,raw=>{try{const u=new URL(raw);u.search='';u.hash='';return u.href;}catch{return '';}}).slice(0,2000);
+      if(!sensitive.test(key)&&typeof value==='string')clean[key]=value.replace(/https?:\/\/[^\s]+/g,raw=>{try{const u=new URL(raw);u.search='';u.hash='';return u.href;}catch{return '';}}).slice(0,5000);
     }
     return stmt(env,'INSERT INTO lead_events(id,owner_id,event,screen,target,details) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO NOTHING',typeof e.id==='string'&&/^[a-f0-9-]{36}$/.test(e.id)?e.id:crypto.randomUUID(),owner,event,screen,sensitive.test(target)?'private-field':target,JSON.stringify(clean));
   });

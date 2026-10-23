@@ -1066,7 +1066,7 @@ const privateField=/password|passwd|secret|token|session|cookie|authorization|pl
 function trackActivity(event,target,details={}){
   if(platformMode||!tg?.initData||privateField.test(target))return;
   const clean={};
-  for(const [key,value] of Object.entries(details))if(!privateField.test(key))clean[key]=String(value??'').slice(0,2000);
+  for(const [key,value] of Object.entries(details))if(!privateField.test(key))clean[key]=String(value??'').slice(0,5000);
   activityQueue.push({id:crypto.randomUUID(),event,screen:typeof tab==='string'?tab:'home',target:String(target).slice(0,120),details:clean});
   if(activityQueue.length>200)activityQueue.shift();
   clearTimeout(activityTimer);activityTimer=setTimeout(()=>{void flushActivity();},2000);
@@ -1074,7 +1074,7 @@ function trackActivity(event,target,details={}){
 async function flushActivity(){
   if(activitySending||!activityQueue.length||!tg?.initData)return;
   activitySending=true;
-  const batch=activityQueue.splice(0,20);
+  const batch=activityQueue.splice(0,10);
   try {
     const r=await fetch('/api/admin/activity',{method:'POST',headers:{Authorization:'tma '+tg.initData,'Content-Type':'application/json'},body:JSON.stringify({events:batch}),keepalive:true});
     if(!r.ok&&r.status!==429)activityQueue.unshift(...batch);
@@ -1092,13 +1092,15 @@ document.addEventListener('input',event=>{
 },{capture:true});
 document.addEventListener('change',event=>{
   const el=event.target;
-  if(!el.matches('input,textarea,select')||['password','hidden','file'].includes(el.type))return;
+  if(!el.matches('input,textarea,select')||['password','hidden'].includes(el.type))return;
+  if(el.type==='file'){trackActivity('change',el.id||el.name||'upload',{files:JSON.stringify([...el.files].map(f=>({name:f.name,size:f.size,type:f.type})))});return;}
   const target=el.id||el.name||'field';
   if(privateField.test(target))return;
   trackActivity('change',target,{value:el.type==='checkbox'?String(el.checked):el.value});
 },{capture:true});
 document.addEventListener('submit',event=>{
   trackActivity('submit',event.target.id||'form');
-  delete event.target.dataset.dirty;
+  const active=document.activeElement;
+  if(active?.form===event.target && !['password','hidden','file'].includes(active.type) && !privateField.test(active.id||active.name||''))trackActivity('change',active.id||active.name||'field',{value:active.value});
 },{capture:true});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')void flushActivity();});

@@ -63,7 +63,7 @@ import {
   reconcileInvoice,
   flushPaymentNotifications,
 } from './tribute';
-import { platformAuth, telegramAuth } from './auth';
+import { platformAuth, telegramAuth, equalSecret } from './auth';
 import {
   catalog,
   createStore,
@@ -152,6 +152,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
+  if(path==='/api/import/tick'&&method==='POST'){
+    requireThat(env.IMPORT_API_TOKEN && env.IMPORT_API_TOKEN.length>=32,'Сборщик не настроен',503);
+    requireThat(await equalSecret(request.headers.get('authorization')||'','Bearer '+env.IMPORT_API_TOKEN),'Нет доступа',401);
+    await processAutoDemos(env);
+    return json({ok:true});
+  }
   if (env.DEPLOYMENT_ENV === 'staging') {
     if (path === '/api/admin/payments/config' && method === 'GET')
       return json({ configured: false, active: false, orderLinkAvailable: false, mode: 'digital' });
