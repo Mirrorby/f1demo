@@ -55,11 +55,13 @@ export interface ProductData {
   color: string;
 }
 export interface Product extends ProductData {
+  position?: number;
   id: string;
   version: number;
   variants: Variant[];
 }
 export interface ProductRow {
+  position: number;
   id: string;
   store_id: string;
   data: string;

@@ -1,3 +1,4 @@
+import { advanceAutoDemo } from './auto-demo';
 import { catalog, ownedStore, stmt, storeMutationGuard } from './catalog';
 import {
   HttpError,
@@ -10,7 +11,7 @@ import {
   text,
 } from './validation';
 
-interface ImportJob {
+export interface ImportJob {
   id: string;
   instagram: string;
   template_id: string;
@@ -19,8 +20,12 @@ interface ImportJob {
   reference_id: string | null;
   store_id: string;
   sample_content: number;
+  auto_build: number;
+  period_days: number;
+  owner_id: string;
 }
 interface Task {
+  attempt: number;
   kind: string;
   remote_id: string | null;
   status: string;
@@ -29,7 +34,7 @@ interface Task {
 const terminal = ['ready', 'needs_review', 'restricted', 'failed', 'interrupted'];
 export const collectorEnabled = (env: Env) => !!(env.IMPORT_API_ORIGIN && env.IMPORT_API_TOKEN);
 
-async function remote(env: Env, path: string, data?: unknown, key?: string) {
+export async function remote(env: Env, path: string, data?: unknown, key?: string) {
   requireThat(collectorEnabled(env), 'Сборщик пока не подключён', 503);
   const base = new URL(env.IMPORT_API_ORIGIN!);
   requireThat(
@@ -54,7 +59,7 @@ async function remote(env: Env, path: string, data?: unknown, key?: string) {
     signal: AbortSignal.timeout(12000),
   });
   requireThat(response.ok, 'Сборщик временно недоступен. Повторите проверку.', 503);
-  return object(JSON.parse(new TextDecoder().decode(await limitedBytes(response, 3_000_000))));
+  return object(JSON.parse(new TextDecoder().decode(await limitedBytes(response, 20_000_000))));
 }
 async function jobFor(env: Env, owner: string, id: string) {
   const job = await stmt(
@@ -110,9 +115,9 @@ export async function syncCollector(env: Env, owner: string, id: string) {
                 theme: job.template_id,
                 language: ['ru', 'en'].includes(job.language) ? job.language : 'auto',
                 currency: job.currency,
-                products: 6,
+                ...(job.auto_build ? {periodDays:job.period_days} : {products:6}),
               },
-          'delokay-' + id + '-' + kind,
+          'delokay-' + id + '-' + kind + (job.auto_build ? '-month-v1-' + task.attempt : ''),
         );
       }
       const remoteId = text(result.id, 32, true),
@@ -166,9 +171,11 @@ export async function syncCollector(env: Env, owner: string, id: string) {
       ).run();
     }
   }
+  if (job.auto_build && job.sample_content) await advanceAutoDemo(env, job);
+
 }
 
-async function archivePhoto(env: Env, input: unknown, storeId: string, uploaded: string[]) {
+export async function archivePhoto(env: Env, input: unknown, storeId: string, uploaded: string[], fileId?: string) {
   const url = new URL(text(input, 3000, true));
   requireThat(
     url.protocol === 'https:' &&
@@ -198,7 +205,7 @@ async function archivePhoto(env: Env, input: unknown, storeId: string, uploaded:
     mime = 'image/webp';
   }
   requireThat(ext, 'Формат фото не поддерживается', 502);
-  const key = storeId + '/' + crypto.randomUUID() + '.' + ext;
+  const key = storeId + '/' + (fileId || crypto.randomUUID()) + '.' + ext;
   await env.IMAGES.put(key, bytes, {
     httpMetadata: { contentType: mime, cacheControl: 'public, max-age=31536000, immutable' },
   });

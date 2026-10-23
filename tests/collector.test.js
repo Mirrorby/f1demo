@@ -1,158 +1,59 @@
-import { before, after, test } from 'node:test';
+import {before,after,test} from 'node:test';
 import assert from 'node:assert/strict';
-import { start, stop, admin, db, mockDomainService, platform, req } from './harness.js';
-const token = 'test-collector-secret-never-in-browser';
-const tasks = new Map();
-const instagramId = 'a'.repeat(32),
-  websiteId = 'b'.repeat(32);
-let submissions = 0,
-  ready = false,
-  fail = false;
-const respond = (data, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-before(async () => {
-  mockDomainService(async (request) => {
-    const url = new URL(request.url);
-    if (url.hostname.endsWith('.cdninstagram.com'))
-      return new Response(new Uint8Array([255, 216, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0]), {
-        headers: { 'Content-Type': 'image/jpeg' },
-      });
-    assert.equal(url.hostname, 'collector.example');
-    assert.equal(request.headers.get('Authorization'), 'Bearer ' + token);
-    if (fail) return respond({}, 503);
-    if (request.method === 'POST') {
-      const payload = await request.json();
-      const kind = payload.kind === 'website' ? 'website' : 'instagram';
-      const key = request.headers.get('Idempotency-Key');
-      if (!tasks.has(key)) {
-        submissions++;
-        tasks.set(key, payload);
-      }
-      return respond({ id: kind === 'website' ? websiteId : instagramId, status: 'queued' }, 202);
+import {start,stop,admin,db,platform,mockDomainService} from './harness.js';
+let ready=false,restricted=false;
+const submissions=[];
+before(async()=>{
+  mockDomainService(async request=>{
+    const url=new URL(request.url);
+    if(url.hostname.endsWith('.cdninstagram.com'))return new Response(new Uint8Array([255,216,255,0,0,0,0,0,0,0,0,0]));
+    if(request.method==='POST'){
+      submissions.push(await request.json());
+      return Response.json({id:'a'.repeat(32),status:'queued'});
     }
-    if (url.pathname.endsWith('/bundle'))
-      return respond({
-        username: 'live_shop',
-        source: {
-          logo_url: 'https://scontent.cdninstagram.com/logo.jpg',
-          photo_posts: [
-            {
-              date: '2026-10-23',
-              assets: [{}],
-              images: ['https://scontent.cdninstagram.com/item.jpg'],
-            },
-          ],
-        },
-        store: {
-          name: 'Real shop',
-          settings: { description: 'Profile biography' },
-          products: [
-            {
-              name: 'Real item',
-              description: 'Actual caption',
-              prices: { USD: 0 },
-              priceOnRequest: true,
-              availability: 'preorder',
-              variants: [{ label: 'Ask', stock: null }],
-            },
-          ],
-        },
-      });
-    const id = url.pathname.split('/').at(-1);
-    return respond(
-      id === websiteId
-        ? {
-            id,
-            status: 'ready',
-            reference: {
-              title: 'Reference shop',
-              url: 'https://example.com/',
-              analysis: 'static_html_css',
-            },
-          }
-        : {
-            id,
-            status: ready ? 'ready' : 'restricted',
-            products: ready ? 1 : 0,
-            error: ready ? undefined : 'instagram_access_restricted',
-          },
-    );
+    if(url.pathname.endsWith('/bundle'))return Response.json({
+      username:'live_shop',source:{period:{complete:true,days:30},logo_url:'https://scontent.cdninstagram.com/logo.jpg',photo_posts:Array.from({length:9},(_,i)=>({date:'2026-10-23',assets:[{}],images:Array.from({length:8},(_,n)=>'https://scontent.cdninstagram.com/'+i+'-'+n+'.jpg')}))},
+      store:{name:'Real shop',settings:{description:'Adapted catalogue introduction'},products:Array.from({length:9},(_,i)=>({name:'Real item '+i,description:'Adapted item description',prices:{USD:0},priceOnRequest:true,availability:'preorder',variants:[{label:'Ask',stock:null}]}))}
+    });
+    return Response.json({id:'a'.repeat(32),status:restricted?'restricted':ready?'ready':'running',products:9});
   });
-  await start({ IMPORT_API_ORIGIN: 'https://collector.example', IMPORT_API_TOKEN: token });
+  await start({IMPORT_API_ORIGIN:'https://collector.example',IMPORT_API_TOKEN:'test-token'});
 });
 after(stop);
 let job;
-test('collector submits once, isolates ownership, records restrictions and reference analysis', async () => {
-  const created = await admin(930, 'demo-jobs', 'POST', {
-    instagram: 'live_shop',
-    templateId: 'fashion',
-    language: 'en',
-    currency: 'USD',
-    referenceUrl: 'https://example.com/',
-  });
-  assert.equal(created.status, 201, JSON.stringify(created));
-  job = created.body.job;
-  assert.equal(JSON.parse(job.collector_tasks).length, 2);
-  assert.equal(submissions, 2);
+test('no store exists until collection and every carousel image are copied',async()=>{
+  const created=await admin(930,'demo-jobs','POST',{instagram:'live_shop',templateId:'fashion',language:'en',currency:'USD'});
+  assert.equal(created.status,201);job=created.body.job;
+  assert.equal(submissions[0].periodDays,30);assert.equal(submissions[0].products,undefined);
+  assert.equal((await admin(930,'stores')).body.length,0);
+  ready=true;
   await db.prepare('UPDATE collector_tasks SET checked_at=0').run();
-  assert.equal((await req(`/api/platform/demo-jobs/${job.id}/sync`, 'POST', {})).status, 401);
-  assert.equal((await platform(`demo-jobs/${job.id}/sync`, 'POST', {})).status, 200);
-  const denied = await admin(931, `demo-jobs/${job.id}/sync`, 'POST', {});
-  assert.equal(denied.status, 404);
-  const synced = await admin(930, `demo-jobs/${job.id}/sync`, 'POST', {});
-  const tasks = JSON.parse(synced.body.job.collector_tasks);
-  assert.equal(tasks.find((t) => t.kind === 'instagram').status, 'restricted');
-  assert.equal(tasks.find((t) => t.kind === 'website').status, 'ready');
-  assert.equal(synced.body.job.sample_content, 1);
-  const refs = await platform('references');
-  assert.equal(JSON.parse(refs.body[0].analysis).title, 'Reference shop');
-  assert.equal(JSON.stringify(synced.body).includes(token), false);
-  assert.equal((await admin(930, `demo-jobs/${job.id}/apply`, 'POST', { version: 1 })).status, 409);
-  assert.equal((await admin(931, `demo-jobs/${job.id}/apply`, 'POST', { version: 1 })).status, 404);
+  const first=await admin(930,'demo-jobs/'+job.id+'/sync','POST',{});
+  assert.equal(first.status,200);
+  assert.equal((await admin(930,'stores')).body.length,0);
+  for(let i=0;i<12;i++)await admin(930,'demo-jobs/'+job.id+'/sync','POST',{});
+  const own=(await admin(930,'stores')).body;
+  assert.equal(own.length,1);assert.equal(own[0].name,'Real shop');assert.equal(own[0].acceptingOrders,false);
+  const products=(await admin(930,'stores/'+job.store_id+'/products')).body;
+  assert.equal(products.length,9);
+  assert.ok(products.every(p=>p.photos.length===8));
+  assert.equal((await admin(930,'demo-jobs')).body[0].sample_content,0);
+  await admin(930,'stores/'+job.store_id+'/settings','PUT',{version:own[0].version,name:'My edits',settings:own[0].settings});
+  await admin(930,'demo-jobs/'+job.id+'/sync','POST',{});
+  assert.equal((await admin(930,'stores/'+job.store_id)).body.name,'My edits');
+  assert.equal(submissions.length,1);
 });
-test('network failure retains retryable task and existing remote ID', async () => {
-  fail = true;
-  await db
-    .prepare("UPDATE collector_tasks SET status='running',checked_at=0 WHERE kind='instagram'")
-    .run();
-  assert.equal((await admin(930, `demo-jobs/${job.id}/sync`, 'POST', {})).status, 200);
-  assert.equal(
-    (await db.prepare("SELECT remote_id FROM collector_tasks WHERE kind='instagram'").first())
-      .remote_id,
-    instagramId,
-  );
-  fail = false;
-});
-test('explicit apply archives photos, keeps design and owner, does not activate orders, and cannot repeat', async () => {
-  ready = true;
-  await db.prepare("UPDATE collector_tasks SET checked_at=0 WHERE kind='instagram'").run();
-  await admin(930, `demo-jobs/${job.id}/sync`, 'POST', {});
-  assert.equal(
-    (await admin(930, `demo-jobs/${job.id}/apply`, 'POST', { version: 99 })).status,
-    409,
-  );
-  const applied = await admin(930, `demo-jobs/${job.id}/apply`, 'POST', { version: 1 });
-  assert.equal(applied.status, 200, JSON.stringify(applied));
-  const own = await admin(930, `stores/${job.store_id}`);
-  assert.equal(own.body.name, 'Real shop');
-  assert.equal(own.body.settings.theme, 'fashion');
-  assert.equal(own.body.settings.language, 'en');
-  assert.equal(own.body.acceptingOrders, false);
-  assert.ok(own.body.settings.logo.startsWith('/media/' + job.store_id + '/'));
-  const ps = await admin(930, `stores/${job.store_id}/products`);
-  assert.equal(ps.body.length, 1);
-  assert.equal(ps.body[0].name, 'Real item');
-  assert.equal(ps.body[0].priceOnRequest, true);
-  assert.ok(ps.body[0].photos[0].startsWith('/media/' + job.store_id + '/'));
-  assert.equal((await admin(930, `demo-jobs/${job.id}/apply`, 'POST', { version: 2 })).status, 409);
-  await db
-    .prepare("UPDATE collector_tasks SET status='running',checked_at=0 WHERE kind='website'")
-    .run();
-  await admin(930, `demo-jobs/${job.id}/sync`, 'POST', {});
-  assert.equal(
-    (await db.prepare("SELECT status FROM collector_tasks WHERE kind='website'").first()).status,
-    'ready',
-  );
-  assert.equal((await admin(930, 'demo-jobs')).body[0].sample_content, 0);
-  assert.equal(submissions, 2);
+test('restriction creates an error, never a fake demo; explicit resubmission retries once',async()=>{
+  ready=false;restricted=true;
+  const created=await admin(931,'demo-jobs','POST',{instagram:'blocked_shop',templateId:'minimal',currency:'USD'});
+  const id=created.body.job.id;
+  await db.prepare('UPDATE collector_tasks SET checked_at=0 WHERE job_id=?').bind(id).run();
+  await admin(931,'demo-jobs/'+id+'/sync','POST',{});
+  assert.equal((await admin(931,'demo-jobs')).body[0].status,'failed');
+  assert.equal((await admin(931,'stores')).body.length,0);
+  assert.equal((await admin(932,'demo-jobs/'+id+'/sync','POST',{})).status,404);
+  const old=submissions.length;
+  await admin(931,'demo-jobs','POST',{instagram:'blocked_shop',templateId:'minimal',currency:'USD'});
+  assert.equal(submissions.length,old+1);
+  assert.equal((await admin(931,'stores')).body.length,0);
 });

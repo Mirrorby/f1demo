@@ -1,5 +1,5 @@
-import { syncCollector } from './collector';
-import { createStore, stmt } from './catalog';
+import { syncCollector, collectorEnabled } from './collector';
+import { stmt } from './catalog';
 import { findTemplate } from './templates';
 import { currencies, object, requireThat, text, HttpError } from './validation';
 import { supportedLanguages, type Language } from './language';
@@ -15,6 +15,7 @@ interface Job {
   status: string;
   sample_content: number;
   lease_until: number;
+  auto_build: number;
 }
 export function instagramUsername(input: unknown) {
   let value = text(input, 500, true);
@@ -76,12 +77,13 @@ export async function listDemoJobs(env: Env, owner: string) {
   return (
     await stmt(
       env,
-      `SELECT j.id,j.instagram,j.template_id,j.store_id,j.status,j.sample_content,j.created_at,s.slug,r.url reference_url, (SELECT json_group_array(json_object('kind',t.kind,'status',t.status,'summary',json(t.summary))) FROM collector_tasks t WHERE t.job_id=j.id) collector_tasks FROM demo_build_jobs j LEFT JOIN stores s ON s.id=j.store_id LEFT JOIN site_references r ON r.id=j.reference_id WHERE j.owner_id=? ORDER BY j.created_at DESC LIMIT 3`,
+      `SELECT j.id,j.instagram,j.template_id,j.store_id,j.status,j.sample_content,j.created_at,j.auto_build,j.period_days,j.import_error,j.progress,s.slug,r.url reference_url, (SELECT json_group_array(json_object('kind',t.kind,'status',t.status,'summary',json(t.summary))) FROM collector_tasks t WHERE t.job_id=j.id) collector_tasks FROM demo_build_jobs j LEFT JOIN stores s ON s.id=j.store_id LEFT JOIN site_references r ON r.id=j.reference_id WHERE j.owner_id=? ORDER BY j.created_at DESC LIMIT 3`,
       owner,
     ).all()
   ).results;
 }
 export async function createDemo(env: Env, owner: string, input: unknown, origin: string) {
+  requireThat(collectorEnabled(env), 'Сборщик временно недоступен. Попробуйте позже.', 503);
   const data = object(input);
   const instagram = instagramUsername(data.instagram);
   const templateId = text(data.templateId, 30, true);
@@ -108,20 +110,14 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
       'Демо этого аккаунта уже существует. Откройте его в списке магазинов.',
       409,
     );
-    if (
-      job.status !== 'failed' &&
-      !(job.status === 'preparing' && job.lease_until < Date.now() / 1000)
-    ) {
-      await syncCollector(env, owner, job.id);
-      return { job: (await listDemoJobs(env, owner)).find((j) => j.id === job!.id) };
+    if(job.status==='failed' && job.auto_build) {
+      await env.DB.batch([
+        stmt(env,"UPDATE demo_build_jobs SET status='preparing',import_error=NULL,lease_until=0 WHERE id=? AND status='failed'",job.id),
+        stmt(env,"UPDATE collector_tasks SET attempt=attempt+1,remote_id=NULL,status='pending',checked_at=0,lease_until=0 WHERE job_id=? AND kind='instagram'",job.id),
+      ]);
     }
-    const lease = await stmt(
-      env,
-      "UPDATE demo_build_jobs SET status='preparing',lease_until=unixepoch()+120 WHERE id=? AND (status='failed' OR (status='preparing' AND lease_until<unixepoch()))",
-      job.id,
-    ).run();
-    if (!lease.meta.changes)
-      return { job: (await listDemoJobs(env, owner)).find((j) => j.id === job!.id) };
+    await syncCollector(env, owner, job.id);
+    return {job:(await listDemoJobs(env,owner)).find(j=>j.id===job!.id)};
   } else {
     const id = crypto.randomUUID(),
       storeId = crypto.randomUUID(),
@@ -140,7 +136,7 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
           : []),
         stmt(
           env,
-          'INSERT INTO demo_build_jobs(id,owner_id,instagram,template_id,reference_id,store_id,language,currency,lease_until) VALUES(?,?,?,?,(SELECT id FROM site_references WHERE url=?),?,?,?,unixepoch()+120)',
+          'INSERT INTO demo_build_jobs(id,owner_id,instagram,template_id,reference_id,store_id,language,currency,lease_until,auto_build) VALUES(?,?,?,?,(SELECT id FROM site_references WHERE url=?),?,?,?,0,1)',
           id,
           owner,
           instagram,
@@ -165,34 +161,6 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
       throw error;
     }
     job = (await stmt(env, 'SELECT * FROM demo_build_jobs WHERE id=?', id).first<Job>())!;
-  }
-  try {
-    await createStore(
-      env,
-      {
-        name: '@' + job.instagram,
-        templateId: job.template_id,
-        seedProducts: true,
-        settings: { instagram: job.instagram, language: job.language, currencies: [job.currency] },
-      },
-      origin,
-      job.store_id,
-      [
-        stmt(env, 'UPDATE stores SET owner_id=?,orders_enabled=0 WHERE id=?', owner, job.store_id),
-        stmt(
-          env,
-          "UPDATE demo_build_jobs SET status='awaiting_import',lease_until=0,updated_at=unixepoch() WHERE id=?",
-          job.id,
-        ),
-      ],
-    );
-  } catch (error) {
-    await stmt(
-      env,
-      "UPDATE demo_build_jobs SET status='failed',lease_until=0,updated_at=unixepoch() WHERE id=? AND status='preparing'",
-      job.id,
-    ).run();
-    throw error;
   }
   await syncCollector(env, owner, job.id);
   return { job: (await listDemoJobs(env, owner)).find((j) => j.id === job!.id) };

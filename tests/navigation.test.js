@@ -1,0 +1,25 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import vm from 'node:vm';
+const script=await readFile('public/admin.js','utf8');
+test('published admin script parses and swipe/back button share real screen history',async()=>{
+  assert.doesNotThrow(()=>new Function(script));
+  const start=script.indexOf('const screenHistory='),end=script.indexOf('function renderProductOrder()',start);
+  const listeners={},shown=[],back=[];
+  const ctx={document:{addEventListener:(n,fn)=>{listeners[n]=fn},querySelector:()=>null},tg:{BackButton:{show:()=>back.push('show'),hide:()=>back.push('hide'),onClick:fn=>{listeners.back=fn}}},trackActivity:()=>{},confirm:()=>true,Date,JSON,Math,show:async tab=>shown.push(tab),editProduct:()=>{},showOrder:()=>{},renderProductOrder:()=>{}};
+  vm.runInNewContext(script.slice(start,end)+';globalThis.testNav={rememberScreen,goBack};',ctx);
+  ctx.testNav.rememberScreen({kind:'tab',tab:'home',storeId:'s'});
+  ctx.testNav.rememberScreen({kind:'tab',tab:'products',storeId:'s'});
+  const target={closest:()=>null};
+  listeners.touchstart({touches:[{clientX:10,clientY:100}],target});
+  listeners.touchend({changedTouches:[{clientX:100,clientY:110}],preventDefault(){}});
+  await Promise.resolve();
+  assert.deepEqual(shown,['home']);
+  ctx.testNav.rememberScreen({kind:'tab',tab:'settings',storeId:'s'});
+  listeners.touchstart({touches:[{clientX:100,clientY:100}],target});
+  listeners.touchend({changedTouches:[{clientX:220,clientY:100}],preventDefault(){}});
+  assert.equal(shown.length,1);
+  await listeners.back();await Promise.resolve();
+  assert.equal(shown.at(-1),'home');
+});

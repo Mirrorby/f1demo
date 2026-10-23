@@ -14,47 +14,45 @@ function emptyStore() {
   document.getElementById('store-name').textContent = 'Мой кабинет';
   main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">DELOKAY</span><h2>Создайте свой магазин</h2><p>Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.</p><button class="primary" data-tab="create">Создать магазин</button></section>`;
 }
-function importStatus(job) {
-  const tasks = JSON.parse(job.collector_tasks || '[]');
-  const labels = {
-    pending: 'Ожидает отправки · нажмите проверить',
-    queued: 'В очереди',
-    running: 'Собираем данные',
-    ready: 'Данные собраны',
-    needs_review: 'Данные собраны частично · проверьте перед применением',
-    restricted: 'Instagram ограничил доступ. Демо можно заполнить вручную.',
-    failed: 'Не удалось собрать данные',
-    interrupted: 'Сбор прерван перезапуском сервиса',
-  };
-  return tasks
-    .map(
-      (t) =>
-        `<p>${t.kind === 'instagram' ? 'Instagram' : 'Сайт-референс'}: ${esc(labels[t.status] || t.status)}${t.kind === 'website' && t.summary?.reference?.title ? ' — ' + esc(t.summary.reference.title) : ''}</p>`,
-    )
-    .join('');
+let demoPollTimer=null, pendingDemoId=null;
+function renderDemoJobs(jobs) {
+  const target=document.getElementById('demo-jobs');
+  if(!target)return;
+  const labels={preparing:'Подключаем Instagram',running:'Собираем демо',awaiting_import:'Ожидаем данные Instagram',ready:'Демо готово',failed:'Не удалось создать демо'};
+  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>':'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
+}
+function scheduleDemoPoll(jobs) {
+  clearTimeout(demoPollTimer);
+  const pending=jobs.filter(j=>j.auto_build&&j.sample_content&&['preparing','running','awaiting_import'].includes(j.status));
+  if(!pending.length||tab!=='create')return;
+  demoPollTimer=setTimeout(async()=>{
+    try {
+      for(const job of pending)await api('demo-jobs/'+job.id+'/sync','POST',{});
+      const fresh=await api('demo-jobs');
+      if(tab!=='create')return;
+      renderDemoJobs(fresh);
+      const ready=fresh.find(j=>j.id===pendingDemoId&&j.status==='ready');
+      if(ready){pendingDemoId=null;await openDemo(ready.store_id);notice('Демо готово. Проверьте товары и тексты.');return;}
+      scheduleDemoPoll(fresh);
+    }catch{if(tab==='create')demoPollTimer=setTimeout(()=>show('create'),8000);}
+  },2500);
 }
 async function showCreate(seq) {
-  main.innerHTML = '<p>Загрузка…</p>';
-  const [response, jobs] = await Promise.all([fetch('/api/templates'), api('demo-jobs')]);
-  if (!response.ok) throw new Error('Не удалось загрузить шаблоны');
-  const templates = await response.json();
-  if (seq !== generation) return;
-  const statuses = {
-    preparing: 'Готовим тестовое демо',
-    awaiting_import: 'Редактируемое демо · данные ещё не импортированы',
-    running: 'Импорт выполняется',
-    ready: 'Готово',
-    failed: 'Ошибка подготовки · повторите создание',
-  };
-  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Демо и редактирование</li><li>Оплата и запуск</li></ol><p class="section-caption">Сначала проверьте демо и отредактируйте его. Заказы подключаются отдельно после оплаты.</p>
-  <section class="card"><h3>Тестовый режим</h3><p>Создадим редактируемое демо и попробуем собрать данные Instagram. Результат появится ниже: собранные товары можно применить отдельно. Если Instagram ограничит доступ, демо останется с примерными товарами. Сайт по ссылке анализируется для базы референсов; оформление пока берётся из выбранного шаблона.</p></section>
+  main.innerHTML='<p>Загрузка…</p>';
+  const [response,jobs]=await Promise.all([fetch('/api/templates'),api('demo-jobs')]);
+  if(!response.ok)throw new Error('Не удалось загрузить шаблоны');
+  const templates=await response.json();
+  if(seq!==generation)return;
+  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Подготовка демо</li><li>Редактирование и запуск</li></ol><section class="card"><p>Соберём фотопубликации за последние 30 дней, до 8 фотографий из каждой карусели, и подготовим тексты для каталога. Демо появится после завершения сборки.</p></section>
   <p class="section-caption">До трёх бесплатных демо на аккаунт.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
   <h3>Выберите оформление</h3><div class="demo-template-grid">${templates.map((t, i) => `<div class="demo-template-card"><label for="demo-template-${esc(t.id)}"><span class="demo-template-preview" aria-hidden="true"><iframe src="/templates/${esc(t.id)}?thumbnail=1&lang=${document.documentElement.lang === 'en' ? 'en' : 'ru'}" title="${esc(t.title)}" loading="lazy" tabindex="-1" inert></iframe></span><span class="demo-template-choice"><input id="demo-template-${esc(t.id)}" type="radio" name="demo-template" value="${esc(t.id)}" ${i === 0 ? 'checked' : ''}> <span>${esc(t.title)}</span></span></label><p>${esc(t.description)}</p><a href="/templates/${esc(t.id)}" target="_blank" rel="noopener">Посмотреть пример ↗</a></div>`).join('')}</div>
-  <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Пока используем выбранный выше шаблон. Ссылка сохраняется в общей базе референсов Delokay.</p>
+  <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Сайт сохранится в базе референсов. Для демо используем выбранное оформление.</p>
   <label for="demo-language">Язык сайта</label><select id="demo-language"><option value="ru">Русский</option><option value="en">English</option></select>
   <label for="demo-currency">Валюта</label><select id="demo-currency">${['BYN', 'RUB', 'USD', 'EUR', 'KZT'].map((c) => `<option>${c}</option>`).join('')}</select>
-  <button class="primary" type="submit">Создать тестовое демо</button></section></form>
-  <section class="card"><h3>Мои демо</h3>${jobs.length ? jobs.map((j) => `<div class="demo-job"><strong data-no-i18n>@${esc(j.instagram)}</strong><p>${esc(statuses[j.status] || j.status)}</p>${importStatus(j)}${j.sample_content || JSON.parse(j.collector_tasks || '[]').some((t) => t.kind === 'website' && !['ready', 'failed', 'interrupted'].includes(t.status)) ? `<button data-sync-import="${esc(j.id)}">Проверить сбор данных</button>${j.sample_content && JSON.parse(j.collector_tasks || '[]').some((t) => t.kind === 'instagram' && ['ready', 'needs_review'].includes(t.status)) ? `<button data-apply-import="${esc(j.id)}" data-store-id="${esc(j.store_id)}">Применить данные Instagram</button>` : ''}` : ''}${j.slug ? `<div class="actions"><button data-open-demo="${esc(j.store_id)}">Редактировать</button><a href="/s/${esc(j.slug)}" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>` : ''}</div>`).join('') : '<p>Здесь появятся ваши демо.</p>'}<button type="button" data-tab="create">Обновить статусы</button></section>`;
+  <button class="primary" type="submit">Создать демо</button></section></form>
+<section class="card"><h3>Мои демо</h3><div id="demo-jobs"></div></section>`;
+  renderDemoJobs(jobs);
+  scheduleDemoPoll(jobs);
 }
 async function openDemo(id) {
   stores = await api('stores');
@@ -160,7 +158,7 @@ async function api(path, method = 'GET', data, contentType = 'application/json')
           : data,
   });
   const result = await r.json();
-  if (!r.ok) throw new Error(result.error || 'Не удалось выполнить запрос');
+  if (!r.ok) {trackActivity('error',path,{message:result.error||'Не удалось выполнить запрос',status:String(r.status)});throw new Error(result.error || 'Не удалось выполнить запрос');}
   return result;
 }
 const base = () => `stores/${store.id}`;
@@ -218,7 +216,7 @@ function renderProductsList() {
     a.localeCompare(b),
   );
   main.innerHTML = `<div class="row between page-heading"><div><h2>Товары · ${products.length}</h2>
-    <p class="section-caption">Управление магазином</p></div><button class="primary" data-action="add">Добавить</button></div>
+    <p class="section-caption">Управление магазином</p></div><div class="actions"><button data-action="product-order">Порядок товаров</button><button class="primary" data-action="add">Добавить</button></div></div>
     <div class="product-toolbar"><label class="visually-hidden" for="product-search">Поиск товаров</label>
       <input id="product-search" type="search" autocomplete="off" placeholder="Найти товар…" value="${esc(productQuery)}">
       <label class="visually-hidden" for="product-category">Все категории товаров</label>
@@ -289,6 +287,8 @@ async function reload() {
   document.getElementById('store-name').textContent = store.name;
 }
 async function show(next = tab) {
+  rememberScreen({kind:'tab',tab:next,storeId:store?.id||null});
+  clearTimeout(demoPollTimer);
   tab = next;
   edited = null;
   notice('');
@@ -365,6 +365,7 @@ function renderPhotos() {
     .join('');
 }
 function editProduct(index) {
+  rememberScreen({kind:'product',index,tab:'products',storeId:store?.id||null});
   edited = index === undefined ? null : products[index];
   photos = [...(edited?.photos || [])];
   const p = edited || {};
@@ -550,6 +551,7 @@ async function renderSettings(seq) {
   document.querySelectorAll('[data-background-editor]').forEach(updateBackgroundEditor);
 }
 function showOrder(o) {
+  rememberScreen({kind:'order',order:o,tab:'orders',storeId:store?.id||null});
   const c = o.customer;
   const buttons = {
     new: [
@@ -603,36 +605,6 @@ document.addEventListener('click', async (event) => {
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   try {
-    if (button.dataset.syncImport) {
-      button.disabled = true;
-      try {
-        await api(`demo-jobs/${button.dataset.syncImport}/sync`, 'POST', {});
-        await show('create');
-      } finally {
-        button.disabled = false;
-      }
-      return;
-    }
-    if (button.dataset.applyImport) {
-      if (
-        !confirm(
-          'Заменить название, описание, логотип и товары этого демо данными Instagram? Проверьте товары после импорта.',
-        )
-      )
-        return;
-      button.disabled = true;
-      try {
-        const current = await api(`stores/${button.dataset.storeId}`);
-        await api(`demo-jobs/${button.dataset.applyImport}/apply`, 'POST', {
-          version: current.version,
-        });
-        await openDemo(button.dataset.storeId);
-        notice('Данные Instagram применены. Проверьте товары, тексты и фотографии.');
-      } finally {
-        button.disabled = false;
-      }
-      return;
-    }
     if (button.dataset.openDemo) {
       await openDemo(button.dataset.openDemo);
       return;
@@ -704,6 +676,19 @@ document.addEventListener('click', async (event) => {
       });
       showOrder(await api(base() + '/orders/' + button.dataset.orderId));
       notice('Статус сохранён');
+      return;
+    }
+    if(button.dataset.action==='product-order'){renderProductOrder();return;}
+    if(button.dataset.moveProduct){
+      button.disabled=true;
+      try {
+        const ids=products.map(p=>p.id),from=ids.indexOf(button.dataset.moveProduct);
+        const to=button.dataset.direction==='first'?0:from+(button.dataset.direction==='up'?-1:1);
+        if(from<0||to<0||to>=ids.length)return;
+        ids.splice(to,0,ids.splice(from,1)[0]);
+        await api(base()+'/product-order','PUT',{version:store.version,ids});
+        await reload();renderProductOrder();
+      } finally {button.disabled=false;}
       return;
     }
     if (button.dataset.action === 'add') editProduct();
@@ -832,7 +817,8 @@ document.addEventListener('submit', async (event) => {
         language: val('demo-language'),
         currency: val('demo-currency'),
       });
-      if (result.job?.slug) await openDemo(result.job.store_id);
+      pendingDemoId=result.job?.id;
+      if (result.job?.status==='ready' && result.job?.slug) await openDemo(result.job.store_id);
       else await show('create');
       return;
     }
@@ -1021,3 +1007,98 @@ document.addEventListener('submit', async (event) => {
       '<p>Не удалось подключиться. Обновите страницу или откройте панель заново.</p>';
   }
 })();
+
+
+const screenHistory=[];
+let currentScreen=null, restoringScreen=false;
+function rememberScreen(next) {
+  if(restoringScreen)return;
+  if(currentScreen?.storeId!==next.storeId)screenHistory.length=0;
+  if(currentScreen&&JSON.stringify(currentScreen)!==JSON.stringify(next))screenHistory.push(currentScreen);
+  if(screenHistory.length>40)screenHistory.shift();
+  currentScreen=next;
+  if(screenHistory.length)tg?.BackButton?.show();else tg?.BackButton?.hide();
+  trackActivity('screen',next.kind,{tab:next.tab});
+}
+async function goBack() {
+  if(!screenHistory.length)return;
+  if(document.querySelector('form[data-dirty="1"]')&&!confirm('Вернуться без сохранения изменений?'))return;
+  const previous=screenHistory.pop();
+  restoringScreen=true;
+  try {
+    if(previous.kind==='product')editProduct(previous.index);
+    else if(previous.kind==='order')showOrder(previous.order);
+    else if(previous.kind==='sort')renderProductOrder();
+    else await show(previous.tab);
+    currentScreen=previous;
+  } finally {restoringScreen=false;}
+  if(screenHistory.length)tg?.BackButton?.show();else tg?.BackButton?.hide();
+}
+tg?.BackButton?.onClick(()=>{void goBack();});
+let edgeGesture=null;
+document.addEventListener('touchstart',event=>{
+  const t=event.touches[0];
+  if(event.touches.length!==1||t.clientX>28||!screenHistory.length||event.target.closest('input,textarea,select,[contenteditable],.photo-list,[data-gallery]')){edgeGesture=null;return;}
+  edgeGesture={x:t.clientX,y:t.clientY,time:Date.now()};
+},{passive:true});
+document.addEventListener('touchmove',event=>{
+  if(!edgeGesture)return;
+  const t=event.touches[0];
+  if(event.touches.length!==1){edgeGesture=null;return;}
+  const dx=t.clientX-edgeGesture.x,dy=t.clientY-edgeGesture.y;
+  if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)){edgeGesture=null;return;}
+  if(dx>15&&Math.abs(dy)<dx*.6)event.preventDefault();
+},{passive:false});
+document.addEventListener('touchend',event=>{
+  if(!edgeGesture)return;
+  const start=edgeGesture;edgeGesture=null;
+  const t=event.changedTouches[0];
+  if(t.clientX-start.x>=70&&Math.abs(t.clientY-start.y)<50&&Date.now()-start.time<900){event.preventDefault();void goBack();}
+},{passive:false});
+function renderProductOrder(){
+  rememberScreen({kind:'sort',tab:'products',storeId:store?.id||null});
+  main.innerHTML='<h2>Порядок товаров</h2><p>Первый товар будет титульным в каталоге. Изменения сохраняются сразу.</p>'+products.map((p,i)=>'<section class="card"><strong>'+esc(p.name)+'</strong>'+(i===0?'<p>Титульный товар</p>':'')+'<div class="actions"><button data-move-product="'+esc(p.id)+'" data-direction="first" '+(i===0?'disabled':'')+'>На первое место</button><button aria-label="Поднять товар" data-move-product="'+esc(p.id)+'" data-direction="up" '+(i===0?'disabled':'')+'>↑</button><button aria-label="Опустить товар" data-move-product="'+esc(p.id)+'" data-direction="down" '+(i===products.length-1?'disabled':'')+'>↓</button></div></section>').join('');
+}
+
+const activityQueue=[];
+let activityTimer=null,activitySending=false;
+const privateField=/password|passwd|secret|token|session|cookie|authorization|platform.?key|wallet|private.?key/i;
+function trackActivity(event,target,details={}){
+  if(platformMode||!tg?.initData||privateField.test(target))return;
+  const clean={};
+  for(const [key,value] of Object.entries(details))if(!privateField.test(key))clean[key]=String(value??'').slice(0,2000);
+  activityQueue.push({id:crypto.randomUUID(),event,screen:typeof tab==='string'?tab:'home',target:String(target).slice(0,120),details:clean});
+  if(activityQueue.length>200)activityQueue.shift();
+  clearTimeout(activityTimer);activityTimer=setTimeout(()=>{void flushActivity();},2000);
+}
+async function flushActivity(){
+  if(activitySending||!activityQueue.length||!tg?.initData)return;
+  activitySending=true;
+  const batch=activityQueue.splice(0,20);
+  try {
+    const r=await fetch('/api/admin/activity',{method:'POST',headers:{Authorization:'tma '+tg.initData,'Content-Type':'application/json'},body:JSON.stringify({events:batch}),keepalive:true});
+    if(!r.ok&&r.status!==429)activityQueue.unshift(...batch);
+  }catch{activityQueue.unshift(...batch);}
+  finally{activitySending=false;if(activityQueue.length)activityTimer=setTimeout(()=>{void flushActivity();},8000);}
+}
+document.addEventListener('click',event=>{
+  const el=event.target.closest('button,a,input[type=radio],input[type=checkbox]');
+  if(!el)return;
+  const target=el.id||el.dataset.action||el.dataset.tab||el.name||el.textContent.trim().slice(0,80);
+  trackActivity('click',target,{label:el.textContent.trim().slice(0,120)});
+},{capture:true});
+document.addEventListener('input',event=>{
+  const form=event.target.closest('form');if(form)form.dataset.dirty='1';
+},{capture:true});
+document.addEventListener('change',event=>{
+  const el=event.target;
+  if(!el.matches('input,textarea,select')||['password','hidden','file'].includes(el.type))return;
+  const target=el.id||el.name||'field';
+  if(privateField.test(target))return;
+  trackActivity('change',target,{value:el.type==='checkbox'?String(el.checked):el.value});
+},{capture:true});
+document.addEventListener('submit',event=>{
+  trackActivity('submit',event.target.id||'form');
+  delete event.target.dataset.dirty;
+},{capture:true});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')void flushActivity();});

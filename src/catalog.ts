@@ -40,7 +40,7 @@ export async function catalog(env: Env, storeId: string): Promise<Product[]> {
   const [ps, vs] = await env.DB.batch([
     stmt(
       env,
-      'SELECT * FROM products WHERE store_id=? AND deleted_at IS NULL ORDER BY created_at,id LIMIT 501',
+      'SELECT * FROM products WHERE store_id=? AND deleted_at IS NULL ORDER BY position,created_at,id LIMIT 501',
       storeId,
     ),
     stmt(
@@ -61,6 +61,7 @@ export async function catalog(env: Env, storeId: string): Promise<Product[]> {
     ...JSON.parse(p.data),
     id: p.id,
     version: p.version,
+    position: p.position,
     variants: variantRows
       .filter((v) => v.product_id === p.id)
       .map((v) => ({
@@ -169,7 +170,7 @@ export async function createStore(
       ),
       stmt(
         env,
-        "INSERT INTO products(id,store_id,data) SELECT json_extract(value,'$.id'),?,json_extract(value,'$.data') FROM json_each(?)",
+        "INSERT INTO products(id,store_id,data,position) SELECT json_extract(value,'$.id'),?,json_extract(value,'$.data'),CAST(key AS INTEGER) FROM json_each(?)",
         id,
         JSON.stringify(products),
       ),
@@ -316,4 +317,24 @@ export function storeMutationGuard(env: Env, s: StoreRow) {
     s.owner_id,
     s.version,
   );
+}
+
+export async function reorderProducts(env: Env, s: StoreRow, input: unknown) {
+  const data = object(input);
+  requireThat(int(data.version,1,Number.MAX_SAFE_INTEGER)===s.version,'Каталог изменён. Обновите список.',409);
+  requireThat(Array.isArray(data.ids) && data.ids.length<=500 && data.ids.every(id=>typeof id==='string' && /^[a-f0-9-]{36}$/.test(id)) && new Set(data.ids).size===data.ids.length,'Некорректный порядок товаров');
+  const ids = JSON.stringify(data.ids);
+  try {
+    await env.DB.batch([
+      storeMutationGuard(env,s),
+      stmt(env,"INSERT INTO mutation_guards(ok) SELECT CASE WHEN (SELECT COUNT(*) FROM products WHERE store_id=? AND deleted_at IS NULL)=? AND NOT EXISTS(SELECT 1 FROM json_each(?) j WHERE NOT EXISTS(SELECT 1 FROM products WHERE store_id=? AND id=j.value AND deleted_at IS NULL)) THEN 1 ELSE 0 END",s.id,data.ids.length,ids,s.id),
+      stmt(env,'UPDATE products SET position=(SELECT CAST(key AS INTEGER) FROM json_each(?) WHERE value=products.id) WHERE store_id=? AND deleted_at IS NULL',ids,s.id),
+      stmt(env,'UPDATE stores SET version=version+1 WHERE id=?',s.id),
+      stmt(env,'DELETE FROM mutation_guards'),
+    ]);
+  } catch(error) {
+    if(String(error).includes('CHECK constraint')) throw new HttpError(409,'Каталог изменён. Обновите список.');
+    throw error;
+  }
+  return {ok:true};
 }

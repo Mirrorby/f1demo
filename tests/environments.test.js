@@ -17,7 +17,7 @@ test('staging config isolates database, images, secrets, cron and payment servic
   assert.equal(config.name, 'catalog-factory-staging');
   assert.equal(config.d1_databases[0].database_name, 'catalog-factory-staging');
   assert.equal(config.r2_buckets[0].bucket_name, 'catalog-factory-staging-images');
-  assert.deepEqual(config.triggers.crons, []);
+  assert.deepEqual(config.triggers.crons, ['* * * * *']);
   assert.deepEqual(config.services, [{ binding: 'AUTH_VERIFIER', service: 'catalog-factory' }]);
   assert.equal(config.vars.DEPLOYMENT_ENV, 'staging');
   assert.equal(config.vars.TRIBUTE_PRODUCT_URL, '');

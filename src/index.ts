@@ -1,3 +1,5 @@
+import { recordActivity, listLeads, leadPassport } from './leads';
+import { processAutoDemos } from './auto-demo';
 import { applyCollector, syncCollector } from './collector';
 import { createDemo, listDemoJobs } from './onboarding';
 import { enrichStorefront } from './storefront-content';
@@ -68,6 +70,7 @@ import {
   ownedStore,
   publicStore,
   saveProduct,
+  reorderProducts,
   stmt,
   storeBySlug,
   updateSettings,
@@ -487,6 +490,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
     const isPlatform = path.startsWith('/api/platform/');
     const owner = isPlatform ? null : await telegramAuth(request, env);
+    if(path==='/api/admin/activity'&&method==='POST')return json(await recordActivity(env,owner!,await jsonBody(request),JSON.parse(new URLSearchParams((request.headers.get('authorization')||'').slice(4)).get('user')||'{}')));
+    if(path==='/api/platform/leads'&&method==='GET')return json(await listLeads(env));
+    const leadMatch=path.match(/^\/api\/platform\/leads\/([0-9]{1,20})$/);
+    if(leadMatch&&method==='GET')return json(await leadPassport(env,leadMatch[1],Math.max(0,Math.min(100000,Number(url.searchParams.get('offset'))||0))));
     if (path === '/api/admin/demo-jobs' && method === 'GET')
       return json(await listDemoJobs(env, owner!));
     if (path === '/api/admin/demo-jobs' && method === 'POST')
@@ -555,7 +562,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return json(stores.results.map((s) => publicStore(s, env.BOT_USERNAME)));
     }
     const match = path.match(
-      /^\/api\/(?:admin|platform)\/stores\/([a-f0-9-]{36})(?:\/(products|orders|settings|images)(?:\/([a-f0-9-]{36}))?)?$/,
+      /^\/api\/(?:admin|platform)\/stores\/([a-f0-9-]{36})(?:\/(products|product-order|orders|settings|images)(?:\/([a-f0-9-]{36}))?)?$/,
     );
     if (match) {
       const s = isPlatform
@@ -577,6 +584,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           stats,
         });
       }
+      if (section === 'product-order' && method === 'PUT') return json(await reorderProducts(env, s, await jsonBody(request)));
       if (section === 'products' && !id && method === 'GET') return json(await catalog(env, s.id));
       if (section === 'products' && !id && method === 'POST')
         return json(await saveProduct(env, s, await jsonBody(request)), 201);
@@ -751,6 +759,7 @@ export default {
     }
   },
   async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    await processAutoDemos(env);
     if (env.DEPLOYMENT_ENV === 'staging') return;
     ctx.waitUntil(
       (async () => {

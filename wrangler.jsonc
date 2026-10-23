@@ -111,7 +111,7 @@
         },
       ],
       "triggers": {
-        "crons": [],
+        "crons": ["* * * * *"],
       },
       "secrets": {
         "required": ["PLATFORM_API_KEY", "IMPORT_API_TOKEN"],
