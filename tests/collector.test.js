@@ -1,6 +1,6 @@
 import {before,after,test} from 'node:test';
 import assert from 'node:assert/strict';
-import {start,stop,admin,db,platform,mockDomainService} from './harness.js';
+import {start,stop,admin,db,platform,req,mockDomainService} from './harness.js';
 let ready=false,restricted=false;
 const submissions=[];
 before(async()=>{
@@ -17,11 +17,13 @@ before(async()=>{
     });
     return Response.json({id:'a'.repeat(32),status:restricted?'restricted':ready?'ready':'running',products:9});
   });
-  await start({IMPORT_API_ORIGIN:'https://collector.example',IMPORT_API_TOKEN:'test-token'});
+  await start({IMPORT_API_ORIGIN:'https://collector.example',IMPORT_API_TOKEN:'test-token-with-at-least-32-characters-for-ci'});
 });
 after(stop);
 let job;
 test('no store exists until collection and every carousel image are copied',async()=>{
+  assert.equal((await req('/api/import/tick','POST',{})).status,401);
+  assert.equal((await req('/api/import/tick','POST',{}, {Authorization:'Bearer test-token-with-at-least-32-characters-for-ci'})).status,200);
   const created=await admin(930,'demo-jobs','POST',{instagram:'live_shop',templateId:'fashion',language:'en',currency:'USD'});
   assert.equal(created.status,201);job=created.body.job;
   assert.equal(submissions[0].periodDays,30);assert.equal(submissions[0].products,undefined);
