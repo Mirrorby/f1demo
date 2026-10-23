@@ -1025,7 +1025,7 @@ function rememberScreen(next) {
   if(screenHistory.length)tg?.BackButton?.show();else tg?.BackButton?.hide();
   trackActivity('screen',next.kind,{tab:next.tab});
 }
-async function goBack() {
+async function goBack(trigger='back') {
   if(!screenHistory.length)return;
   if(document.querySelector('form[data-dirty="1"]')&&!confirm('Вернуться без сохранения изменений?'))return;
   const previous=screenHistory.pop();
@@ -1036,10 +1036,11 @@ async function goBack() {
     else if(previous.kind==='sort')renderProductOrder();
     else await show(previous.tab);
     currentScreen=previous;
+    trackActivity('screen','back',{tab:previous.tab,trigger});
   } finally {restoringScreen=false;}
   if(screenHistory.length)tg?.BackButton?.show();else tg?.BackButton?.hide();
 }
-tg?.BackButton?.onClick(()=>{void goBack();});
+tg?.BackButton?.onClick(()=>{void goBack('telegram');});
 let edgeGesture=null;
 document.addEventListener('touchstart',event=>{
   const t=event.touches[0];
@@ -1058,7 +1059,7 @@ document.addEventListener('touchend',event=>{
   if(!edgeGesture)return;
   const start=edgeGesture;edgeGesture=null;
   const t=event.changedTouches[0];
-  if(t.clientX-start.x>=70&&Math.abs(t.clientY-start.y)<50&&Date.now()-start.time<900){event.preventDefault();void goBack();}
+  if(t.clientX-start.x>=70&&Math.abs(t.clientY-start.y)<50&&Date.now()-start.time<900){event.preventDefault();void goBack('swipe');}
 },{passive:false});
 function renderProductOrder(){
   generation++;
