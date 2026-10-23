@@ -1,7 +1,7 @@
 import { createStore, stmt } from './catalog';
 import { archivePhoto, remote, type ImportJob, syncCollector } from './collector';
 import { digest } from './auth';
-import { object, requireThat, text } from './validation';
+import { object, requireThat, text, HttpError } from './validation';
 
 interface Checkpoint {
   name:string; settings:Record<string,unknown>; products:Record<string,unknown>[];
@@ -28,6 +28,7 @@ export async function advanceAutoDemo(env:Env, job:ImportJob) {
       requireThat(bundle.username===job.instagram && object(source.period).complete===true,'Сбор периода не завершён',409);
       const name=text(store.name,200,true);
       requireThat(Array.isArray(store.products) && store.products.length<=500 && Array.isArray(source.photo_posts),'Некорректные данные магазина',502);
+      requireThat(store.products.length>0,'За последние 30 дней не найдены фотопубликации для каталога.',409);
       const posts=source.photo_posts.map(object).filter(p=>p.date && Array.isArray(p.assets) && p.assets.length);
       requireThat(posts.length===store.products.length,'Неполные данные товаров',502);
       const cfg={...object(store.settings),theme:job.template_id,language:job.language,currencies:[job.currency],instagram:job.instagram,logo:''};
@@ -57,9 +58,9 @@ export async function advanceAutoDemo(env:Env, job:ImportJob) {
       stmt(env,"UPDATE demo_build_jobs SET sample_content=0,status='ready',progress=100,import_error=NULL,lease_until=0,updated_at=unixepoch() WHERE id=?",job.id),
     ]);
     await env.IMAGES.delete(key);
-  } catch {
+  } catch (error) {
     // Keep the private checkpoint and already copied photos; never expose a half-filled store.
-    await stmt(env,"UPDATE demo_build_jobs SET status='failed',import_error='Не удалось завершить демо. Повторите создание.',lease_until=0,updated_at=unixepoch() WHERE id=? AND sample_content=1",job.id).run();
+    await stmt(env,"UPDATE demo_build_jobs SET status='failed',import_error=?,lease_until=0,updated_at=unixepoch() WHERE id=? AND sample_content=1",error instanceof HttpError ? error.message.slice(0,200) : 'Не удалось завершить демо. Повторите создание.',job.id).run();
   }
 }
 export async function processAutoDemos(env:Env) {

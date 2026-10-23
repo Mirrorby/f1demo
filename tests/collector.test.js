@@ -1,7 +1,7 @@
 import {before,after,test} from 'node:test';
 import assert from 'node:assert/strict';
 import {start,stop,admin,db,platform,req,mockDomainService} from './harness.js';
-let ready=false,restricted=false;
+let ready=false,restricted=false,empty=false;
 const submissions=[];
 before(async()=>{
   mockDomainService(async request=>{
@@ -12,8 +12,8 @@ before(async()=>{
       return Response.json({id:'a'.repeat(32),status:'queued'});
     }
     if(url.pathname.endsWith('/bundle'))return Response.json({
-      username:'live_shop',source:{period:{complete:true,days:30},logo_url:'https://scontent.cdninstagram.com/logo.jpg',photo_posts:Array.from({length:9},(_,i)=>({date:'2026-10-23',assets:[{}],images:Array.from({length:8},(_,n)=>'https://scontent.cdninstagram.com/'+i+'-'+n+'.jpg')}))},
-      store:{name:'Real shop',settings:{description:'Adapted catalogue introduction'},products:Array.from({length:9},(_,i)=>({name:'Real item '+i,description:'Adapted item description',prices:{USD:0},priceOnRequest:true,availability:'preorder',variants:[{label:'Ask',stock:null}]}))}
+      username:'live_shop',source:{period:{complete:true,days:30},logo_url:'https://scontent.cdninstagram.com/logo.jpg',photo_posts:Array.from({length:empty?0:9},(_,i)=>({date:'2026-10-23',assets:[{}],images:Array.from({length:8},(_,n)=>'https://scontent.cdninstagram.com/'+i+'-'+n+'.jpg')}))},
+      store:{name:'Real shop',settings:{description:'Adapted catalogue introduction'},products:Array.from({length:empty?0:9},(_,i)=>({name:'Real item '+i,description:'Adapted item description',prices:{USD:0},priceOnRequest:true,availability:'preorder',variants:[{label:'Ask',stock:null}]}))}
     });
     return Response.json({id:'a'.repeat(32),status:restricted?'restricted':ready?'ready':'running',products:9});
   });
@@ -58,4 +58,16 @@ test('restriction creates an error, never a fake demo; explicit resubmission ret
   await admin(931,'demo-jobs','POST',{instagram:'blocked_shop',templateId:'minimal',currency:'USD'});
   assert.equal(submissions.length,old+1);
   assert.equal((await admin(931,'stores')).body.length,0);
+});
+
+test('a month with no photos reports an error instead of publishing an empty demo',async()=>{
+  restricted=false;ready=true;empty=true;
+  const created=await admin(933,'demo-jobs','POST',{instagram:'empty_shop',templateId:'fashion',currency:'USD'});
+  const id=created.body.job.id;
+  await db.prepare('UPDATE collector_tasks SET checked_at=0 WHERE job_id=?').bind(id).run();
+  await admin(933,'demo-jobs/'+id+'/sync','POST',{});
+  const result=(await admin(933,'demo-jobs')).body[0];
+  assert.equal(result.status,'failed');
+  assert.match(result.import_error,/30 дней/);
+  assert.equal((await admin(933,'stores')).body.length,0);
 });
