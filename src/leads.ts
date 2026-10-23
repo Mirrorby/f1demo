@@ -28,5 +28,6 @@ export async function leadPassport(env:Env,owner:string,offset=0){
   const demos=(await stmt(env,'SELECT instagram,template_id,status,period_days,created_at,import_error FROM demo_build_jobs WHERE owner_id=? ORDER BY created_at DESC',owner).all()).results;
   const stores=(await stmt(env,'SELECT id,name,slug,status FROM stores WHERE owner_id=?',owner).all()).results;
   const profile=await stmt(env,'SELECT first_name,username,language,last_seen FROM lead_profiles WHERE owner_id=?',owner).first();
-  return {ownerId:owner,profile,events,demos,stores,offset,nextOffset:events.length===100?offset+100:null};
+  const expiredDemos=(await stmt(env,'SELECT template_id,period_days,outcome,products,created_at,expired_at FROM demo_statistics WHERE owner_id=? ORDER BY expired_at DESC',owner).all()).results;
+  return {ownerId:owner,profile,events,demos,stores,expiredDemos,offset,nextOffset:events.length===100?offset+100:null};
 }

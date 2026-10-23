@@ -1,23 +1,28 @@
 import { createStore, stmt } from './catalog';
-import { archivePhoto, remote, type ImportJob, syncCollector } from './collector';
+import { referenceDesign } from './reference-design';
+import { importArchivedPhoto, remote, type ImportJob, syncCollector } from './collector';
 import { digest } from './auth';
 import { object, requireThat, text, HttpError } from './validation';
 
 interface Checkpoint {
   name:string; settings:Record<string,unknown>; products:Record<string,unknown>[];
-  images:{url:string;product:number}[]; cursor:number;
+  images:{file:string;product:number}[]; cursor:number;
 }
 export async function advanceAutoDemo(env:Env, job:ImportJob) {
-  const task=await stmt(env,"SELECT remote_id,status FROM collector_tasks WHERE job_id=? AND kind='instagram'",job.id).first<{remote_id:string;status:string}>();
+  const task=await stmt(env,"SELECT remote_id,status,summary FROM collector_tasks WHERE job_id=? AND kind='instagram'",job.id).first<{remote_id:string;status:string;summary:string}>();
   if (!task) return;
   if (['restricted','failed','interrupted'].includes(task.status)) {
-    await stmt(env,"UPDATE demo_build_jobs SET status='failed',import_error=?,lease_until=0 WHERE id=? AND sample_content=1",task.status==='restricted'?'Instagram ограничил доступ. Демо пока не создано.':'Не удалось полностью собрать данные за период. Повторите создание.',job.id).run();
+    await stmt(env,"UPDATE demo_build_jobs SET status='failed',import_error=?,lease_until=0 WHERE id=? AND sample_content=1",task.status==='restricted'?(JSON.parse(task.summary||'{}').httpStatus===429?'Instagram временно ограничил число запросов. Попробуйте позже. Демо пока не создано.':'Instagram ограничил доступ. Демо пока не создано.'):'Не удалось полностью собрать данные за период. Повторите создание.',job.id).run();
     return;
   }
   if (!['ready','needs_review'].includes(task.status)) return;
+  if (job.reference_id) {
+    const website=await stmt(env,"SELECT status FROM collector_tasks WHERE job_id=? AND kind='website'",job.id).first<{status:string}>();
+    if(!website || ['pending','queued','running'].includes(website.status)) return;
+  }
   const lease=await stmt(env,"UPDATE demo_build_jobs SET lease_until=unixepoch()+120 WHERE id=? AND auto_build=1 AND sample_content=1 AND status<>'failed' AND lease_until<unixepoch()",job.id).run();
   if (!lease.meta.changes) return;
-  const key='_imports/'+job.id+'.json';
+  const key='_imports/'+job.id+'-'+task.remote_id+'.json';
   try {
     const saved=await env.IMAGES.get(key);
     let state:Checkpoint;
@@ -28,15 +33,16 @@ export async function advanceAutoDemo(env:Env, job:ImportJob) {
       requireThat(bundle.username===job.instagram && object(source.period).complete===true,'Сбор периода не завершён',409);
       const name=text(store.name,200,true);
       requireThat(Array.isArray(store.products) && store.products.length<=500 && Array.isArray(source.photo_posts),'Некорректные данные магазина',502);
-      requireThat(store.products.length>0,'За последние 30 дней не найдены фотопубликации для каталога.',409);
+      requireThat(store.products.length>0,'За выбранный период не найдены фотопубликации для каталога.',409);
       const posts=source.photo_posts.map(object).filter(p=>p.date && Array.isArray(p.assets) && p.assets.length);
       requireThat(posts.length===store.products.length,'Неполные данные товаров',502);
-      const cfg={...object(store.settings),theme:job.template_id,language:job.language,currencies:[job.currency],instagram:job.instagram,logo:''};
+      const reference = job.reference_id ? await stmt(env,'SELECT analysis FROM site_references WHERE id=?',job.reference_id).first<{analysis:string}>() : null;
+      const design = reference?.analysis ? referenceDesign(JSON.parse(reference.analysis)) : {};
+      const cfg={...object(store.settings),...design,theme:job.template_id,language:job.language,currencies:[job.currency],instagram:job.instagram,logo:''};
       state={name,settings:cfg,products:store.products.map(p=>({...object(p),photos:[]})),images:[],cursor:0};
-      if(source.logo_url) state.images.push({url:text(source.logo_url,3000,true),product:-1});
+      if(source.logo_asset) state.images.push({file:text(object(source.logo_asset).file,200,true),product:-1});
       posts.forEach((p,i)=>{
-        requireThat(Array.isArray(p.images) && p.images.length,'Нет фотографий товара',502);
-        for(const url of p.images.slice(0,8)) state.images.push({url:text(url,3000,true),product:i});
+        for(const asset of (p.assets as unknown[]).slice(0,8)) state.images.push({file:text(object(asset).file,200,true),product:i});
       });
     }
     // Small resumable batches keep large monthly imports within Worker invocation limits.
@@ -46,7 +52,7 @@ export async function advanceAutoDemo(env:Env, job:ImportJob) {
       const group=state.images.slice(offset,Math.min(offset+4,stop));
       const results=await Promise.allSettled(group.map(async(image,i)=>({
         image,
-        url:await archivePhoto(env,image.url,job.store_id,[],await digest(task.remote_id+'-'+(offset+i))),
+        url:await importArchivedPhoto(env,task.remote_id,image.file,job.store_id,await digest(task.remote_id+'-'+(offset+i))),
       })));
       for(const result of results) {
         if(result.status==='rejected')throw result.reason;

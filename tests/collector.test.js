@@ -6,13 +6,13 @@ const submissions=[];
 before(async()=>{
   mockDomainService(async request=>{
     const url=new URL(request.url);
-    if(url.hostname.endsWith('.cdninstagram.com'))return new Response(new Uint8Array([255,216,255,0,0,0,0,0,0,0,0,0]));
+    if(url.pathname.includes('/assets/'))return new Response(new Uint8Array([255,216,255,0,0,0,0,0,0,0,0,0]));
     if(request.method==='POST'){
       submissions.push(await request.json());
       return Response.json({id:'a'.repeat(32),status:'queued'});
     }
     if(url.pathname.endsWith('/bundle'))return Response.json({
-      username:submissions.at(-1).instagram,source:{period:{complete:true,days:30},logo_url:'https://scontent.cdninstagram.com/logo.jpg',photo_posts:Array.from({length:empty?0:9},(_,i)=>({date:'2026-10-23',assets:[{}],images:Array.from({length:8},(_,n)=>'https://scontent.cdninstagram.com/'+i+'-'+n+'.jpg')}))},
+      username:submissions.at(-1).instagram,source:{period:{complete:true,days:30},logo_asset:{file:'assets/'+'f'.repeat(64)+'.jpg'},photo_posts:Array.from({length:empty?0:9},(_,i)=>({date:'2026-10-23',assets:Array.from({length:8},(_,n)=>({file:'assets/'+String(i*8+n).padStart(64,'0')+'.jpg'})),images:Array.from({length:8},(_,n)=>'https://scontent.cdninstagram.com/'+i+'-'+n+'.jpg')}))},
       store:{name:'Real shop',settings:{description:'Adapted catalogue introduction'},products:Array.from({length:empty?0:9},(_,i)=>({name:'Real item '+i,description:'Adapted item description',prices:{USD:0},priceOnRequest:true,availability:'preorder',variants:[{label:'Ask',stock:null}]}))}
     });
     return Response.json({id:'a'.repeat(32),status:restricted?'restricted':ready?'ready':'running',products:9});
@@ -68,6 +68,6 @@ test('a month with no photos reports an error instead of publishing an empty dem
   await admin(933,'demo-jobs/'+id+'/sync','POST',{});
   const result=(await admin(933,'demo-jobs')).body[0];
   assert.equal(result.status,'failed');
-  assert.match(result.import_error,/30 дней/);
+  assert.match(result.import_error,/выбранный период/);
   assert.equal((await admin(933,'stores')).body.length,0);
 });

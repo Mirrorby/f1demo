@@ -38,3 +38,10 @@ test('concurrent submissions preserve one job',async()=>{
   assert.equal(results[0].body.job.id,results[1].body.job.id);
   assert.equal((await db.prepare("SELECT COUNT(*) n FROM demo_build_jobs WHERE owner_id='920'").first()).n,1);
 });
+
+test('selected period is validated, persisted and cannot silently change an existing job',async()=>{
+  for(const periodDays of [0,8,91,'30',true])assert.equal((await create(940,{periodDays})).status,400);
+  const result=await create(940,{periodDays:7});
+  assert.equal(result.status,201);assert.equal(result.body.job.period_days,7);
+  assert.equal((await create(940,{periodDays:90})).status,409);
+});

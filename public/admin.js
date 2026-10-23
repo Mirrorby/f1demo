@@ -25,7 +25,7 @@ function renderDemoJobs(jobs) {
   const target=document.getElementById('demo-jobs');
   if(!target)return;
   const labels={preparing:'Подключаем Instagram',running:'Собираем демо',awaiting_import:'Ожидаем данные Instagram',ready:'Демо готово',failed:'Не удалось создать демо'};
-  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+collectionNote(j)+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>':'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
+  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+collectionNote(j)+(j.expires_at&&j.status==='ready'?'<p>Хранится до '+esc(new Date(j.expires_at*1000).toLocaleDateString())+'</p>':'')+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>':'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
 }
 function scheduleDemoPoll(jobs) {
   clearTimeout(demoPollTimer);
@@ -49,10 +49,11 @@ async function showCreate(seq) {
   if(!response.ok)throw new Error('Не удалось загрузить шаблоны');
   const templates=await response.json();
   if(seq!==generation)return;
-  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Подготовка демо</li><li>Редактирование и запуск</li></ol><section class="card"><p>Соберём фотопубликации за последние 30 дней, до 8 фотографий из каждой карусели, и подготовим тексты для каталога. Демо появится после завершения сборки.</p></section>
-  <p class="section-caption">До трёх бесплатных демо на аккаунт.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
+  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Подготовка демо</li><li>Редактирование и запуск</li></ol><section class="card"><p>Соберём фотопубликации за выбранный период, до 8 фотографий из каждой карусели, и подготовим тексты для каталога. Демо появится после завершения сборки.</p></section>
+  <p class="section-caption">До трёх бесплатных демо на аккаунт. Неактивированное демо хранится 7 дней после готовности.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
+  <label for="demo-period">Период публикаций</label><select id="demo-period"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select>
   <h3>Выберите оформление</h3><div class="demo-template-grid">${templates.map((t, i) => `<div class="demo-template-card"><label for="demo-template-${esc(t.id)}"><span class="demo-template-preview" aria-hidden="true"><iframe src="/templates/${esc(t.id)}?thumbnail=1&lang=${document.documentElement.lang === 'en' ? 'en' : 'ru'}" title="${esc(t.title)}" loading="lazy" tabindex="-1" inert></iframe></span><span class="demo-template-choice"><input id="demo-template-${esc(t.id)}" type="radio" name="demo-template" value="${esc(t.id)}" ${i === 0 ? 'checked' : ''}> <span>${esc(t.title)}</span></span></label><p>${esc(t.description)}</p><a href="/templates/${esc(t.id)}" target="_blank" rel="noopener">Посмотреть пример ↗</a></div>`).join('')}</div>
-  <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Сайт сохранится в базе референсов. Для демо используем выбранное оформление.</p>
+  <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Сохраним сайт в базе референсов и адаптируем его цветовую палитру к выбранному оформлению. Тексты и фотографии возьмём из вашего Instagram.</p>
   <label for="demo-language">Язык сайта</label><select id="demo-language"><option value="ru">Русский</option><option value="en">English</option></select>
   <label for="demo-currency">Валюта</label><select id="demo-currency">${['BYN', 'RUB', 'USD', 'EUR', 'KZT'].map((c) => `<option>${c}</option>`).join('')}</select>
   <button class="primary" type="submit">Создать демо</button></section></form>
@@ -821,6 +822,7 @@ document.addEventListener('submit', async (event) => {
         referenceUrl: val('demo-reference'),
         language: val('demo-language'),
         currency: val('demo-currency'),
+        periodDays: Number(val('demo-period')),
       });
       pendingDemoId=result.job?.id;
       if (result.job?.status==='ready' && result.job?.slug) await openDemo(result.job.store_id);

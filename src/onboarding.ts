@@ -16,6 +16,7 @@ interface Job {
   sample_content: number;
   lease_until: number;
   auto_build: number;
+  period_days: number;
 }
 export function instagramUsername(input: unknown) {
   let value = text(input, 500, true);
@@ -77,7 +78,7 @@ export async function listDemoJobs(env: Env, owner: string) {
   return (
     await stmt(
       env,
-      `SELECT j.id,j.instagram,j.template_id,j.store_id,j.status,j.sample_content,j.created_at,j.auto_build,j.period_days,j.import_error,j.progress,s.slug,r.url reference_url, (SELECT json_group_array(json_object('kind',t.kind,'status',t.status,'summary',json(t.summary))) FROM collector_tasks t WHERE t.job_id=j.id) collector_tasks FROM demo_build_jobs j LEFT JOIN stores s ON s.id=j.store_id LEFT JOIN site_references r ON r.id=j.reference_id WHERE j.owner_id=? ORDER BY j.created_at DESC LIMIT 3`,
+      `SELECT j.id,j.instagram,j.template_id,j.store_id,j.status,j.sample_content,j.created_at,j.auto_build,j.period_days,j.import_error,j.progress,(SELECT expires_at FROM demo_retention WHERE job_id=j.id) expires_at,s.slug,r.url reference_url, (SELECT json_group_array(json_object('kind',t.kind,'status',t.status,'summary',json(t.summary))) FROM collector_tasks t WHERE t.job_id=j.id) collector_tasks FROM demo_build_jobs j LEFT JOIN stores s ON s.id=j.store_id LEFT JOIN site_references r ON r.id=j.reference_id WHERE j.owner_id=? ORDER BY j.created_at DESC LIMIT 3`,
       owner,
     ).all()
   ).results;
@@ -89,6 +90,8 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
   const templateId = text(data.templateId, 30, true);
   requireThat(findTemplate(templateId), 'Выберите готовый шаблон');
   const reference = referenceUrl(data.referenceUrl);
+  const periodDays = data.periodDays ?? 30;
+  requireThat(typeof periodDays === 'number' && [7,30,90].includes(periodDays), 'Выберите период: 7, 30 или 90 дней');
   const language = text(data.language || 'ru', 5) as Language;
   requireThat(supportedLanguages.includes(language), 'Неподдерживаемый язык');
   const currency = text(data.currency || 'BYN', 3);
@@ -106,12 +109,13 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
         }>()
       : null;
     requireThat(
-      job.template_id === templateId && (ref?.url || '') === reference,
+      job.template_id === templateId && (ref?.url || '') === reference && job.period_days === periodDays,
       'Демо этого аккаунта уже существует. Откройте его в списке магазинов.',
       409,
     );
     if(job.status==='failed' && job.auto_build) {
       await env.DB.batch([
+        stmt(env,'DELETE FROM demo_retention WHERE job_id=?',job.id),
         stmt(env,"UPDATE demo_build_jobs SET status='preparing',import_error=NULL,lease_until=0 WHERE id=? AND status='failed'",job.id),
         stmt(env,"UPDATE collector_tasks SET attempt=attempt+1,remote_id=NULL,status='pending',checked_at=0,lease_until=0 WHERE job_id=? AND kind='instagram'",job.id),
       ]);
@@ -136,7 +140,7 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
           : []),
         stmt(
           env,
-          'INSERT INTO demo_build_jobs(id,owner_id,instagram,template_id,reference_id,store_id,language,currency,lease_until,auto_build) VALUES(?,?,?,?,(SELECT id FROM site_references WHERE url=?),?,?,?,0,1)',
+          'INSERT INTO demo_build_jobs(id,owner_id,instagram,template_id,reference_id,store_id,language,currency,period_days,lease_until,auto_build) VALUES(?,?,?,?,(SELECT id FROM site_references WHERE url=?),?,?,?,?,0,1)',
           id,
           owner,
           instagram,
@@ -145,6 +149,7 @@ export async function createDemo(env: Env, owner: string, input: unknown, origin
           storeId,
           language,
           currency,
+          periodDays,
         ),
       ]);
     } catch (error) {

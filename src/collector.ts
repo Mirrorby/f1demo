@@ -134,6 +134,8 @@ export async function syncCollector(env: Env, owner: string, id: string) {
         profile: result.profile,
         issues: result.issues,
         error: result.error,
+        reason: result.reason,
+        httpStatus: result.httpStatus,
         ...(kind === 'website' ? { reference: result.reference } : {}),
       });
       await stmt(
@@ -189,6 +191,19 @@ export async function archivePhoto(env: Env, input: unknown, storeId: string, up
   );
   const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(15000) });
   requireThat(response.ok, 'Фото Instagram недоступно. Импорт не применён.', 502);
+  return saveArchivedPhoto(env,response,storeId,uploaded,fileId);
+}
+
+export async function importArchivedPhoto(env:Env, remoteId:string, file:string, storeId:string, fileId:string) {
+  requireThat(/^[a-f0-9]{32}$/.test(remoteId) && /^assets\/[a-f0-9]{64}\.(jpg|png|webp)$/.test(file),'Некорректный архив фотографии',502);
+  const base=new URL(env.IMPORT_API_ORIGIN!);
+  requireThat(base.protocol==='https:' && base.pathname==='/' && !base.username && !base.password,'Ошибка настройки сборщика',503);
+  const response=await fetch(new URL('/v1/jobs/'+remoteId+'/'+file,base),{headers:{Authorization:'Bearer '+env.IMPORT_API_TOKEN},redirect:'manual',signal:AbortSignal.timeout(15000)});
+  requireThat(response.ok,'Архив фотографии недоступен',502);
+  return saveArchivedPhoto(env,response,storeId,[],fileId);
+}
+
+async function saveArchivedPhoto(env:Env,response:Response,storeId:string,uploaded:string[],fileId?:string) {
   const bytes = await limitedBytes(response, 3 * 1024 * 1024);
   let ext = '',
     mime = '';

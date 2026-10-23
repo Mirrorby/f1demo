@@ -1,3 +1,4 @@
+import {runRetention} from './retention';
 import { recordActivity, listLeads, leadPassport } from './leads';
 import { processAutoDemos } from './auto-demo';
 import { applyCollector, syncCollector } from './collector';
@@ -156,6 +157,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     requireThat(env.IMPORT_API_TOKEN && env.IMPORT_API_TOKEN.length>=32,'Сборщик не настроен',503);
     requireThat(await equalSecret(request.headers.get('authorization')||'','Bearer '+env.IMPORT_API_TOKEN),'Нет доступа',401);
     await processAutoDemos(env);
+    await runRetention(env);
     await cleanupMedia(env);
     return json({ok:true});
   }
@@ -531,7 +533,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return json(
         (
           await env.DB.prepare(
-            'SELECT r.*, (SELECT COUNT(*) FROM demo_build_jobs j WHERE j.reference_id=r.id) AS uses FROM site_references r ORDER BY created_at DESC LIMIT 200',
+            'SELECT r.*, ((SELECT COUNT(*) FROM demo_build_jobs j WHERE j.reference_id=r.id)+(SELECT COUNT(*) FROM demo_statistics a WHERE a.reference_id=r.id)) AS uses FROM site_references r ORDER BY created_at DESC LIMIT 200',
           ).all()
         ).results,
       );
@@ -790,6 +792,7 @@ export default {
     ctx.waitUntil(flushNotifications(env));
     ctx.waitUntil(flushPaymentNotifications(env));
     await processCopy(env, origin(env), undefined, 2);
+    await runRetention(env);
     await cleanupMedia(env);
     await stmt(env, 'DELETE FROM owner_invites WHERE expires_at<unixepoch()-86400').run();
   },
