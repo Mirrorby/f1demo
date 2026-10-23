@@ -12,7 +12,7 @@ before(async()=>{
       return Response.json({id:'a'.repeat(32),status:'queued'});
     }
     if(url.pathname.endsWith('/bundle'))return Response.json({
-      username:'live_shop',source:{period:{complete:true,days:30},logo_url:'https://scontent.cdninstagram.com/logo.jpg',photo_posts:Array.from({length:empty?0:9},(_,i)=>({date:'2026-10-23',assets:[{}],images:Array.from({length:8},(_,n)=>'https://scontent.cdninstagram.com/'+i+'-'+n+'.jpg')}))},
+      username:submissions.at(-1).instagram,source:{period:{complete:true,days:30},logo_url:'https://scontent.cdninstagram.com/logo.jpg',photo_posts:Array.from({length:empty?0:9},(_,i)=>({date:'2026-10-23',assets:[{}],images:Array.from({length:8},(_,n)=>'https://scontent.cdninstagram.com/'+i+'-'+n+'.jpg')}))},
       store:{name:'Real shop',settings:{description:'Adapted catalogue introduction'},products:Array.from({length:empty?0:9},(_,i)=>({name:'Real item '+i,description:'Adapted item description',prices:{USD:0},priceOnRequest:true,availability:'preorder',variants:[{label:'Ask',stock:null}]}))}
     });
     return Response.json({id:'a'.repeat(32),status:restricted?'restricted':ready?'ready':'running',products:9});
