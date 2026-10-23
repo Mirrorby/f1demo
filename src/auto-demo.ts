@@ -40,12 +40,21 @@ export async function advanceAutoDemo(env:Env, job:ImportJob) {
       });
     }
     // Small resumable batches keep large monthly imports within Worker invocation limits.
-    const stop=Math.min(state.cursor+8,state.images.length);
-    for(;state.cursor<stop;state.cursor++) {
-      const image=state.images[state.cursor];
-      const url=await archivePhoto(env,image.url,job.store_id,[],await digest(task.remote_id+'-'+state.cursor));
-      if(image.product<0) state.settings.logo=url;
-      else (state.products[image.product].photos as string[]).push(url);
+    const stop=Math.min(state.cursor+16,state.images.length);
+    while(state.cursor<stop) {
+      const offset=state.cursor;
+      const group=state.images.slice(offset,Math.min(offset+4,stop));
+      const results=await Promise.allSettled(group.map(async(image,i)=>({
+        image,
+        url:await archivePhoto(env,image.url,job.store_id,[],await digest(task.remote_id+'-'+(offset+i))),
+      })));
+      for(const result of results) {
+        if(result.status==='rejected')throw result.reason;
+        const {image,url}=result.value;
+        if(image.product<0)state.settings.logo=url;
+        else (state.products[image.product].photos as string[]).push(url);
+      }
+      state.cursor+=group.length;
     }
     await env.IMAGES.put(key,JSON.stringify(state));
     if(state.cursor<state.images.length) {
