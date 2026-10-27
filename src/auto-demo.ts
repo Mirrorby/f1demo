@@ -31,6 +31,7 @@ export async function advanceAutoDemo(env:Env, job:ImportJob) {
       const bundle=await remote(env,'/v1/jobs/'+task.remote_id+'/bundle');
       const source=object(bundle.source), store=object(bundle.store);
       requireThat(bundle.username===job.instagram && object(source.period).complete===true,'Сбор периода не завершён',409);
+      requireThat(!Array.isArray(bundle.issues) || !bundle.issues.includes('Не получено название магазина'),'Instagram не предоставил название магазина. Демо пока не создано.',409);
       const name=text(store.name,200,true);
       requireThat(Array.isArray(store.products) && store.products.length<=500 && Array.isArray(source.photo_posts),'Некорректные данные магазина',502);
       requireThat(store.products.length>0,'За выбранный период не найдены фотопубликации для каталога.',409);
