@@ -19,7 +19,7 @@ export function notificationToken(env:Env) {
 }
 export async function telegram(env: Env, method: string, payload: unknown) {
   requireThat(
-    env.DEPLOYMENT_ENV !== 'staging' || method === 'sendMessage',
+    env.DEPLOYMENT_ENV !== 'staging' || ['sendMessage','getMe'].includes(method),
     'Настройка бота отключена в тестовой среде',
     403,
   );

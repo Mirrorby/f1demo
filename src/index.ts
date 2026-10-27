@@ -78,7 +78,7 @@ import {
   updateSettings,
 } from './catalog';
 import { placeOrder, changeStatus, orderView } from './orders';
-import { flushNotifications, inviteOwner, origin, webhook, setupTelegram, notificationToken } from './telegram';
+import { flushNotifications, inviteOwner, origin, webhook, setupTelegram, notificationToken, telegram } from './telegram';
 import {
   cleanupMedia,
   deleteDemo,
@@ -428,6 +428,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     }
     if (path === '/api/platform/telegram/setup' && method === 'POST')
       return json(await setupTelegram(env));
+    if (path === '/api/platform/bot-status' && method === 'GET') {
+      const bot=object((await telegram(env,'getMe',{})).result);
+      const username=text(bot.username,64,true);
+      return json({username, matchesConfigured:username.toLowerCase() === (env.BOT_USERNAME||'').toLowerCase()});
+    }
     if (path === '/api/platform/config' && method === 'GET')
       return json({
         publicOrigin: origin(env),

@@ -47,3 +47,13 @@ test('delivery failure is retried; expiration never silently turns off orders',a
   const store=(await admin(333,`stores/${demo.id}`)).body;
   assert.equal(store.subscription.status,'expired');assert.equal(store.acceptingOrders,true);
 });
+
+test('bot identity can be checked without sending a message or exposing credentials',async()=>{
+  const count=notifications.length;
+  assert.equal((await req('/api/platform/bot-status')).status,401);
+  const result=await platform('bot-status');
+  assert.equal(result.status,200);assert.equal(result.body.matchesConfigured,true);
+  assert.equal(result.body.username,'catalog_test_bot');
+  assert.equal(notifications.length,count+1);
+  assert.ok(notifications.at(-1).path.endsWith('/getMe'));
+});
