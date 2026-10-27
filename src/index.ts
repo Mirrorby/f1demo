@@ -1,3 +1,4 @@
+import {manualSubscription,subscriptionFor,sendSubscriptionReminders} from './subscriptions';
 import {runRetention} from './retention';
 import { recordActivity, listLeads, leadPassport } from './leads';
 import { processAutoDemos } from './auto-demo';
@@ -157,6 +158,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     requireThat(env.IMPORT_API_TOKEN && env.IMPORT_API_TOKEN.length>=32,'Сборщик не настроен',503);
     requireThat(await equalSecret(request.headers.get('authorization')||'','Bearer '+env.IMPORT_API_TOKEN),'Нет доступа',401);
     await processAutoDemos(env);
+    await sendSubscriptionReminders(env);
+    await flushNotifications(env);
     await runRetention(env);
     await cleanupMedia(env);
     return json({ok:true});
@@ -434,13 +437,14 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     if (path === '/api/platform/stores' && method === 'GET') {
       const stores = await stmt(
         env,
-        'SELECT * FROM stores ORDER BY created_at DESC,id LIMIT 200 OFFSET ?',
+        'SELECT s.*,sub.started_at AS subscription_started_at,sub.expires_at AS subscription_expires_at,sub.reminder_attempts AS subscription_reminder_attempts,sub.reminder_sent_at AS subscription_reminder_sent_at FROM stores s LEFT JOIN subscriptions sub ON sub.store_id=s.id ORDER BY s.created_at DESC,s.id LIMIT 200 OFFSET ?',
         int(Number(url.searchParams.get('offset') ?? 0), 0, 1000000),
-      ).all<StoreRow>();
+      ).all<StoreRow & {subscription_started_at:number|null;subscription_expires_at:number|null;subscription_reminder_attempts:number|null;subscription_reminder_sent_at:number|null}>();
       return json(
         stores.results.map((s) => ({
           ...publicStore(s, env.BOT_USERNAME),
           ownerLinked: !!s.owner_id,
+          subscription: s.subscription_expires_at ? {started_at:s.subscription_started_at,expires_at:s.subscription_expires_at,status:s.subscription_expires_at>Math.floor(Date.now()/1000)?'active':'expired',reminder_attempts:s.subscription_reminder_attempts,reminder_sent_at:s.subscription_reminder_sent_at} : null,
         })),
       );
     }
@@ -453,7 +457,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return json({ ok: true });
     }
     const match = path.match(
-      /^\/api\/platform\/stores\/([a-f0-9-]{36})\/(invite|activate|export|intake|copy|delete-demo)$/,
+      /^\/api\/platform\/stores\/([a-f0-9-]{36})\/(invite|activate|renew|export|intake|copy|delete-demo)$/,
     );
     if (match) {
       const s = await stmt(env, 'SELECT * FROM stores WHERE id=?', match[1]).first<StoreRow>();
@@ -472,21 +476,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       }
       if (match[2] === 'invite' && method === 'POST')
         return json(await inviteOwner(env, s, await jsonBody(request)));
-      if (match[2] === 'activate' && method === 'POST') {
-        requireThat(s.owner_id, 'Сначала подключите владельца', 409);
-        requireThat(
-          env.TELEGRAM_BOT_TOKEN && env.TELEGRAM_WEBHOOK_SECRET,
-          'Сначала настройте Telegram',
-          503,
-        );
-        await stmt(
-          env,
-          "UPDATE stores SET status='active',version=version+1 WHERE id=? AND version=? AND owner_id IS ?",
-          s.id,
-          s.version,
-          s.owner_id,
-        ).run();
-        return json({ url: origin(env) + '/shop/' + s.slug });
+      if ((match[2] === 'activate' || match[2] === 'renew') && method === 'POST') {
+        if(match[2]==='renew')requireThat(s.status==='active','Сначала активируйте магазин',409);
+        if(match[2]==='activate')requireThat(s.status==='demo','Магазин уже активирован. Для продления используйте отдельную кнопку.',409);
+        const result=await manualSubscription(env,s,await jsonBody(request));
+        return json({...result,url:origin(env)+'/shop/'+s.slug});
       }
       if (match[2] === 'export' && method === 'GET')
         return json({
@@ -590,6 +584,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         return json({
           ...publicStore(s, env.BOT_USERNAME),
           customUrl: await domainUrl(env, s.id),
+          subscription: await subscriptionFor(env,s.id),
           stats,
         });
       }
@@ -791,6 +786,7 @@ export default {
     );
     ctx.waitUntil(flushNotifications(env));
     ctx.waitUntil(flushPaymentNotifications(env));
+    await sendSubscriptionReminders(env);
     await processCopy(env, origin(env), undefined, 2);
     await runRetention(env);
     await cleanupMedia(env);

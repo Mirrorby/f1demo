@@ -14,14 +14,18 @@ import { stmt, ownedStore, storeMutationGuard } from './catalog';
 import { changeStatus } from './orders';
 import type { OrderRow, StoreRow, OrderItem, Customer } from './types';
 import { object, requireThat, text } from './validation';
+export function notificationToken(env:Env) {
+  return env.DEPLOYMENT_ENV === 'staging' ? (env as Env & {STAGING_TELEGRAM_BOT_TOKEN?:string}).STAGING_TELEGRAM_BOT_TOKEN : env.TELEGRAM_BOT_TOKEN;
+}
 export async function telegram(env: Env, method: string, payload: unknown) {
   requireThat(
-    env.DEPLOYMENT_ENV !== 'staging',
-    'Отправка сообщений и настройка бота отключены в тестовой среде',
+    env.DEPLOYMENT_ENV !== 'staging' || method === 'sendMessage',
+    'Настройка бота отключена в тестовой среде',
     403,
   );
-  requireThat(env.TELEGRAM_BOT_TOKEN, 'Telegram не настроен', 503);
-  const result = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/${method}`, {
+  const token=notificationToken(env);
+  requireThat(token, 'Telegram не настроен', 503);
+  const result = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -291,7 +295,7 @@ export async function flushNotifications(env: Env, onlyOrder?: string) {
       await telegram(env, 'sendMessage', {
         chat_id: o.owner_id,
         text: body.slice(0, 4000),
-        reply_markup: {
+        reply_markup: env.DEPLOYMENT_ENV === 'staging' ? {inline_keyboard: [[{text:t.openOrder,web_app:{url:origin(env)+`/admin?store=${o.store_id}&order=${o.id}&lang=${lang}`}}]]} : {
           inline_keyboard: [
             [
               { text: t.accept, callback_data: 'a:' + o.id },

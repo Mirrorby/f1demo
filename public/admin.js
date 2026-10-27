@@ -108,7 +108,7 @@ function moreScreen() {
   main.innerHTML = `<div class="section-label">Ваши инструменты</div><div class="more-list">
     ${store ? '<button class="more-link" data-tab="site" aria-label="Мой сайт"><span class="more-icon mint">↗</span><span class="more-copy"><strong>Мой сайт</strong><small>Ссылка на вашу витрину и её статус</small></span><span class="more-chevron">›</span></button>' : ''}
     ${store ? '<button class="more-link" data-tab="settings" aria-label="Настройки"><span class="more-icon">⚙</span><span class="more-copy"><strong>Настройки</strong><small>Оформление магазина, контакты и доставка</small></span><span class="more-chevron">›</span></button>' : ''}
-    ${!platformMode ? '<button class="more-link" data-tab="payments" aria-label="Оплата"><span class="more-icon mint">▣</span><span class="more-copy"><strong>Оплата</strong><small>Услуги Delokay, история покупок и Tribute</small></span><span class="more-chevron">›</span></button>' : ''}
+    ${!platformMode && store ? '<button class="more-link" data-tab="subscription"><span class="more-icon mint">▣</span><span class="more-copy"><strong>Подписка</strong><small>Срок действия и продление</small></span><span class="more-chevron">›</span></button>' : ''}
     </div>
     <div class="section-label">Delokay</div><div class="hint-strip">Меньше рутины. Больше дела. ✨<br>Новые инструменты будут появляться здесь по мере запуска.</div>`;
 }
@@ -297,7 +297,7 @@ async function show(next = tab) {
   tab = next;
   edited = null;
   notice('');
-  const selectedNav = ['settings', 'site', 'payments'].includes(tab) ? 'more' : tab;
+  const selectedNav = ['settings', 'site', 'payments', 'subscription'].includes(tab) ? 'more' : tab;
   document
     .querySelectorAll('#nav [data-tab]')
     .forEach((b) => b.classList.toggle('active', b.dataset.tab === selectedNav));
@@ -307,6 +307,11 @@ async function show(next = tab) {
       await showCreate(seq);
     } else if (tab === 'payments' && !platformMode) {
       await showPayments(seq);
+    } else if (tab === 'subscription' && store) {
+      await reload();
+      if(seq!==generation)return;
+      const sub=store.subscription;
+      main.innerHTML='<h2>Подписка</h2><section class="card">'+(sub?'<p>Статус: '+(sub.status==='expired'?'срок закончился':'действует')+'</p><p>Действует до: '+esc(new Date(sub.expires_at*1000).toLocaleDateString())+'</p><p>Напомним о продлении за три дня. Чтобы продлить подписку, свяжитесь с Delokay.</p>':'<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>')+'</section>';
     } else if (tab === 'more') {
       moreScreen();
     } else if (!store) {
@@ -317,7 +322,7 @@ async function show(next = tab) {
       main.innerHTML = `<section class="card hero-card">
       <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
       <h2>Всё под рукой</h2>${store.demoJob?.sample_content ? '<p>Если данные Instagram ещё не применены, товары и цены в демо примерные. Статус сбора доступен в разделе «Создать магазин».</p>' : ''}${!platformMode ? '<button data-tab="create">Создать ещё магазин</button>' : ''}
-      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>
+      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>${store.subscription ? `<p>Подписка ${store.subscription.status === 'expired' ? 'закончилась' : 'действует'} до ${new Date(store.subscription.expires_at*1000).toLocaleDateString()}. Для продления свяжитесь с Delokay.</p>` : '<p>После оплаты мы вручную активируем ваш сайт и подписку.</p>'}
       <div class="actions"><button class="primary" data-action="add">Добавить товар</button></div>
     </section>
     <div class="section-label">Обзор магазина</div>

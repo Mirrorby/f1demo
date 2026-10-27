@@ -23,6 +23,7 @@ export function deploymentConfig(source, values) {
       secrets: {
         PLATFORM_API_KEY: values.PLATFORM_API_KEY,
         ...(values.IMPORT_API_TOKEN ? { IMPORT_API_TOKEN: values.IMPORT_API_TOKEN } : {}),
+        ...(values.STAGING_TELEGRAM_BOT_TOKEN ? { STAGING_TELEGRAM_BOT_TOKEN: values.STAGING_TELEGRAM_BOT_TOKEN } : {}),
       },
     };
   }
