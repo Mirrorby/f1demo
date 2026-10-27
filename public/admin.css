@@ -484,6 +484,27 @@ body.delokay-app button.primary {
   border-color: var(--accent);
   box-shadow: 0 8px 20px #5865e82b;
 }
+body.delokay-app a.support-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 10px 14px;
+  border-radius: 13px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  text-decoration: none;
+  box-shadow: 0 8px 20px #5865e82b;
+}
+body.delokay-app a.support-link:focus-visible {
+  outline: 3px solid #5865e855;
+  outline-offset: 2px;
+}
 body.delokay-app input,
 body.delokay-app select,
 body.delokay-app textarea {

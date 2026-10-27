@@ -15,7 +15,8 @@ function emptyStore() {
   main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">DELOKAY</span><h2>Создайте свой магазин</h2><p>Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.</p><button class="primary" data-tab="create">Создать магазин</button></section>`;
 }
 function supportButton(label='Написать в Delokay') {
-  return `<button type="button" class="primary" data-payment-url="${esc(window.DELOKAY_SUPPORT_URL || 'https://t.me/Mirrorby')}">${label}</button>`;
+  const url = 'https://t.me/Mirrorby';
+  return `<a class="primary support-link" href="${url}" target="_blank" rel="noopener" data-support-link><span>${esc(label)}</span> <span data-no-i18n>@Mirrorby</span></a>`;
 }
 function launchOffer() {
   return `<section class="card launch-offer"><h2>Запустите свой магазин</h2><p>Настройте демо бесплатно: проверьте товары, фотографии и тексты.</p><p>После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.</p>${supportButton('Обсудить запуск')}</section>`;
@@ -620,6 +621,17 @@ async function uploadImage(file, destination = base()) {
   return (await api(destination + '/images', 'POST', blob, blob.type)).url;
 }
 document.addEventListener('click', async (event) => {
+  const supportLink = event.target.closest('a[data-support-link]');
+  if (supportLink) {
+    // Preserve the native link as a fallback when the Telegram API is unavailable.
+    if (tg?.initData && typeof tg.openTelegramLink === 'function') {
+      try {
+        tg.openTelegramLink(supportLink.href);
+        event.preventDefault();
+      } catch (_) { /* Let the browser open the link. */ }
+    }
+    return;
+  }
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   try {
