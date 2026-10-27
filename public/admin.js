@@ -16,7 +16,8 @@ function emptyStore() {
 }
 function supportButton(label='Написать в Delokay') {
   const url = 'https://t.me/Mirrorby';
-  return `<a class="primary support-link" href="${url}" target="_blank" rel="noopener" data-support-link><span>${esc(label)}</span> <span data-no-i18n>@Mirrorby</span></a>`;
+  if (platformMode) return `<a class="primary support-link" href="${url}" target="_blank" rel="noopener"><span>${esc(label)}</span> <span data-no-i18n>@Mirrorby</span></a>`;
+  return `<div class="support-contact"><button type="button" class="primary" data-support-contact><span>${esc(label)}</span> <span data-no-i18n>@Mirrorby</span></button><p class="support-result" role="status" hidden></p></div>`;
 }
 function launchOffer() {
   return `<section class="card launch-offer"><h2>Запустите свой магазин</h2><p>Настройте демо бесплатно: проверьте товары, фотографии и тексты.</p><p>После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.</p>${supportButton('Обсудить запуск')}</section>`;
@@ -621,22 +622,22 @@ async function uploadImage(file, destination = base()) {
   return (await api(destination + '/images', 'POST', blob, blob.type)).url;
 }
 document.addEventListener('click', async (event) => {
-  const supportLink = event.target.closest('a[data-support-link]');
-  if (supportLink) {
-    // Some Telegram clients ignore openTelegramLink for user profiles. Open the
-    // public link via the client's browser instead; preserve native navigation
-    // if the API is unavailable or throws.
-    if (tg?.initData && typeof tg.openLink === 'function') {
-      try {
-        tg.openLink(supportLink.href);
-        event.preventDefault();
-      } catch (_) { /* Let the browser open the link. */ }
-    }
-    return;
-  }
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   try {
+    if (button.hasAttribute('data-support-contact')) {
+      const result=button.parentElement.querySelector('.support-result');
+      button.disabled=true;
+      let sent=false;
+      try {
+        await api('support-contact','POST',{});
+        sent=true;
+        result.textContent=window.DelokayI18n?.language && window.DelokayI18n.language !== 'ru' ? 'The contact was sent to the bot chat. Close this window to open it.' : 'Контакт отправлен в чат бота. Закройте это окно и нажмите кнопку в сообщении.';
+      } catch (_) {
+        result.textContent=window.DelokayI18n?.language && window.DelokayI18n.language !== 'ru' ? 'Could not send the contact. Find @Mirrorby in Telegram.' : 'Не удалось отправить контакт. Найдите @Mirrorby в поиске Telegram.';
+      } finally { result.hidden=false; button.disabled=sent; }
+      return;
+    }
     if (button.dataset.openDemo) {
       await openDemo(button.dataset.openDemo);
       return;

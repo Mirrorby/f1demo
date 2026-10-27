@@ -6,7 +6,7 @@ import { processAutoDemos } from './auto-demo';
 import { applyCollector, syncCollector } from './collector';
 import { createDemo, listDemoJobs } from './onboarding';
 import { enrichStorefront } from './storefront-content';
-import { botLanguages, setLanguage } from './telegram-i18n';
+import { botLanguages, setLanguage, notificationLanguage } from './telegram-i18n';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import platformScript from '../public/platform.js';
 import adminScript from '../public/admin.js';
@@ -500,6 +500,15 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
     const isPlatform = path.startsWith('/api/platform/');
     const owner = isPlatform ? null : await telegramAuth(request, env);
+    if(path==='/api/admin/support-contact'&&method==='POST') {
+      const language=await notificationLanguage(env,owner!);
+      await telegram(env,'sendMessage',{
+        chat_id:owner!,
+        text:language==='ru'?'Связаться с Delokay: @Mirrorby':'Contact Delokay: @Mirrorby',
+        reply_markup:{inline_keyboard:[[{text:language==='ru'?'Написать в Delokay':'Contact Delokay',url:SUPPORT_URL}]]},
+      });
+      return json({ok:true});
+    }
     if(path==='/api/admin/activity'&&method==='POST')return json(await recordActivity(env,owner!,await jsonBody(request),JSON.parse(new URLSearchParams((request.headers.get('authorization')||'').slice(4)).get('user')||'{}')));
     if(path==='/api/platform/leads'&&method==='GET')return json(await listLeads(env));
     const leadMatch=path.match(/^\/api\/platform\/leads\/([0-9]{1,20})$/);
