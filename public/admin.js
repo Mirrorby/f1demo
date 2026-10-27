@@ -16,8 +16,8 @@ function emptyStore() {
 }
 function supportButton(label='Написать в Delokay') {
   const url = 'https://t.me/Mirrorby';
-  if (platformMode) return `<a class="primary support-link" href="${url}" target="_blank" rel="noopener"><span>${esc(label)}</span> <span data-no-i18n>@Mirrorby</span></a>`;
-  return `<div class="support-contact"><button type="button" class="primary" data-support-contact><span>${esc(label)}</span> <span data-no-i18n>@Mirrorby</span></button><p class="support-result" role="status" hidden></p></div>`;
+  if (platformMode) return `<a class="primary support-link" href="${url}" target="_blank" rel="noopener"><span>${esc(label)}</span></a>`;
+  return `<div class="support-contact"><button type="button" class="primary" data-support-contact><span>${esc(label)}</span></button><p class="support-result" role="status" hidden></p></div>`;
 }
 function launchOffer() {
   return `<section class="card launch-offer"><h2>Запустите свой магазин</h2><p>Настройте демо бесплатно: проверьте товары, фотографии и тексты.</p><p>После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.</p>${supportButton('Обсудить запуск')}</section>`;
