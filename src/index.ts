@@ -1,5 +1,6 @@
 import {manualSubscription,subscriptionFor,sendSubscriptionReminders} from './subscriptions';
 import {runRetention} from './retention';
+import {SUPPORT_URL} from './support';
 import { recordActivity, listLeads, leadPassport } from './leads';
 import { processAutoDemos } from './auto-demo';
 import { applyCollector, syncCollector } from './collector';
@@ -286,7 +287,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     (method === 'GET' || method === 'HEAD')
   )
     return new Response(
-      method === 'HEAD' ? null : path.endsWith('.js') ? adminScript : brandedPanel(adminPage),
+      method === 'HEAD' ? null : path.endsWith('.js') ? `window.DELOKAY_SUPPORT_URL=${JSON.stringify(SUPPORT_URL)};\n${adminScript}` : brandedPanel(adminPage),
       {
         headers: {
           'Content-Type': path.endsWith('.js')

@@ -1,4 +1,5 @@
 import {stmt,storeMutationGuard} from './catalog';
+import {SUPPORT_URL} from './support';
 import {telegram,notificationToken} from './telegram';
 import {notificationLanguage} from './telegram-i18n';
 import {int,object,requireThat,HttpError} from './validation';
@@ -54,9 +55,9 @@ export async function sendSubscriptionReminders(env:Env) {
       const language=await notificationLanguage(env,s.owner_id);
       const date=new Intl.DateTimeFormat(language==='ru'?'ru-RU':'en-GB',{dateStyle:'long',timeZone:'UTC'}).format(new Date(s.expires_at*1000));
       const message=language==='ru'
-        ? `Напоминание Delokay: срок подписки магазина «${s.name}» заканчивается ${date}. Для продления свяжитесь с Delokay.`
-        : `Delokay reminder: the subscription for “${s.name}” expires on ${date}. Contact Delokay to renew.`;
-      await telegram(env,'sendMessage',{chat_id:s.owner_id,text:message});
+        ? `Напоминание Delokay: срок подписки магазина «${s.name}» заканчивается ${date}. Для продления напишите нам: ${SUPPORT_URL}`
+        : `Delokay reminder: the subscription for “${s.name}” expires on ${date}. Contact us to renew: ${SUPPORT_URL}`;
+      await telegram(env,'sendMessage',{chat_id:s.owner_id,text:message,reply_markup:{inline_keyboard:[[{text:language==='ru'?'Продлить подписку':'Renew subscription',url:SUPPORT_URL}]]}});
       await stmt(env,'UPDATE subscriptions SET reminder_sent_at=unixepoch(),reminder_lease_until=0 WHERE store_id=? AND expires_at=?',s.store_id,s.expires_at).run();
     } catch {
       const delay=Math.min(86400,60*2**Math.min(lease.reminder_attempts,10));

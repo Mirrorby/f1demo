@@ -2,6 +2,20 @@
 (() => {
   'use strict';
   const en = {
+    'Запустите свой магазин': 'Launch your store',
+    'Настройте демо бесплатно: проверьте товары, фотографии и тексты.': 'Set up your demo for free: review your products, photos and text.',
+    'После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.': 'After payment, we will activate your site and order intake. Contact us to discuss pricing and payment.',
+    'Обсудить запуск': 'Discuss launch',
+    'Обсудить продление': 'Discuss renewal',
+    'Написать в Delokay': 'Contact Delokay',
+    'Получить помощь': 'Get help',
+    'Нужна помощь?': 'Need help?',
+    'Ответим на вопросы о настройке, запуске и продлении.': 'Ask us about setup, launch or renewal.',
+    'Для запуска сайта и приёма заказов свяжитесь с нами после подготовки демо.': 'Contact us when your demo is ready to launch your site and accept orders.',
+    'Напомним о продлении за три дня.': 'We will remind you three days before renewal.',
+    'Чтобы продлить подписку, свяжитесь с Delokay.': 'Contact Delokay to renew your subscription.',
+    'Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.': 'Your subscription is not active yet. Delokay will activate your site manually after payment.',
+    'Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.': 'Subscription details are not available yet. Contact us to discuss the terms.',
     'Фон сайта и блоков': 'Page and section backgrounds',
     'Выберите цвет или своё фото. Режим «Как в шаблоне» возвращает исходное оформление блока. После изменений сохраните настройки.':
       'Choose a colour or your own photo. “Use template” restores the section’s original background. Save settings after making changes.',

@@ -14,6 +14,12 @@ function emptyStore() {
   document.getElementById('store-name').textContent = 'Мой кабинет';
   main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">DELOKAY</span><h2>Создайте свой магазин</h2><p>Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.</p><button class="primary" data-tab="create">Создать магазин</button></section>`;
 }
+function supportButton(label='Написать в Delokay') {
+  return `<button type="button" class="primary" data-payment-url="${esc(window.DELOKAY_SUPPORT_URL || 'https://t.me/Mirrorby')}">${label}</button>`;
+}
+function launchOffer() {
+  return `<section class="card launch-offer"><h2>Запустите свой магазин</h2><p>Настройте демо бесплатно: проверьте товары, фотографии и тексты.</p><p>После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.</p>${supportButton('Обсудить запуск')}</section>`;
+}
 let demoPollTimer=null, pendingDemoId=null;
 function collectionNote(job){
   if(job.status==='ready'||job.status==='failed')return '';
@@ -25,7 +31,7 @@ function renderDemoJobs(jobs) {
   const target=document.getElementById('demo-jobs');
   if(!target)return;
   const labels={preparing:'Подключаем Instagram',running:'Собираем демо',awaiting_import:'Ожидаем данные Instagram',ready:'Демо готово',failed:'Не удалось создать демо'};
-  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+collectionNote(j)+(j.expires_at&&j.status==='ready'?'<p>Хранится до '+esc(new Date(j.expires_at*1000).toLocaleDateString())+'</p>':'')+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>':'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
+  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+collectionNote(j)+(j.expires_at&&j.status==='ready'?'<p>Хранится до '+esc(new Date(j.expires_at*1000).toLocaleDateString())+'</p>':'')+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>'+supportButton('Получить помощь'):'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
 }
 function scheduleDemoPoll(jobs) {
   clearTimeout(demoPollTimer);
@@ -50,7 +56,7 @@ async function showCreate(seq) {
   const templates=await response.json();
   if(seq!==generation)return;
   main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Подготовка демо</li><li>Редактирование и запуск</li></ol><section class="card"><p>Соберём фотопубликации за выбранный период, до 8 фотографий из каждой карусели, и подготовим тексты для каталога. Демо появится после завершения сборки.</p></section>
-  <p class="section-caption">До трёх бесплатных демо на аккаунт. Неактивированное демо хранится 7 дней после готовности.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
+  <p class="section-caption">До трёх бесплатных демо на аккаунт. Неактивированное демо хранится 7 дней после готовности.</p><p>Для запуска сайта и приёма заказов свяжитесь с нами после подготовки демо.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
   <label for="demo-period">Период публикаций</label><select id="demo-period"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select>
   <h3>Выберите оформление</h3><div class="demo-template-grid">${templates.map((t, i) => `<div class="demo-template-card"><label for="demo-template-${esc(t.id)}"><span class="demo-template-preview" aria-hidden="true"><iframe src="/templates/${esc(t.id)}?thumbnail=1&lang=${document.documentElement.lang === 'en' ? 'en' : 'ru'}" title="${esc(t.title)}" loading="lazy" tabindex="-1" inert></iframe></span><span class="demo-template-choice"><input id="demo-template-${esc(t.id)}" type="radio" name="demo-template" value="${esc(t.id)}" ${i === 0 ? 'checked' : ''}> <span>${esc(t.title)}</span></span></label><p>${esc(t.description)}</p><a href="/templates/${esc(t.id)}" target="_blank" rel="noopener">Посмотреть пример ↗</a></div>`).join('')}</div>
   <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Сохраним сайт в базе референсов и адаптируем его цветовую палитру к выбранному оформлению. Тексты и фотографии возьмём из вашего Instagram.</p>
@@ -110,7 +116,7 @@ function moreScreen() {
     ${store ? '<button class="more-link" data-tab="settings" aria-label="Настройки"><span class="more-icon">⚙</span><span class="more-copy"><strong>Настройки</strong><small>Оформление магазина, контакты и доставка</small></span><span class="more-chevron">›</span></button>' : ''}
     ${!platformMode && store ? '<button class="more-link" data-tab="subscription"><span class="more-icon mint">▣</span><span class="more-copy"><strong>Подписка</strong><small>Срок действия и продление</small></span><span class="more-chevron">›</span></button>' : ''}
     </div>
-    <div class="section-label">Delokay</div><div class="hint-strip">Меньше рутины. Больше дела. ✨<br>Новые инструменты будут появляться здесь по мере запуска.</div>`;
+    <div class="section-label">Delokay</div><div class="card"><h3>Нужна помощь?</h3><p>Ответим на вопросы о настройке, запуске и продлении.</p>${supportButton()}</div><div class="hint-strip">Меньше рутины. Больше дела. ✨<br>Новые инструменты будут появляться здесь по мере запуска.</div>`;
 }
 function storeState() {
   return store.status === 'demo'
@@ -311,7 +317,7 @@ async function show(next = tab) {
       await reload();
       if(seq!==generation)return;
       const sub=store.subscription;
-      main.innerHTML='<h2>Подписка</h2><section class="card">'+(sub?'<p>Статус: '+(sub.status==='expired'?'срок закончился':'действует')+'</p><p>Действует до: '+esc(new Date(sub.expires_at*1000).toLocaleDateString())+'</p><p>'+(store.notificationsAvailable?'Напомним о продлении за три дня. ':'')+'Чтобы продлить подписку, свяжитесь с Delokay.</p>':'<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>')+'</section>';
+      main.innerHTML='<h2>Подписка</h2><section class="card">'+(sub?'<p>Статус: '+(sub.status==='expired'?'срок закончился':'действует')+'</p><p>Действует до: '+esc(new Date(sub.expires_at*1000).toLocaleDateString())+'</p><p>'+(store.notificationsAvailable?'Напомним о продлении за три дня.</p><p>':'')+'Чтобы продлить подписку, свяжитесь с Delokay.</p>'+supportButton('Обсудить продление'):(store.status==='demo'?'<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>':'<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>')+supportButton(store.status==='demo'?'Обсудить запуск':'Написать в Delokay'))+'</section>';
     } else if (tab === 'more') {
       moreScreen();
     } else if (!store) {
@@ -322,9 +328,10 @@ async function show(next = tab) {
       main.innerHTML = `<section class="card hero-card">
       <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
       <h2>Всё под рукой</h2>${store.demoJob?.sample_content ? '<p>Если данные Instagram ещё не применены, товары и цены в демо примерные. Статус сбора доступен в разделе «Создать магазин».</p>' : ''}${!platformMode ? '<button data-tab="create">Создать ещё магазин</button>' : ''}
-      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>${store.subscription ? `<p>Подписка ${store.subscription.status === 'expired' ? 'закончилась' : 'действует'} до ${new Date(store.subscription.expires_at*1000).toLocaleDateString()}. Для продления свяжитесь с Delokay.</p>` : '<p>После оплаты мы вручную активируем ваш сайт и подписку.</p>'}
+      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>${store.subscription ? `<p>Подписка ${store.subscription.status === 'expired' ? 'закончилась' : 'действует'} до ${new Date(store.subscription.expires_at*1000).toLocaleDateString()}. Для продления свяжитесь с Delokay.</p>` : store.status === 'demo' ? '<p>После оплаты мы вручную активируем ваш сайт и подписку.</p>' : '<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>'}
       <div class="actions"><button class="primary" data-action="add">Добавить товар</button></div>
     </section>
+    ${store.status === 'demo' && !platformMode ? launchOffer() : ''}
     <div class="section-label">Обзор магазина</div>
     <div class="stats">
       <div class="card"><div class="stat-symbol">▦</div><div class="stat">${store.stats.productCount}</div><p>Товаров</p></div>
@@ -344,14 +351,15 @@ async function show(next = tab) {
     } else if (tab === 'orders') {
       orders = await api(base() + `/orders?offset=${orderOffset}&status=${orderFilter}`);
       if (seq !== generation) return;
-      renderOrdersList();
+      if (store.status === 'demo' && !platformMode) main.innerHTML=launchOffer();
+      else renderOrdersList();
     } else if (tab === 'settings') await renderSettings(seq);
     else if (tab === 'site')
       main.innerHTML = `<div class="row between page-heading"><div><h2>Мой сайт</h2><p class="section-caption">Ссылка на витрину</p></div></div>
         <div class="card site-overview"><div class="row between"><h3 data-no-i18n>${esc(store.name)}</h3><span class="badge">${storeState()}</span></div>
         <p class="section-caption">${store.status === 'demo' ? 'Заказы отключены в демонстрационном режиме.' : 'Магазин готов делиться с клиентами.'}</p>
         <div class="site-link" data-no-i18n>${esc(shareUrl())}</div>
-        <div class="actions"><button class="primary" data-action="copy">Скопировать ссылку</button><a class="site-open-link" href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть витрину ↗</a></div></div>`;
+        <div class="actions"><button class="primary" data-action="copy">Скопировать ссылку</button><a class="site-open-link" href="${esc(siteUrl())}" target="_blank" rel="noopener">Открыть витрину ↗</a></div></div>${store.status === 'demo' && !platformMode ? launchOffer() : ''}`;
   } catch (e) {
     if (seq !== generation) return;
     notice(e.message);
@@ -986,7 +994,7 @@ document.addEventListener('submit', async (event) => {
   try {
     stores = await api('stores');
     const params = new URLSearchParams(location.search);
-    if (!platformMode && params.get('tab') === 'payments') tab = 'payments';
+    if (!platformMode && params.get('tab') === 'payments') tab = 'subscription';
     if (!stores.length) {
       document.getElementById('store-name').textContent = 'Мой кабинет';
       document.querySelectorAll('#nav [data-tab]').forEach((button) => {

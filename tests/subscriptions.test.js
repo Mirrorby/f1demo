@@ -29,6 +29,8 @@ test('reminder is sent in the final three days, not duplicated, and renewal rese
   assert.equal(notifications.length,initial+1);
   assert.equal(String(notifications.at(-1).payload.chat_id),'333');
   assert.match(notifications.at(-1).payload.text,/subscription|подписк/i);
+  assert.match(notifications.at(-1).payload.text,/https:\/\/t\.me\/Mirrorby/);
+  assert.equal(notifications.at(-1).payload.reply_markup.inline_keyboard[0][0].url,'https://t.me/Mirrorby');
   await tick();assert.equal(notifications.length,initial+1);
   const previous=(await admin(333,`stores/${demo.id}`)).body.subscription.expires_at;
   const renewed=await platform(`stores/${demo.id}/renew`,'POST',{months:1});
