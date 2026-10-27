@@ -623,10 +623,12 @@ async function uploadImage(file, destination = base()) {
 document.addEventListener('click', async (event) => {
   const supportLink = event.target.closest('a[data-support-link]');
   if (supportLink) {
-    // Preserve the native link as a fallback when the Telegram API is unavailable.
-    if (tg?.initData && typeof tg.openTelegramLink === 'function') {
+    // Some Telegram clients ignore openTelegramLink for user profiles. Open the
+    // public link via the client's browser instead; preserve native navigation
+    // if the API is unavailable or throws.
+    if (tg?.initData && typeof tg.openLink === 'function') {
       try {
-        tg.openTelegramLink(supportLink.href);
+        tg.openLink(supportLink.href);
         event.preventDefault();
       } catch (_) { /* Let the browser open the link. */ }
     }
