@@ -311,7 +311,7 @@ async function show(next = tab) {
       await reload();
       if(seq!==generation)return;
       const sub=store.subscription;
-      main.innerHTML='<h2>Подписка</h2><section class="card">'+(sub?'<p>Статус: '+(sub.status==='expired'?'срок закончился':'действует')+'</p><p>Действует до: '+esc(new Date(sub.expires_at*1000).toLocaleDateString())+'</p><p>Напомним о продлении за три дня. Чтобы продлить подписку, свяжитесь с Delokay.</p>':'<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>')+'</section>';
+      main.innerHTML='<h2>Подписка</h2><section class="card">'+(sub?'<p>Статус: '+(sub.status==='expired'?'срок закончился':'действует')+'</p><p>Действует до: '+esc(new Date(sub.expires_at*1000).toLocaleDateString())+'</p><p>'+(store.notificationsAvailable?'Напомним о продлении за три дня. ':'')+'Чтобы продлить подписку, свяжитесь с Delokay.</p>':'<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>')+'</section>';
     } else if (tab === 'more') {
       moreScreen();
     } else if (!store) {

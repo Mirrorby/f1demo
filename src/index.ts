@@ -78,7 +78,7 @@ import {
   updateSettings,
 } from './catalog';
 import { placeOrder, changeStatus, orderView } from './orders';
-import { flushNotifications, inviteOwner, origin, webhook, setupTelegram } from './telegram';
+import { flushNotifications, inviteOwner, origin, webhook, setupTelegram, notificationToken } from './telegram';
 import {
   cleanupMedia,
   deleteDemo,
@@ -433,6 +433,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         publicOrigin: origin(env),
         botUsername: env.BOT_USERNAME,
         features: { priceOnRequest: true, supportedLanguages },
+        notificationsAvailable: !!notificationToken(env),
       });
     if (path === '/api/platform/stores' && method === 'GET') {
       const stores = await stmt(
@@ -585,6 +586,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           ...publicStore(s, env.BOT_USERNAME),
           customUrl: await domainUrl(env, s.id),
           subscription: await subscriptionFor(env,s.id),
+          notificationsAvailable: !!notificationToken(env),
           stats,
         });
       }
