@@ -123,6 +123,7 @@ test('all supported storefront languages persist and translate catalog controls'
     pl: 'Koszyk',
     ja: 'カート',
     de: 'Warenkorb',
+    ro: 'Coș',
   };
   for (const [language, cart] of Object.entries(expected)) {
     const result = await platform('stores', 'POST', {
@@ -139,5 +140,5 @@ test('all supported storefront languages persist and translate catalog controls'
     assert.ok(html.includes(cart));
   }
   const config = (await platform('config')).body;
-  assert.equal(config.features.supportedLanguages.length, 10);
+  assert.equal(config.features.supportedLanguages.length, 11);
 });

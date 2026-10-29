@@ -3,19 +3,25 @@
   'use strict';
   const en = {
     'Запустите свой магазин': 'Launch your store',
-    'Настройте демо бесплатно: проверьте товары, фотографии и тексты.': 'Set up your demo for free: review your products, photos and text.',
-    'После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.': 'After payment, we will activate your site and order intake. Contact us to discuss pricing and payment.',
+    'Настройте демо бесплатно: проверьте товары, фотографии и тексты.':
+      'Set up your demo for free: review your products, photos and text.',
+    'После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.':
+      'After payment, we will activate your site and order intake. Contact us to discuss pricing and payment.',
     'Обсудить запуск': 'Discuss launch',
     'Обсудить продление': 'Discuss renewal',
     'Написать в Delokay': 'Contact Delokay',
     'Получить помощь': 'Get help',
     'Нужна помощь?': 'Need help?',
-    'Ответим на вопросы о настройке, запуске и продлении.': 'Ask us about setup, launch or renewal.',
-    'Для запуска сайта и приёма заказов свяжитесь с нами после подготовки демо.': 'Contact us when your demo is ready to launch your site and accept orders.',
+    'Ответим на вопросы о настройке, запуске и продлении.':
+      'Ask us about setup, launch or renewal.',
+    'Для запуска сайта и приёма заказов свяжитесь с нами после подготовки демо.':
+      'Contact us when your demo is ready to launch your site and accept orders.',
     'Напомним о продлении за три дня.': 'We will remind you three days before renewal.',
     'Чтобы продлить подписку, свяжитесь с Delokay.': 'Contact Delokay to renew your subscription.',
-    'Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.': 'Your subscription is not active yet. Delokay will activate your site manually after payment.',
-    'Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.': 'Subscription details are not available yet. Contact us to discuss the terms.',
+    'Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.':
+      'Your subscription is not active yet. Delokay will activate your site manually after payment.',
+    'Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.':
+      'Subscription details are not available yet. Contact us to discuss the terms.',
     'Фон сайта и блоков': 'Page and section backgrounds',
     'Выберите цвет или своё фото. Режим «Как в шаблоне» возвращает исходное оформление блока. После изменений сохраните настройки.':
       'Choose a colour or your own photo. “Use template” restores the section’s original background. Save settings after making changes.',
@@ -329,6 +335,95 @@
       'Your logo is also used as the store tab icon.',
     'Материал: хлопок\nОбъём: 100 мл': 'Material: cotton\nVolume: 100 ml',
   });
+  Object.assign(en, {
+    'Создайте свой магазин': 'Create your store',
+    'Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.':
+      'Add Instagram, choose a design and prepare your catalog for launch.',
+    'Создать магазин': 'Create store',
+    'Создать демо': 'Create demo',
+    'Создать ещё магазин': 'Create another store',
+    'Запустите свой магазин': 'Launch your store',
+    'Настройте демо бесплатно: проверьте товары, фотографии и тексты.':
+      'Set up your demo for free: review your products, photos and text.',
+    'После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.':
+      'After payment, we will activate your site and order intake. Contact us to discuss pricing and payment.',
+    'Обсудить запуск': 'Discuss launch',
+    'Обсудить продление': 'Discuss renewal',
+    'Написать в Delokay': 'Contact Delokay',
+    'Получить помощь': 'Get help',
+    'Нужна помощь?': 'Need help?',
+    'Ответим на вопросы о настройке, запуске и продлении.':
+      'Ask us about setup, launch or renewal.',
+    Подписка: 'Subscription',
+    'Фон сайта и блоков': 'Page and section backgrounds',
+    'Языки сайта': 'Website languages',
+    'Основной язык включается автоматически. Выберите дополнительные языки.':
+      'The main language is included automatically. Choose additional languages.',
+    'Сохраните выбор языков, чтобы заполнить переводы ниже.':
+      'Save your language selection to edit translations below.',
+    'Заполните перевод своих текстов. Пустые поля используют основной язык. Стандартные кнопки переводятся автоматически.':
+      'Translate your content. Empty fields use the main language. Standard buttons are translated automatically.',
+    'Пустые поля используют основной язык.': 'Empty fields use the main language.',
+    'Способы доставки: перевод по строкам в исходном порядке':
+      'Delivery methods: translate each line in the original order',
+    'Instagram аккаунт (необязательно)': 'Instagram account (optional)',
+    'Период публикаций': 'Post period',
+    '7 дней': '7 days',
+    '30 дней': '30 days',
+    '90 дней': '90 days',
+    'Тестовое демо без Instagram': 'Test demo without Instagram',
+    'Заполните данные магазина. Добавим примерные товары выбранного шаблона — замените их своими перед запуском.':
+      'Enter your store details. We will add sample products from your template; replace them before launch.',
+    'Выберите оформление': 'Choose a design',
+    'Посмотреть пример ↗': 'View example ↗',
+    'Сайт, который вам нравится (необязательно)': 'Website you like (optional)',
+    Валюта: 'Currency',
+    'Можно указать свой трёхбуквенный код валюты. Например: USD, MDL, RON.':
+      'You can enter a custom three-letter currency code, for example USD, MDL or RON.',
+    'Любой трёхбуквенный код: USD, MDL, RON и другие. Перед включением новой валюты добавьте цены в карточках товаров.':
+      'Any three-letter code: USD, MDL, RON and others. Add product prices before enabling a new currency.',
+    'Добавить свою валюту': 'Add a custom currency',
+    'Добавить валюту': 'Add currency',
+    'Мои демо': 'My demos',
+    'Здесь появятся готовые демо.': 'Your demos will appear here.',
+    'Для запуска сайта и приёма заказов свяжитесь с нами после подготовки демо.':
+      'Contact us when your demo is ready to launch your site and accept orders.',
+    'До трёх бесплатных демо на аккаунт. Неактивированное демо хранится 7 дней после готовности.':
+      'Up to three free demos per account. Unactivated demos are kept for 7 days after completion.',
+    'Тестовое демо: товары и цены примерные. Отредактируйте их перед запуском.':
+      'Test demo: products and prices are examples. Edit them before launch.',
+    'Аккаунт и оформление': 'Account and design',
+    'Подготовка демо': 'Preparing demo',
+    'Редактирование и запуск': 'Editing and launch',
+    'Укажите трёхбуквенный код валюты': 'Enter a three-letter currency code',
+    'О магазине: заголовок': 'About: title',
+    'О магазине: текст': 'About: text',
+    'Выбор товара: заголовок': 'Product selection: title',
+    'Выбор товара: текст': 'Product selection: text',
+    'Заказ: заголовок': 'Ordering: title',
+    'Заказ: текст': 'Ordering: text',
+    'Доставка: заголовок': 'Delivery: title',
+    'Доставка: текст': 'Delivery: text',
+    'Возврат: заголовок': 'Returns: title',
+    'Возврат: текст': 'Returns: text',
+    'Вопросы: заголовок': 'Questions: title',
+    'Вопрос 1': 'Question 1',
+    'Вопрос 2': 'Question 2',
+    'Вопрос 3': 'Question 3',
+    'Ответ 1': 'Answer 1',
+    'Ответ 2': 'Answer 2',
+    'Ответ 3': 'Answer 3',
+  });
+  Object.assign(en, {
+    'Создайте тестовое демо вручную или укажите Instagram для сбора фотопубликаций за выбранный период. Из каждой карусели возьмём до 8 фотографий.':
+      'Create a test demo manually or add Instagram to collect photo posts for your chosen period. We collect up to 8 photos per carousel.',
+    'Сохраним сайт в базе референсов и адаптируем его цветовую палитру к выбранному оформлению. Если указан Instagram, тексты и фотографии возьмём из него. Без Instagram используем выбранный шаблон; ссылка останется в базе референсов.':
+      'We save the website as a reference. With Instagram, we collect its text and photos and adapt the reference colours. Without Instagram, we use your template and keep the reference link.',
+    'Выберите оформление, заполните данные вручную или добавьте Instagram и подготовьте каталог к запуску.':
+      'Choose a design, enter your details manually or add Instagram, and prepare your catalog for launch.',
+    'Тестовое демо · ручное заполнение': 'Test demo · manual content',
+    'Характеристики: перевод, по одной на строке': 'Translated attributes, one per line',
+  });
   const reverse = Object.fromEntries(
     Object.entries(en)
       .reverse()
@@ -346,6 +441,7 @@
     pl: 'Polski',
     ja: '日本語',
     de: 'Deutsch',
+    ro: 'Română',
   };
   const codes = Object.keys(languageNames);
   const normalize = (value) =>
@@ -362,6 +458,8 @@
     ['{n} pcs', /^(\d+) шт\.$/, /^(\d+) pcs$/],
     ['Total: {n}', /^Итого: (.*)$/, /^Total: (.*)$/],
     ['Photo {n}', /^Фото (\d+)$/, /^Photo (\d+)$/],
+    ['Website translation · {n}', /^Перевод сайта · (.+)$/, /^Website translation · (.+)$/],
+    ['Product translation · {n}', /^Перевод товара · (.+)$/, /^Product translation · (.+)$/],
   ];
   const russianDynamic = [
     'Товары · {n}',
@@ -370,6 +468,8 @@
     '{n} шт.',
     'Итого: {n}',
     'Фото {n}',
+    'Перевод сайта · {n}',
+    'Перевод товара · {n}',
   ];
   const keys = ['aria-label', 'placeholder', 'title'];
   const app = document.body.classList.contains('delokay-app');
@@ -572,6 +672,7 @@
         pl: 'pl-PL',
         ja: 'ja-JP',
         de: 'de-DE',
+        ro: 'ro-RO',
       })[language],
   };
 })();

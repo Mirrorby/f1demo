@@ -5,7 +5,18 @@ export interface Background {
   tone: 'auto' | 'light' | 'dark';
   overlay: number;
 }
+export interface StoreTranslation {
+  name?: string;
+  description?: string;
+  heroTitle?: string;
+  footerText?: string;
+  deliveryHint?: string;
+  deliveryMethods?: string[];
+  texts?: Record<string, string>;
+}
 export interface Settings {
+  languages?: import('./language').Language[];
+  translations?: Partial<Record<import('./language').Language, StoreTranslation>>;
   backgrounds?: Partial<
     Record<'page' | 'hero' | 'catalog' | 'cards' | 'information' | 'footer', Background>
   >;
@@ -40,6 +51,21 @@ export interface Variant {
   stock: number | null;
 }
 export interface ProductData {
+  translations?: Partial<
+    Record<
+      import('./language').Language,
+      {
+        name?: string;
+        category?: string;
+        description?: string;
+        brand?: string;
+        collection?: string;
+        color?: string;
+        variantLabels?: Record<string, string>;
+        attributes?: { label: string; value: string }[];
+      }
+    >
+  >;
   name: string;
   category: string;
   description: string;

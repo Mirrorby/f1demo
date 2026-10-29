@@ -266,8 +266,14 @@ export const templates: readonly Template[] = [
 export function findTemplate(id: string) {
   return templates.find((t) => t.id === id);
 }
-export function templateList() {
-  return templates.map(({ samples, ...meta }) => ({ ...meta, productCount: samples.length }));
+export function templateList(language: Language = 'ru') {
+  return templates.map(({ samples, ...meta }) => ({
+    ...meta,
+    title: translate(meta.title, language),
+    name: translate(meta.name, language),
+    description: translate(meta.description, language),
+    productCount: samples.length,
+  }));
 }
 const themeCopy = {
   minimal: {
@@ -441,7 +447,10 @@ export function templateProducts(t: Template, codes: string[], language: Languag
     attributes: [{ label: local(s.detail[0]), value: local(s.detail[1]) }],
     photos: ['/template-assets/' + s.asset + '.svg'],
     prices: Object.fromEntries(
-      codes.map((code) => [code, priceSets[s.price][code as keyof (typeof priceSets)[0]]]),
+      codes.map((code) => [
+        code,
+        priceSets[s.price][code as keyof (typeof priceSets)[0]] ?? priceSets[s.price].USD,
+      ]),
     ),
     variants: s.variants.map((label) => ({ label: local(label), stock: 10 })),
   }));

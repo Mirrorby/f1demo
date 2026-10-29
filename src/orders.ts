@@ -1,3 +1,4 @@
+import { selectStoreLanguage, localizedSettings } from './multilingual';
 import { catalog, stmt } from './catalog';
 import { digest } from './auth';
 import type { StoreRow, Settings, Customer, OrderRow, OrderItem } from './types';
@@ -21,6 +22,14 @@ export async function placeOrder(env: Env, s: StoreRow, input: unknown, key: str
     comment: text(c.comment, 1000),
     deliveryMethod: text(c.deliveryMethod, 100, true),
   };
+  const orderLanguage = selectStoreLanguage(
+    cfg,
+    typeof d.language === 'string' ? d.language : null,
+  );
+  const methodIndex = localizedSettings(cfg, orderLanguage).deliveryMethods.indexOf(
+    customer.deliveryMethod,
+  );
+  if (methodIndex >= 0) customer.deliveryMethod = cfg.deliveryMethods[methodIndex];
   requireThat(/^[+\d\s()-]{7,30}$/.test(customer.phone), 'Проверьте номер телефона');
   requireThat(
     cfg.deliveryMethods.includes(customer.deliveryMethod),

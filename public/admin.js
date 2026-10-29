@@ -12,60 +12,290 @@ if (document.body.classList.contains('delokay-app')) {
 let platformKey = '';
 function emptyStore() {
   document.getElementById('store-name').textContent = 'Мой кабинет';
-  main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">DELOKAY</span><h2>Создайте свой магазин</h2><p>Добавьте Instagram, выберите оформление и подготовьте каталог к запуску.</p><button class="primary" data-tab="create">Создать магазин</button></section>`;
+  main.innerHTML = `<section class="card hero-card"><span class="home-eyebrow">DELOKAY</span><h2>Создайте свой магазин</h2><p>Выберите оформление, заполните данные вручную или добавьте Instagram и подготовьте каталог к запуску.</p><button class="primary" data-tab="create">Создать магазин</button></section>`;
 }
-function supportButton(label='Написать в Delokay') {
+function supportButton(label = 'Написать в Delokay') {
   const url = 'https://t.me/Mirrorby';
-  if (platformMode) return `<a class="primary support-link" href="${url}" target="_blank" rel="noopener"><span>${esc(label)}</span></a>`;
+  if (platformMode)
+    return `<a class="primary support-link" href="${url}" target="_blank" rel="noopener"><span>${esc(label)}</span></a>`;
   return `<div class="support-contact"><button type="button" class="primary" data-support-contact><span>${esc(label)}</span></button><p class="support-result" role="status" hidden></p></div>`;
 }
 function launchOffer() {
   return `<section class="card launch-offer"><h2>Запустите свой магазин</h2><p>Настройте демо бесплатно: проверьте товары, фотографии и тексты.</p><p>После оплаты мы активируем сайт и приём заказов. Стоимость и способ оплаты обсудим лично.</p>${supportButton('Обсудить запуск')}</section>`;
 }
-let demoPollTimer=null, pendingDemoId=null;
-function collectionNote(job){
-  if(job.status==='ready'||job.status==='failed')return '';
-  const value=JSON.parse(job.collector_tasks||'[]').find(t=>t.kind==='instagram')?.summary?.collection;
-  if(!value)return '';
-  return '<p>'+esc(value.phase==='saving_photos'?'Сохраняем фотографии: '+Number(value.files||0):'Найдено фотопубликаций за период: '+Number(value.posts||0))+'</p>';
+
+const siteLanguageNames = {
+  ru: 'Русский',
+  en: 'English',
+  ro: 'Română',
+  es: 'Español',
+  pt: 'Português',
+  fr: 'Français',
+  it: 'Italiano',
+  tr: 'Türkçe',
+  pl: 'Polski',
+  ja: '日本語',
+  de: 'Deutsch',
+};
+function languageOptions(selected = document.documentElement.lang || 'ru') {
+  return Object.entries(siteLanguageNames)
+    .map(
+      ([code, name]) =>
+        `<option value="${code}" ${code === selected ? 'selected' : ''}>${name}</option>`,
+    )
+    .join('');
+}
+function languagesField(languages = [], id = 'site-languages') {
+  return `<fieldset id="${id}" class="language-choices"><legend>Языки сайта</legend><p>Основной язык включается автоматически. Выберите дополнительные языки.</p>${Object.entries(
+    siteLanguageNames,
+  )
+    .map(
+      ([code, name]) =>
+        `<label><input type="checkbox" value="${code}" ${languages.includes(code) ? 'checked' : ''}> ${name}</label>`,
+    )
+    .join('')}</fieldset>`;
+}
+function chosenLanguages(id, primary) {
+  return [
+    ...new Set([
+      primary,
+      ...[...document.querySelectorAll('#' + id + ' input:checked')].map((el) => el.value),
+    ]),
+  ];
+}
+function storeTranslationFields(s) {
+  const labels = {
+    name: 'Название магазина',
+    heroTitle: 'Заголовок витрины',
+    description: 'Описание магазина',
+    footerText: 'Текст внизу сайта',
+    deliveryHint: 'Условия доставки',
+  };
+  const textLabels = {
+    about_title: 'О магазине: заголовок',
+    about_body: 'О магазине: текст',
+    sizing_title: 'Выбор товара: заголовок',
+    sizing_body: 'Выбор товара: текст',
+    ordering_title: 'Заказ: заголовок',
+    ordering_body: 'Заказ: текст',
+    shipping_title: 'Доставка: заголовок',
+    shipping_body: 'Доставка: текст',
+    returns_title: 'Возврат: заголовок',
+    returns_body: 'Возврат: текст',
+    faq_title: 'Вопросы: заголовок',
+    faq_1_question: 'Вопрос 1',
+    faq_1_answer: 'Ответ 1',
+    faq_2_question: 'Вопрос 2',
+    faq_2_answer: 'Ответ 2',
+    faq_3_question: 'Вопрос 3',
+    faq_3_answer: 'Ответ 3',
+  };
+  return (s.languages || [s.language])
+    .filter((code) => code !== s.language)
+    .map((code) => {
+      const tr = s.translations?.[code] || {};
+      return `<details class="card" data-store-translation="${code}"><summary>Перевод сайта · ${siteLanguageNames[code]}</summary><p>Заполните перевод своих текстов. Пустые поля используют основной язык. Стандартные кнопки переводятся автоматически.</p>${Object.entries(
+        labels,
+      )
+        .map(
+          ([key, label]) =>
+            `<label for="tr-store-${code}-${key}">${label}</label><textarea id="tr-store-${code}-${key}" data-translation-key="${key}">${esc(tr[key] || '')}</textarea>`,
+        )
+        .join(
+          '',
+        )}<label for="tr-store-${code}-deliveryMethods">Способы доставки: перевод по строкам в исходном порядке</label><textarea id="tr-store-${code}-deliveryMethods" data-translation-key="deliveryMethods">${esc((tr.deliveryMethods || []).join('\n'))}</textarea>${Object.entries(
+        textLabels,
+      )
+        .map(
+          ([key, label]) =>
+            `<label for="tr-text-${code}-${key}">${label}</label><textarea id="tr-text-${code}-${key}" data-translation-text="${key}">${esc(tr.texts?.[key] || '')}</textarea>`,
+        )
+        .join('')}</details>`;
+    })
+    .join('');
+}
+function productTranslationFields(p) {
+  return (store.settings.languages || [store.settings.language])
+    .filter((code) => code !== store.settings.language)
+    .map(
+      (code) =>
+        `<details class="card" data-product-translation="${code}"><summary>Перевод товара · ${siteLanguageNames[code]}</summary><p>Пустые поля используют основной язык.</p>${Object.entries(
+          {
+            name: 'Название',
+            category: 'Категория',
+            description: 'Описание',
+            brand: 'Бренд',
+            collection: 'Коллекция',
+            color: 'Цвет',
+          },
+        )
+          .map(
+            ([key, label]) =>
+              `<label>${label}<textarea data-translation-key="${key}">${esc(p.translations?.[code]?.[key] || '')}</textarea></label>`,
+          )
+          .join(
+            '',
+          )}<label>Характеристики: перевод, по одной на строке<textarea data-translation-key="attributes">${esc((p.translations?.[code]?.attributes || []).map((a) => a.label + ': ' + a.value).join('\n'))}</textarea></label>${(p.variants || []).map((v) => `<label>${esc(v.label)}<input data-translation-variant="${esc(v.id)}" value="${esc(p.translations?.[code]?.variantLabels?.[v.id] || '')}"></label>`).join('')}</details>`,
+    )
+    .join('');
+}
+function readTranslations(selector, previous = {}) {
+  const result = { ...previous };
+  for (const panel of document.querySelectorAll(selector)) {
+    const code = panel.dataset.storeTranslation || panel.dataset.productTranslation;
+    const tr = { ...result[code] };
+    for (const el of panel.querySelectorAll('[data-translation-key]')) {
+      const value = el.value.trim(),
+        key = el.dataset.translationKey;
+      if (value)
+        tr[key] =
+          key === 'deliveryMethods'
+            ? value
+                .split('\n')
+                .map((x) => x.trim())
+                .filter(Boolean)
+            : key === 'attributes'
+              ? value
+                  .split('\n')
+                  .filter((x) => x.trim())
+                  .map((line) => {
+                    const i = line.indexOf(':');
+                    if (i < 1 || !line.slice(i + 1).trim())
+                      throw new Error('Характеристики: используйте формат «Название: значение»');
+                    return { label: line.slice(0, i).trim(), value: line.slice(i + 1).trim() };
+                  })
+              : value;
+      else delete tr[key];
+    }
+    if (panel.querySelector('[data-translation-text]')) {
+      tr.texts = { ...tr.texts };
+      for (const el of panel.querySelectorAll('[data-translation-text]')) {
+        if (el.value.trim()) tr.texts[el.dataset.translationText] = el.value.trim();
+        else delete tr.texts[el.dataset.translationText];
+      }
+    }
+    if (panel.querySelector('[data-translation-variant]')) {
+      tr.variantLabels = {};
+      for (const el of panel.querySelectorAll('[data-translation-variant]'))
+        if (el.value.trim()) tr.variantLabels[el.dataset.translationVariant] = el.value.trim();
+    }
+    result[code] = tr;
+  }
+  return result;
+}
+function updateDemoSource() {
+  const instagram = document.getElementById('demo-instagram');
+  if (!instagram) return;
+  const manual = !instagram.value.trim();
+  document.getElementById('manual-demo-fields').hidden = !manual;
+  document.getElementById('demo-name').required = manual;
+  document.getElementById('demo-period-fields').hidden = manual;
+}
+
+let demoPollTimer = null,
+  pendingDemoId = null;
+function collectionNote(job) {
+  if (job.status === 'ready' || job.status === 'failed') return '';
+  const value = JSON.parse(job.collector_tasks || '[]').find((t) => t.kind === 'instagram')?.summary
+    ?.collection;
+  if (!value) return '';
+  return (
+    '<p>' +
+    esc(
+      value.phase === 'saving_photos'
+        ? 'Сохраняем фотографии: ' + Number(value.files || 0)
+        : 'Найдено фотопубликаций за период: ' + Number(value.posts || 0),
+    ) +
+    '</p>'
+  );
 }
 function renderDemoJobs(jobs) {
-  const target=document.getElementById('demo-jobs');
-  if(!target)return;
-  const labels={preparing:'Подключаем Instagram',running:'Собираем демо',awaiting_import:'Ожидаем данные Instagram',ready:'Демо готово',failed:'Не удалось создать демо'};
-  target.innerHTML=jobs.map(j=>'<div class="demo-job"><strong data-no-i18n>@'+esc(j.instagram)+'</strong><p>'+esc(labels[j.status]||j.status)+(j.progress?' · '+j.progress+'%':'')+'</p>'+collectionNote(j)+(j.expires_at&&j.status==='ready'?'<p>Хранится до '+esc(new Date(j.expires_at*1000).toLocaleDateString())+'</p>':'')+(j.import_error?'<p role="status">'+esc(j.import_error)+'</p>'+supportButton('Получить помощь'):'')+((j.status==='ready'||!j.auto_build)&&j.slug?'<div class="actions"><button data-open-demo="'+esc(j.store_id)+'">Открыть демо</button><a href="/s/'+esc(j.slug)+'" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>':'')+'</div>').join('')||'<p>Здесь появятся готовые демо.</p>';
+  const target = document.getElementById('demo-jobs');
+  if (!target) return;
+  const labels = {
+    preparing: 'Подключаем Instagram',
+    running: 'Собираем демо',
+    awaiting_import: 'Ожидаем данные Instagram',
+    ready: 'Демо готово',
+    failed: 'Не удалось создать демо',
+  };
+  target.innerHTML =
+    jobs
+      .map(
+        (j) =>
+          '<div class="demo-job"><strong ' +
+          (j.auto_build ? 'data-no-i18n' : '') +
+          '>' +
+          esc(j.auto_build ? '@' + j.instagram : 'Тестовое демо · ручное заполнение') +
+          '</strong><p>' +
+          esc(labels[j.status] || j.status) +
+          (j.progress ? ' · ' + j.progress + '%' : '') +
+          '</p>' +
+          collectionNote(j) +
+          (j.expires_at && j.status === 'ready'
+            ? '<p>Хранится до ' + esc(new Date(j.expires_at * 1000).toLocaleDateString()) + '</p>'
+            : '') +
+          (j.import_error
+            ? '<p role="status">' + esc(j.import_error) + '</p>' + supportButton('Получить помощь')
+            : '') +
+          ((j.status === 'ready' || !j.auto_build) && j.slug
+            ? '<div class="actions"><button data-open-demo="' +
+              esc(j.store_id) +
+              '">Открыть демо</button><a href="/s/' +
+              esc(j.slug) +
+              '" target="_blank" rel="noopener">Посмотреть сайт ↗</a></div>'
+            : '') +
+          '</div>',
+      )
+      .join('') || '<p>Здесь появятся готовые демо.</p>';
 }
 function scheduleDemoPoll(jobs) {
   clearTimeout(demoPollTimer);
-  const pending=jobs.filter(j=>j.auto_build&&j.sample_content&&['preparing','running','awaiting_import'].includes(j.status));
-  if(!pending.length||tab!=='create')return;
-  demoPollTimer=setTimeout(async()=>{
+  const pending = jobs.filter(
+    (j) =>
+      j.auto_build &&
+      j.sample_content &&
+      ['preparing', 'running', 'awaiting_import'].includes(j.status),
+  );
+  if (!pending.length || tab !== 'create') return;
+  demoPollTimer = setTimeout(async () => {
     try {
-      for(const job of pending)await api('demo-jobs/'+job.id+'/sync','POST',{});
-      const fresh=await api('demo-jobs');
-      if(tab!=='create')return;
+      for (const job of pending) await api('demo-jobs/' + job.id + '/sync', 'POST', {});
+      const fresh = await api('demo-jobs');
+      if (tab !== 'create') return;
       renderDemoJobs(fresh);
-      const ready=fresh.find(j=>j.id===pendingDemoId&&j.status==='ready');
-      if(ready){pendingDemoId=null;await openDemo(ready.store_id);notice('Демо готово. Проверьте товары и тексты.');return;}
+      const ready = fresh.find((j) => j.id === pendingDemoId && j.status === 'ready');
+      if (ready) {
+        pendingDemoId = null;
+        await openDemo(ready.store_id);
+        notice('Демо готово. Проверьте товары и тексты.');
+        return;
+      }
       scheduleDemoPoll(fresh);
-    }catch{if(tab==='create')demoPollTimer=setTimeout(()=>show('create'),8000);}
-  },2500);
+    } catch {
+      if (tab === 'create') demoPollTimer = setTimeout(() => show('create'), 8000);
+    }
+  }, 2500);
 }
 async function showCreate(seq) {
-  main.innerHTML='<p>Загрузка…</p>';
-  const [response,jobs]=await Promise.all([fetch('/api/templates'),api('demo-jobs')]);
-  if(!response.ok)throw new Error('Не удалось загрузить шаблоны');
-  const templates=await response.json();
-  if(seq!==generation)return;
-  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Подготовка демо</li><li>Редактирование и запуск</li></ol><section class="card"><p>Соберём фотопубликации за выбранный период, до 8 фотографий из каждой карусели, и подготовим тексты для каталога. Демо появится после завершения сборки.</p></section>
-  <p class="section-caption">До трёх бесплатных демо на аккаунт. Неактивированное демо хранится 7 дней после готовности.</p><p>Для запуска сайта и приёма заказов свяжитесь с нами после подготовки демо.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт</label><input id="demo-instagram" required maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
-  <label for="demo-period">Период публикаций</label><select id="demo-period"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select>
-  <h3>Выберите оформление</h3><div class="demo-template-grid">${templates.map((t, i) => `<div class="demo-template-card"><label for="demo-template-${esc(t.id)}"><span class="demo-template-preview" aria-hidden="true"><iframe src="/templates/${esc(t.id)}?thumbnail=1&lang=${document.documentElement.lang === 'en' ? 'en' : 'ru'}" title="${esc(t.title)}" loading="lazy" tabindex="-1" inert></iframe></span><span class="demo-template-choice"><input id="demo-template-${esc(t.id)}" type="radio" name="demo-template" value="${esc(t.id)}" ${i === 0 ? 'checked' : ''}> <span>${esc(t.title)}</span></span></label><p>${esc(t.description)}</p><a href="/templates/${esc(t.id)}" target="_blank" rel="noopener">Посмотреть пример ↗</a></div>`).join('')}</div>
-  <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Сохраним сайт в базе референсов и адаптируем его цветовую палитру к выбранному оформлению. Тексты и фотографии возьмём из вашего Instagram.</p>
-  <label for="demo-language">Язык сайта</label><select id="demo-language"><option value="ru">Русский</option><option value="en">English</option></select>
-  <label for="demo-currency">Валюта</label><select id="demo-currency">${['BYN', 'RUB', 'USD', 'EUR', 'KZT'].map((c) => `<option>${c}</option>`).join('')}</select>
+  main.innerHTML = '<p>Загрузка…</p>';
+  const [response, jobs] = await Promise.all([
+    fetch('/api/templates?lang=' + encodeURIComponent(document.documentElement.lang || 'ru')),
+    api('demo-jobs'),
+  ]);
+  if (!response.ok) throw new Error('Не удалось загрузить шаблоны');
+  const templates = await response.json();
+  if (seq !== generation) return;
+  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Аккаунт и оформление</li><li>Подготовка демо</li><li>Редактирование и запуск</li></ol><section class="card"><p>Создайте тестовое демо вручную или укажите Instagram для сбора фотопубликаций за выбранный период. Из каждой карусели возьмём до 8 фотографий.</p></section>
+  <p class="section-caption">До трёх бесплатных демо на аккаунт. Неактивированное демо хранится 7 дней после готовности.</p><p>Для запуска сайта и приёма заказов свяжитесь с нами после подготовки демо.</p><form id="demo-form"><section class="card"><label for="demo-instagram">Instagram аккаунт (необязательно)</label><input id="demo-instagram" maxlength="500" placeholder="@your_store или https://instagram.com/your_store/">
+  <div id="demo-period-fields"><label for="demo-period">Период публикаций</label><select id="demo-period"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select></div>
+  <section id="manual-demo-fields"><h3>Тестовое демо без Instagram</h3><p>Заполните данные магазина. Добавим примерные товары выбранного шаблона — замените их своими перед запуском.</p><label for="demo-name">Название магазина</label><input id="demo-name" maxlength="200" required><label for="demo-description">Описание магазина</label><textarea id="demo-description" maxlength="2000"></textarea><label for="demo-logo">Ссылка на логотип</label><input id="demo-logo" type="url" placeholder="https://example.com/logo.png"><label for="demo-telegram">Telegram username без @</label><input id="demo-telegram" maxlength="64"><label for="demo-whatsapp">WhatsApp: номер с кодом страны, только цифры</label><input id="demo-whatsapp" maxlength="20"></section><h3>Выберите оформление</h3><div class="demo-template-grid">${templates.map((t, i) => `<div class="demo-template-card"><label for="demo-template-${esc(t.id)}"><span class="demo-template-preview" aria-hidden="true"><iframe src="/templates/${esc(t.id)}?thumbnail=1&lang=${document.documentElement.lang || 'ru'}" title="${esc(t.title)}" loading="lazy" tabindex="-1" inert></iframe></span><span class="demo-template-choice"><input id="demo-template-${esc(t.id)}" type="radio" name="demo-template" value="${esc(t.id)}" ${i === 0 ? 'checked' : ''}> <span>${esc(t.title)}</span></span></label><p>${esc(t.description)}</p><a href="/templates/${esc(t.id)}" target="_blank" rel="noopener">Посмотреть пример ↗</a></div>`).join('')}</div>
+  <label for="demo-reference">Сайт, который вам нравится (необязательно)</label><input id="demo-reference" type="url" maxlength="2000" placeholder="https://example.com"><p>Сохраним сайт в базе референсов и адаптируем его цветовую палитру к выбранному оформлению. Если указан Instagram, тексты и фотографии возьмём из него. Без Instagram используем выбранный шаблон; ссылка останется в базе референсов.</p>
+  <label for="demo-language">Язык сайта</label><select id="demo-language">${languageOptions()}</select>${languagesField([], 'demo-languages')}
+  <label for="demo-currency">Валюта</label><input id="demo-currency" list="demo-currencies" value="USD" required maxlength="3" pattern="[A-Za-z]{3}"><datalist id="demo-currencies">${['USD', 'EUR', 'BYN', 'RUB', 'KZT', 'MDL', 'RON'].map((c) => `<option value="${c}">`).join('')}</datalist><p>Можно указать свой трёхбуквенный код валюты. Например: USD, MDL, RON.</p>
   <button class="primary" type="submit">Создать демо</button></section></form>
 <section class="card"><h3>Мои демо</h3><div id="demo-jobs"></div></section>`;
+  updateDemoSource();
   renderDemoJobs(jobs);
   scheduleDemoPoll(jobs);
 }
@@ -83,7 +313,11 @@ async function openDemo(id) {
     )
     .join('');
   await show('home');
-  notice(store.demoJob?.sample_content ? 'Это ранее созданное демо с примерными товарами.' : 'Демо заполнено данными Instagram. Тексты можно редактировать.');
+  notice(
+    store.demoJob?.sample_content
+      ? 'Тестовое демо: товары и цены приведены для примера. Замените их перед запуском.'
+      : 'Демо заполнено данными Instagram. Тексты можно редактировать.',
+  );
 }
 
 function paymentButton(url, label) {
@@ -171,7 +405,13 @@ async function api(path, method = 'GET', data, contentType = 'application/json')
           : data,
   });
   const result = await r.json();
-  if (!r.ok) {trackActivity('error',path,{message:result.error||'Не удалось выполнить запрос',status:String(r.status)});throw new Error(result.error || 'Не удалось выполнить запрос');}
+  if (!r.ok) {
+    trackActivity('error', path, {
+      message: result.error || 'Не удалось выполнить запрос',
+      status: String(r.status),
+    });
+    throw new Error(result.error || 'Не удалось выполнить запрос');
+  }
   return result;
 }
 const base = () => `stores/${store.id}`;
@@ -300,7 +540,7 @@ async function reload() {
   document.getElementById('store-name').textContent = store.name;
 }
 async function show(next = tab) {
-  rememberScreen({kind:'tab',tab:next,storeId:store?.id||null});
+  rememberScreen({ kind: 'tab', tab: next, storeId: store?.id || null });
   clearTimeout(demoPollTimer);
   tab = next;
   edited = null;
@@ -317,9 +557,24 @@ async function show(next = tab) {
       await showPayments(seq);
     } else if (tab === 'subscription' && store) {
       await reload();
-      if(seq!==generation)return;
-      const sub=store.subscription;
-      main.innerHTML='<h2>Подписка</h2><section class="card">'+(sub?'<p>Статус: '+(sub.status==='expired'?'срок закончился':'действует')+'</p><p>Действует до: '+esc(new Date(sub.expires_at*1000).toLocaleDateString())+'</p><p>'+(store.notificationsAvailable?'Напомним о продлении за три дня.</p><p>':'')+'Чтобы продлить подписку, свяжитесь с Delokay.</p>'+supportButton('Обсудить продление'):(store.status==='demo'?'<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>':'<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>')+supportButton(store.status==='demo'?'Обсудить запуск':'Написать в Delokay'))+'</section>';
+      if (seq !== generation) return;
+      const sub = store.subscription;
+      main.innerHTML =
+        '<h2>Подписка</h2><section class="card">' +
+        (sub
+          ? '<p>Статус: ' +
+            (sub.status === 'expired' ? 'срок закончился' : 'действует') +
+            '</p><p>Действует до: ' +
+            esc(new Date(sub.expires_at * 1000).toLocaleDateString()) +
+            '</p><p>' +
+            (store.notificationsAvailable ? 'Напомним о продлении за три дня.</p><p>' : '') +
+            'Чтобы продлить подписку, свяжитесь с Delokay.</p>' +
+            supportButton('Обсудить продление')
+          : (store.status === 'demo'
+              ? '<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>'
+              : '<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>') +
+            supportButton(store.status === 'demo' ? 'Обсудить запуск' : 'Написать в Delokay')) +
+        '</section>';
     } else if (tab === 'more') {
       moreScreen();
     } else if (!store) {
@@ -329,8 +584,8 @@ async function show(next = tab) {
       if (seq !== generation) return;
       main.innerHTML = `<section class="card hero-card">
       <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
-      <h2>Всё под рукой</h2>${store.demoJob?.sample_content ? '<p>Если данные Instagram ещё не применены, товары и цены в демо примерные. Статус сбора доступен в разделе «Создать магазин».</p>' : ''}${!platformMode ? '<button data-tab="create">Создать ещё магазин</button>' : ''}
-      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>${store.subscription ? `<p>Подписка ${store.subscription.status === 'expired' ? 'закончилась' : 'действует'} до ${new Date(store.subscription.expires_at*1000).toLocaleDateString()}. Для продления свяжитесь с Delokay.</p>` : store.status === 'demo' ? '<p>После оплаты мы вручную активируем ваш сайт и подписку.</p>' : '<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>'}
+      <h2>Всё под рукой</h2>${store.demoJob?.sample_content ? '<p>Тестовое демо: товары и цены примерные. Отредактируйте их перед запуском.</p>' : ''}${!platformMode ? '<button data-tab="create">Создать ещё магазин</button>' : ''}
+      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>${store.subscription ? `<p>Подписка ${store.subscription.status === 'expired' ? 'закончилась' : 'действует'} до ${new Date(store.subscription.expires_at * 1000).toLocaleDateString()}. Для продления свяжитесь с Delokay.</p>` : store.status === 'demo' ? '<p>После оплаты мы вручную активируем ваш сайт и подписку.</p>' : '<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>'}
       <div class="actions"><button class="primary" data-action="add">Добавить товар</button></div>
     </section>
     ${store.status === 'demo' && !platformMode ? launchOffer() : ''}
@@ -353,7 +608,7 @@ async function show(next = tab) {
     } else if (tab === 'orders') {
       orders = await api(base() + `/orders?offset=${orderOffset}&status=${orderFilter}`);
       if (seq !== generation) return;
-      if (store.status === 'demo' && !platformMode) main.innerHTML=launchOffer();
+      if (store.status === 'demo' && !platformMode) main.innerHTML = launchOffer();
       else renderOrdersList();
     } else if (tab === 'settings') await renderSettings(seq);
     else if (tab === 'site')
@@ -385,19 +640,15 @@ function renderPhotos() {
     .join('');
 }
 function editProduct(index) {
-  rememberScreen({kind:'product',index,tab:'products',storeId:store?.id||null});
+  rememberScreen({ kind: 'product', index, tab: 'products', storeId: store?.id || null });
   edited = index === undefined ? null : products[index];
   photos = [...(edited?.photos || [])];
   const p = edited || {};
-  main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple><label for="photo-url">Ссылка на фото</label><input id="photo-url" type="url" maxlength="1000" placeholder="https://example.com/photo.jpg"><button type="button" data-action="photo-link">Добавить фото по ссылке</button>${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
+  main.innerHTML = `<div class="row between page-heading"><div><h2>${edited ? 'Редактировать товар' : 'Новый товар'}</h2><p class="section-caption">Цены, фото и варианты товара</p></div><button data-tab="products">Закрыть</button></div><form id="product-form"><div class="card"><h3 class="form-section-heading">Основные сведения</h3><div id="photos" class="photo-row"></div><label for="photo-upload">Фотографии (до 8)</label><input id="photo-upload" type="file" accept="image/jpeg,image/png,image/webp" multiple><label for="photo-url">Ссылка на фото</label><input id="photo-url" type="url" maxlength="1000" placeholder="https://example.com/photo.jpg"><button type="button" data-action="photo-link">Добавить фото по ссылке</button>${productTranslationFields(p)}${field('name', 'Название', p.name, 'text', true)}${field('category', 'Категория', p.category || 'Прочее', 'text', true)}<datalist id="categories">${[...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('')}</datalist><label for="description">Описание</label><textarea id="description">${esc(p.description || '')}</textarea></div><div class="card"><h3 class="form-section-heading">Цены и остатки</h3>
  <label><input id="price-on-request" type="checkbox" ${p.priceOnRequest ? 'checked' : ''}> Цена по запросу</label>
  ${store.settings.currencies.map((c) => field('price-' + c, 'Цена, ' + c, (p.prices?.[c] ?? 0) / 100, 'number', true)).join('')}
- <details><summary>Дополнительные валюты и характеристики</summary>${[
-   'BYN',
-   'RUB',
-   'KZT',
-   'USD',
-   'EUR',
+ <div id="custom-price-fields"></div><label for="custom-price-code">Добавить свою валюту</label><input id="custom-price-code" maxlength="3" placeholder="MDL"><button type="button" data-action="add-price-currency">Добавить валюту</button><details><summary>Дополнительные валюты и характеристики</summary>${[
+   ...new Set(['USD', 'EUR', 'BYN', 'RUB', 'KZT', 'MDL', 'RON', ...Object.keys(p.prices || {})]),
  ]
    .filter((c) => !store.settings.currencies.includes(c))
    .map((c) =>
@@ -506,7 +757,7 @@ async function renderSettings(seq) {
   }
   if (seq !== generation || selected.id !== store.id) return;
   const s = { ...selected.settings, texts: { ...defaults, ...selected.settings.texts } };
-  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}<label for="store-language">Язык сайта</label><select id="store-language"><option value="ru" ${s.language === 'ru' ? 'selected' : ''}>Русский</option><option value="en" ${s.language === 'en' ? 'selected' : ''}>English</option><option value="es" ${s.language === 'es' ? 'selected' : ''}>Español</option><option value="pt" ${s.language === 'pt' ? 'selected' : ''}>Português</option><option value="fr" ${s.language === 'fr' ? 'selected' : ''}>Français</option><option value="it" ${s.language === 'it' ? 'selected' : ''}>Italiano</option><option value="tr" ${s.language === 'tr' ? 'selected' : ''}>Türkçe</option><option value="pl" ${s.language === 'pl' ? 'selected' : ''}>Polski</option><option value="ja" ${s.language === 'ja' ? 'selected' : ''}>日本語</option><option value="de" ${s.language === 'de' ? 'selected' : ''}>Deutsch</option></select><p>Язык интерфейса и стандартных текстов. Собственные названия и описания товаров редактируются отдельно.</p>${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
+  main.innerHTML = `<h2>Настройки</h2><p class="section-caption">Управление магазином</p><form id="settings-form"><div class="card"><h3 class="form-section-heading">Сведения о магазине</h3>${field('store-title', 'Название магазина', store.name, 'text', true)}<label for="store-language">Язык сайта</label><select id="store-language">${languageOptions(s.language)}</select>${languagesField(s.languages || [s.language])}<p>Сохраните выбор языков, чтобы заполнить переводы ниже.</p><p>Язык интерфейса и стандартных текстов. Собственные названия и описания товаров редактируются отдельно.</p>${storeTranslationFields(s)}${field('hero-title', 'Заголовок витрины', s.heroTitle)}<label for="store-description">Описание магазина</label><textarea id="store-description">${esc(s.description)}</textarea></div><div class="card"><h3 class="form-section-heading">Оформление</h3><label for="theme">Шаблон витрины</label><select id="theme">${[
     ['minimal', 'Универсальный'],
     ['fashion', 'Одежда и аксессуары'],
     ['home', 'Дом и декор'],
@@ -518,7 +769,7 @@ async function renderSettings(seq) {
     )
     .join(
       '',
-    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"><p>Логотип также используется как иконка вкладки магазина.</p></div>${backgroundEditors(s)}<div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>BYN, RUB, KZT, USD, EUR. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
+    )}</select><p>Меняет оформление. Товары и цены сохраняются; основной цвет и название вариантов можно настроить ниже.</p>${field('accent', 'Основной цвет', s.accentColor, 'color')}${field('logo', 'Ссылка на логотип', s.logo)}<label for="logo-upload">Загрузить логотип</label><input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp"><p>Логотип также используется как иконка вкладки магазина.</p></div>${backgroundEditors(s)}<div class="card"><h3 class="form-section-heading">Контакты</h3>${field('whatsapp', 'WhatsApp: номер с кодом страны, только цифры', s.whatsapp)}${field('telegram', 'Telegram username без @', s.telegram)}${field('instagram', 'Instagram username без @', s.instagram)}</div><div class="card"><h3 class="form-section-heading">Доставка и оплата</h3><label for="currencies">Валюты (1 или 2, через запятую)</label><input id="currencies" value="${esc(s.currencies.join(', '))}" required><p>Любой трёхбуквенный код: USD, MDL, RON и другие. Перед включением новой валюты добавьте цены в карточках товаров.</p><label for="delivery">Способы доставки (по одному на строке)</label><textarea id="delivery" required>${esc(s.deliveryMethods.join('\n'))}</textarea><label for="delivery-hint">Условия доставки</label><textarea id="delivery-hint">${esc(s.deliveryHint)}</textarea>${field('footer', 'Текст внизу сайта', s.footerText)}<details><summary>Тексты кнопок и подписей</summary>${[
     ['btn_cart', 'Кнопка корзины'],
     ['btn_add', 'Добавить в корзину'],
     ['btn_add_size', 'Подсказка выбора варианта'],
@@ -571,7 +822,7 @@ async function renderSettings(seq) {
   document.querySelectorAll('[data-background-editor]').forEach(updateBackgroundEditor);
 }
 function showOrder(o) {
-  rememberScreen({kind:'order',order:o,tab:'orders',storeId:store?.id||null});
+  rememberScreen({ kind: 'order', order: o, tab: 'orders', storeId: store?.id || null });
   const c = o.customer;
   const buttons = {
     new: [
@@ -626,16 +877,25 @@ document.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   try {
     if (button.hasAttribute('data-support-contact')) {
-      const result=button.parentElement.querySelector('.support-result');
-      button.disabled=true;
-      let sent=false;
+      const result = button.parentElement.querySelector('.support-result');
+      button.disabled = true;
+      let sent = false;
       try {
-        await api('support-contact','POST',{});
-        sent=true;
-        result.textContent=window.DelokayI18n?.language && window.DelokayI18n.language !== 'ru' ? 'The contact was sent to the bot chat. Close this window to open it.' : 'Контакт отправлен в чат бота. Закройте это окно и нажмите кнопку в сообщении.';
+        await api('support-contact', 'POST', {});
+        sent = true;
+        result.textContent =
+          window.DelokayI18n?.language && window.DelokayI18n.language !== 'ru'
+            ? 'The contact was sent to the bot chat. Close this window to open it.'
+            : 'Контакт отправлен в чат бота. Закройте это окно и нажмите кнопку в сообщении.';
       } catch (_) {
-        result.textContent=window.DelokayI18n?.language && window.DelokayI18n.language !== 'ru' ? 'Could not send the contact. Find @Mirrorby in Telegram.' : 'Не удалось отправить контакт. Найдите @Mirrorby в поиске Telegram.';
-      } finally { result.hidden=false; button.disabled=sent; }
+        result.textContent =
+          window.DelokayI18n?.language && window.DelokayI18n.language !== 'ru'
+            ? 'Could not send the contact. Find @Mirrorby in Telegram.'
+            : 'Не удалось отправить контакт. Найдите @Mirrorby в поиске Telegram.';
+      } finally {
+        result.hidden = false;
+        button.disabled = sent;
+      }
       return;
     }
     if (button.dataset.openDemo) {
@@ -711,18 +971,43 @@ document.addEventListener('click', async (event) => {
       notice('Статус сохранён');
       return;
     }
-    if(button.dataset.action==='product-order'){renderProductOrder();return;}
-    if(button.dataset.moveProduct){
-      const sortGeneration=++generation;
-      button.disabled=true;
+    if (button.dataset.action === 'product-order') {
+      renderProductOrder();
+      return;
+    }
+    if (button.dataset.moveProduct) {
+      const sortGeneration = ++generation;
+      button.disabled = true;
       try {
-        const ids=products.map(p=>p.id),from=ids.indexOf(button.dataset.moveProduct);
-        const to=button.dataset.direction==='first'?0:from+(button.dataset.direction==='up'?-1:1);
-        if(from<0||to<0||to>=ids.length)return;
-        ids.splice(to,0,ids.splice(from,1)[0]);
-        await api(base()+'/product-order','PUT',{version:store.version,ids});
-        await reload();if(sortGeneration===generation)renderProductOrder();
-      } finally {button.disabled=false;}
+        const ids = products.map((p) => p.id),
+          from = ids.indexOf(button.dataset.moveProduct);
+        const to =
+          button.dataset.direction === 'first'
+            ? 0
+            : from + (button.dataset.direction === 'up' ? -1 : 1);
+        if (from < 0 || to < 0 || to >= ids.length) return;
+        ids.splice(to, 0, ids.splice(from, 1)[0]);
+        await api(base() + '/product-order', 'PUT', { version: store.version, ids });
+        await reload();
+        if (sortGeneration === generation) renderProductOrder();
+      } finally {
+        button.disabled = false;
+      }
+      return;
+    }
+    if (button.dataset.action === 'add-price-currency') {
+      const code = document.getElementById('custom-price-code').value.trim().toUpperCase();
+      if (!/^[A-Z]{3}$/.test(code)) throw new Error('Укажите трёхбуквенный код валюты');
+      if (!document.getElementById('price-' + code))
+        document
+          .getElementById('custom-price-fields')
+          .insertAdjacentHTML('beforeend', field('price-' + code, 'Цена, ' + code, '', 'number'));
+      const priceInput = document.getElementById('price-' + code);
+      priceInput.min = '0';
+      priceInput.max = '1000000';
+      priceInput.step = '0.01';
+      priceInput.closest('details')?.setAttribute('open', '');
+      priceInput.focus();
       return;
     }
     if (button.dataset.action === 'add') editProduct();
@@ -756,6 +1041,7 @@ document.addEventListener('click', async (event) => {
   }
 });
 document.addEventListener('input', (event) => {
+  if (event.target.id === 'demo-instagram') updateDemoSource();
   if (event.target.id === 'product-search') {
     productQuery = event.target.value;
     drawProductRows();
@@ -845,25 +1131,35 @@ document.addEventListener('submit', async (event) => {
     if (form.id === 'demo-form') {
       button.textContent = 'Готовим демо…';
       const result = await api('demo-jobs', 'POST', {
+        requestId: form.dataset.requestId || (form.dataset.requestId = clientEventId()),
+        name: val('demo-name'),
+        description: val('demo-description'),
+        logo: val('demo-logo'),
+        telegram: val('demo-telegram'),
+        whatsapp: val('demo-whatsapp'),
+        languages: chosenLanguages('demo-languages', val('demo-language')),
         instagram: val('demo-instagram'),
         templateId: form.querySelector('[name=demo-template]:checked').value,
         referenceUrl: val('demo-reference'),
         language: val('demo-language'),
-        currency: val('demo-currency'),
+        currency: val('demo-currency').toUpperCase(),
         periodDays: Number(val('demo-period')),
       });
-      pendingDemoId=result.job?.id;
-      if (result.job?.status==='ready' && result.job?.slug) await openDemo(result.job.store_id);
+      pendingDemoId = result.job?.id;
+      if (result.job?.status === 'ready' && result.job?.slug) await openDemo(result.job.store_id);
       else await show('create');
       return;
     }
     if (form.id === 'product-form') {
       const prices = {};
-      for (const c of ['BYN', 'RUB', 'KZT', 'USD', 'EUR']) {
-        const raw = val('price-' + c);
+      for (const input of document.querySelectorAll('input[id^=price-]')) {
+        if (!/^price-[A-Z]{3}$/.test(input.id)) continue;
+        const c = input.id.slice(6),
+          raw = input.value.trim();
         if (raw !== '') prices[c] = Math.round(Number(raw) * 100);
       }
       const data = {
+        translations: readTranslations('[data-product-translation]', edited?.translations),
         name: val('name'),
         category: val('category'),
         description: val('description'),
@@ -912,6 +1208,8 @@ document.addEventListener('submit', async (event) => {
         description: val('store-description'),
         theme: val('theme'),
         language: val('store-language'),
+        languages: chosenLanguages('site-languages', val('store-language')),
+        translations: readTranslations('[data-store-translation]', store.settings.translations),
         accentColor: val('accent'),
         logo: val('logo'),
         backgrounds: Object.fromEntries(
@@ -961,7 +1259,7 @@ document.addEventListener('submit', async (event) => {
     notice(e.message);
   } finally {
     button.disabled = false;
-    if (form.id === 'demo-form') button.textContent = 'Создать тестовое демо';
+    if (form.id === 'demo-form') button.textContent = 'Создать демо';
   }
 });
 (async () => {
@@ -1043,110 +1341,261 @@ document.addEventListener('submit', async (event) => {
   }
 })();
 
-
-const screenHistory=[];
-let currentScreen=null, restoringScreen=false;
+const screenHistory = [];
+let currentScreen = null,
+  restoringScreen = false;
 function rememberScreen(next) {
-  if(restoringScreen)return;
-  if(currentScreen?.storeId!==next.storeId)screenHistory.length=0;
-  if(currentScreen&&JSON.stringify(currentScreen)!==JSON.stringify(next))screenHistory.push(currentScreen);
-  if(screenHistory.length>40)screenHistory.shift();
-  currentScreen=next;
-  if(screenHistory.length)tg?.BackButton?.show();else tg?.BackButton?.hide();
-  trackActivity('screen',next.kind,{tab:next.tab});
+  if (restoringScreen) return;
+  if (currentScreen?.storeId !== next.storeId) screenHistory.length = 0;
+  if (currentScreen && JSON.stringify(currentScreen) !== JSON.stringify(next))
+    screenHistory.push(currentScreen);
+  if (screenHistory.length > 40) screenHistory.shift();
+  currentScreen = next;
+  if (screenHistory.length) tg?.BackButton?.show();
+  else tg?.BackButton?.hide();
+  trackActivity('screen', next.kind, { tab: next.tab });
 }
-async function goBack(trigger='back') {
-  if(!screenHistory.length)return;
-  if(document.querySelector('form[data-dirty="1"]')&&!confirm('Вернуться без сохранения изменений?'))return;
-  const previous=screenHistory.pop();
-  restoringScreen=true;
+async function goBack(trigger = 'back') {
+  if (!screenHistory.length) return;
+  if (
+    document.querySelector('form[data-dirty="1"]') &&
+    !confirm('Вернуться без сохранения изменений?')
+  )
+    return;
+  const previous = screenHistory.pop();
+  restoringScreen = true;
   try {
-    if(previous.kind==='product')editProduct(previous.index);
-    else if(previous.kind==='order')showOrder(previous.order);
-    else if(previous.kind==='sort')renderProductOrder();
+    if (previous.kind === 'product') editProduct(previous.index);
+    else if (previous.kind === 'order') showOrder(previous.order);
+    else if (previous.kind === 'sort') renderProductOrder();
     else await show(previous.tab);
-    currentScreen=previous;
-    trackActivity('screen','back',{tab:previous.tab,trigger});
-  } finally {restoringScreen=false;}
-  if(screenHistory.length)tg?.BackButton?.show();else tg?.BackButton?.hide();
+    currentScreen = previous;
+    trackActivity('screen', 'back', { tab: previous.tab, trigger });
+  } finally {
+    restoringScreen = false;
+  }
+  if (screenHistory.length) tg?.BackButton?.show();
+  else tg?.BackButton?.hide();
 }
-tg?.BackButton?.onClick(()=>{void goBack('telegram');});
-let edgeGesture=null;
-document.addEventListener('touchstart',event=>{
-  const t=event.touches[0];
-  if(event.touches.length!==1||t.clientX>28||!screenHistory.length||event.target.closest('input,textarea,select,[contenteditable],.photo-list,[data-gallery]')){edgeGesture=null;return;}
-  edgeGesture={x:t.clientX,y:t.clientY,time:Date.now()};
-},{passive:true});
-document.addEventListener('touchmove',event=>{
-  if(!edgeGesture)return;
-  const t=event.touches[0];
-  if(event.touches.length!==1){edgeGesture=null;return;}
-  const dx=t.clientX-edgeGesture.x,dy=t.clientY-edgeGesture.y;
-  if(Math.abs(dy)>40&&Math.abs(dy)>Math.abs(dx)){edgeGesture=null;return;}
-  if(dx>15&&Math.abs(dy)<dx*.6)event.preventDefault();
-},{passive:false});
-document.addEventListener('touchend',event=>{
-  if(!edgeGesture)return;
-  const start=edgeGesture;edgeGesture=null;
-  const t=event.changedTouches[0];
-  if(t.clientX-start.x>=70&&Math.abs(t.clientY-start.y)<50&&Date.now()-start.time<900){event.preventDefault();void goBack('swipe');}
-},{passive:false});
-function renderProductOrder(){
+tg?.BackButton?.onClick(() => {
+  void goBack('telegram');
+});
+let edgeGesture = null;
+document.addEventListener(
+  'touchstart',
+  (event) => {
+    const t = event.touches[0];
+    if (
+      event.touches.length !== 1 ||
+      t.clientX > 28 ||
+      !screenHistory.length ||
+      event.target.closest('input,textarea,select,[contenteditable],.photo-list,[data-gallery]')
+    ) {
+      edgeGesture = null;
+      return;
+    }
+    edgeGesture = { x: t.clientX, y: t.clientY, time: Date.now() };
+  },
+  { passive: true },
+);
+document.addEventListener(
+  'touchmove',
+  (event) => {
+    if (!edgeGesture) return;
+    const t = event.touches[0];
+    if (event.touches.length !== 1) {
+      edgeGesture = null;
+      return;
+    }
+    const dx = t.clientX - edgeGesture.x,
+      dy = t.clientY - edgeGesture.y;
+    if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)) {
+      edgeGesture = null;
+      return;
+    }
+    if (dx > 15 && Math.abs(dy) < dx * 0.6) event.preventDefault();
+  },
+  { passive: false },
+);
+document.addEventListener(
+  'touchend',
+  (event) => {
+    if (!edgeGesture) return;
+    const start = edgeGesture;
+    edgeGesture = null;
+    const t = event.changedTouches[0];
+    if (
+      t.clientX - start.x >= 70 &&
+      Math.abs(t.clientY - start.y) < 50 &&
+      Date.now() - start.time < 900
+    ) {
+      event.preventDefault();
+      void goBack('swipe');
+    }
+  },
+  { passive: false },
+);
+function renderProductOrder() {
   generation++;
-  rememberScreen({kind:'sort',tab:'products',storeId:store?.id||null});
-  main.innerHTML='<h2>Порядок товаров</h2><p>Первый товар будет титульным в каталоге. Изменения сохраняются сразу.</p>'+products.map((p,i)=>'<section class="card"><strong>'+esc(p.name)+'</strong>'+(i===0?'<p>Титульный товар</p>':'')+'<div class="actions"><button data-move-product="'+esc(p.id)+'" data-direction="first" '+(i===0?'disabled':'')+'>На первое место</button><button aria-label="Поднять товар" data-move-product="'+esc(p.id)+'" data-direction="up" '+(i===0?'disabled':'')+'>↑</button><button aria-label="Опустить товар" data-move-product="'+esc(p.id)+'" data-direction="down" '+(i===products.length-1?'disabled':'')+'>↓</button></div></section>').join('');
+  rememberScreen({ kind: 'sort', tab: 'products', storeId: store?.id || null });
+  main.innerHTML =
+    '<h2>Порядок товаров</h2><p>Первый товар будет титульным в каталоге. Изменения сохраняются сразу.</p>' +
+    products
+      .map(
+        (p, i) =>
+          '<section class="card"><strong>' +
+          esc(p.name) +
+          '</strong>' +
+          (i === 0 ? '<p>Титульный товар</p>' : '') +
+          '<div class="actions"><button data-move-product="' +
+          esc(p.id) +
+          '" data-direction="first" ' +
+          (i === 0 ? 'disabled' : '') +
+          '>На первое место</button><button aria-label="Поднять товар" data-move-product="' +
+          esc(p.id) +
+          '" data-direction="up" ' +
+          (i === 0 ? 'disabled' : '') +
+          '>↑</button><button aria-label="Опустить товар" data-move-product="' +
+          esc(p.id) +
+          '" data-direction="down" ' +
+          (i === products.length - 1 ? 'disabled' : '') +
+          '>↓</button></div></section>',
+      )
+      .join('');
 }
 
-const activityQueue=[];
-let activityTimer=null,activitySending=false;
-const privateField=/password|passwd|secret|token|session|cookie|authorization|platform.?key|wallet|private.?key/i;
-function clientEventId(){
-  try{
-    if(typeof crypto.randomUUID==='function')return crypto.randomUUID();
-    const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
-    const s=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
-    return s.slice(0,8)+'-'+s.slice(8,12)+'-'+s.slice(12,16)+'-'+s.slice(16,20)+'-'+s.slice(20);
-  }catch{return null;}
-}
-function trackActivity(event,target,details={}){
-  if(platformMode||!tg?.initData||privateField.test(target))return;
-  const clean={};
-  for(const [key,value] of Object.entries(details))if(!privateField.test(key))clean[key]=String(value??'').slice(0,5000);
-  const id=clientEventId();if(!id)return;
-  activityQueue.push({id,event,screen:typeof tab==='string'?tab:'home',target:String(target).slice(0,120),details:clean});
-  if(activityQueue.length>200)activityQueue.shift();
-  clearTimeout(activityTimer);activityTimer=setTimeout(()=>{void flushActivity();},2000);
-}
-async function flushActivity(){
-  if(activitySending||!activityQueue.length||!tg?.initData)return;
-  activitySending=true;
-  const batch=activityQueue.splice(0,10);
+const activityQueue = [];
+let activityTimer = null,
+  activitySending = false;
+const privateField =
+  /password|passwd|secret|token|session|cookie|authorization|platform.?key|wallet|private.?key/i;
+function clientEventId() {
   try {
-    const r=await fetch('/api/admin/activity',{method:'POST',headers:{Authorization:'tma '+tg.initData,'Content-Type':'application/json'},body:JSON.stringify({events:batch}),keepalive:true});
-    if(!r.ok&&r.status!==429)activityQueue.unshift(...batch);
-  }catch{activityQueue.unshift(...batch);}
-  finally{activitySending=false;if(activityQueue.length)activityTimer=setTimeout(()=>{void flushActivity();},8000);}
+    if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+    const b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    b[6] = (b[6] & 15) | 64;
+    b[8] = (b[8] & 63) | 128;
+    const s = [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+    return (
+      s.slice(0, 8) +
+      '-' +
+      s.slice(8, 12) +
+      '-' +
+      s.slice(12, 16) +
+      '-' +
+      s.slice(16, 20) +
+      '-' +
+      s.slice(20)
+    );
+  } catch {
+    return null;
+  }
 }
-document.addEventListener('click',event=>{
-  const el=event.target.closest('button,a,input[type=radio],input[type=checkbox]');
-  if(!el)return;
-  const target=el.id||el.dataset.action||el.dataset.tab||el.name||el.textContent.trim().slice(0,80);
-  trackActivity('click',target,{label:el.textContent.trim().slice(0,120),storeId:el.dataset.openDemo||store?.id||'',productId:el.dataset.moveProduct||(el.dataset.edit!==undefined?products[Number(el.dataset.edit)]?.id:'')||'',direction:el.dataset.direction||''});
-},{capture:true});
-document.addEventListener('input',event=>{
-  const form=event.target.closest('form');if(form)form.dataset.dirty='1';
-},{capture:true});
-document.addEventListener('change',event=>{
-  const el=event.target;
-  if(!el.matches('input,textarea,select')||['password','hidden'].includes(el.type))return;
-  if(el.type==='file'){trackActivity('change',el.id||el.name||'upload',{files:JSON.stringify([...el.files].map(f=>({name:f.name,size:f.size,type:f.type})))});return;}
-  const target=el.id||el.name||'field';
-  if(privateField.test(target))return;
-  trackActivity('change',target,{value:el.type==='checkbox'?String(el.checked):el.value});
-},{capture:true});
-document.addEventListener('submit',event=>{
-  trackActivity('submit',event.target.id||'form');
-  const active=document.activeElement;
-  if(active?.form===event.target && !['password','hidden','file'].includes(active.type) && !privateField.test(active.id||active.name||''))trackActivity('change',active.id||active.name||'field',{value:active.value});
-},{capture:true});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')void flushActivity();});
+function trackActivity(event, target, details = {}) {
+  if (platformMode || !tg?.initData || privateField.test(target)) return;
+  const clean = {};
+  for (const [key, value] of Object.entries(details))
+    if (!privateField.test(key)) clean[key] = String(value ?? '').slice(0, 5000);
+  const id = clientEventId();
+  if (!id) return;
+  activityQueue.push({
+    id,
+    event,
+    screen: typeof tab === 'string' ? tab : 'home',
+    target: String(target).slice(0, 120),
+    details: clean,
+  });
+  if (activityQueue.length > 200) activityQueue.shift();
+  clearTimeout(activityTimer);
+  activityTimer = setTimeout(() => {
+    void flushActivity();
+  }, 2000);
+}
+async function flushActivity() {
+  if (activitySending || !activityQueue.length || !tg?.initData) return;
+  activitySending = true;
+  const batch = activityQueue.splice(0, 10);
+  try {
+    const r = await fetch('/api/admin/activity', {
+      method: 'POST',
+      headers: { Authorization: 'tma ' + tg.initData, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ events: batch }),
+      keepalive: true,
+    });
+    if (!r.ok && r.status !== 429) activityQueue.unshift(...batch);
+  } catch {
+    activityQueue.unshift(...batch);
+  } finally {
+    activitySending = false;
+    if (activityQueue.length)
+      activityTimer = setTimeout(() => {
+        void flushActivity();
+      }, 8000);
+  }
+}
+document.addEventListener(
+  'click',
+  (event) => {
+    const el = event.target.closest('button,a,input[type=radio],input[type=checkbox]');
+    if (!el) return;
+    const target =
+      el.id || el.dataset.action || el.dataset.tab || el.name || el.textContent.trim().slice(0, 80);
+    trackActivity('click', target, {
+      label: el.textContent.trim().slice(0, 120),
+      storeId: el.dataset.openDemo || store?.id || '',
+      productId:
+        el.dataset.moveProduct ||
+        (el.dataset.edit !== undefined ? products[Number(el.dataset.edit)]?.id : '') ||
+        '',
+      direction: el.dataset.direction || '',
+    });
+  },
+  { capture: true },
+);
+document.addEventListener(
+  'input',
+  (event) => {
+    const form = event.target.closest('form');
+    if (form) form.dataset.dirty = '1';
+  },
+  { capture: true },
+);
+document.addEventListener(
+  'change',
+  (event) => {
+    const el = event.target;
+    if (!el.matches('input,textarea,select') || ['password', 'hidden'].includes(el.type)) return;
+    if (el.type === 'file') {
+      trackActivity('change', el.id || el.name || 'upload', {
+        files: JSON.stringify(
+          [...el.files].map((f) => ({ name: f.name, size: f.size, type: f.type })),
+        ),
+      });
+      return;
+    }
+    const target = el.id || el.name || 'field';
+    if (privateField.test(target)) return;
+    trackActivity('change', target, {
+      value: el.type === 'checkbox' ? String(el.checked) : el.value,
+    });
+  },
+  { capture: true },
+);
+document.addEventListener(
+  'submit',
+  (event) => {
+    trackActivity('submit', event.target.id || 'form');
+    const active = document.activeElement;
+    if (
+      active?.form === event.target &&
+      !['password', 'hidden', 'file'].includes(active.type) &&
+      !privateField.test(active.id || active.name || '')
+    )
+      trackActivity('change', active.id || active.name || 'field', { value: active.value });
+  },
+  { capture: true },
+);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') void flushActivity();
+});

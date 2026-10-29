@@ -56,7 +56,24 @@ export function imageUrl(v: unknown, storeId?: string): string {
   }
   return s;
 }
-export const currencies = ['BYN', 'RUB', 'KZT', 'USD', 'EUR'];
+export const currencies = ['USD', 'EUR', 'BYN', 'RUB', 'KZT', 'MDL', 'RON'];
+export function currencyCode(value: unknown): string {
+  const code = text(value, 3, true).toUpperCase();
+  requireThat(/^[A-Z]{3}$/.test(code), 'Укажите трёхбуквенный код валюты, например USD или MDL');
+  return code;
+}
+export function siteLanguages(value: unknown, primary: Language): Language[] {
+  const list = value === undefined ? [primary] : strings(value, 11, 5);
+  if (!list.includes(primary)) list.unshift(primary);
+  requireThat(
+    list.length > 0 &&
+      list.includes(primary) &&
+      new Set(list).size === list.length &&
+      list.every((l) => supportedLanguages.includes(l as Language)),
+    'Выберите языки сайта и включите основной язык',
+  );
+  return list as Language[];
+}
 const textKeys = [
   ...informationKeys,
   'about_title',
@@ -92,11 +109,12 @@ export function settings(input: unknown, storeId?: string): Settings {
   const d = object(input ?? {});
   const language = (d.language ?? 'ru') as Language;
   requireThat(supportedLanguages.includes(language), 'Неподдерживаемый язык');
-  const codes = d.currencies === undefined ? ['BYN'] : strings(d.currencies, 2);
+  const languages = siteLanguages(d.languages, language);
+  const codes = d.currencies === undefined ? ['USD'] : strings(d.currencies, 2).map(currencyCode);
   requireThat(
     codes.length > 0 &&
       new Set(codes).size === codes.length &&
-      codes.every((c) => currencies.includes(c)),
+      codes.every((c) => /^[A-Z]{3}$/.test(c)),
     'Неподдерживаемая валюта',
   );
   const methods =
@@ -107,6 +125,14 @@ export function settings(input: unknown, storeId?: string): Settings {
     methods.length > 0 && new Set(methods).size === methods.length,
     'Укажите способы доставки',
   );
+  const translations = storeTranslations(d.translations, languages);
+  for (const tr of Object.values(translations))
+    if (tr?.deliveryMethods)
+      requireThat(
+        tr.deliveryMethods.length === methods.length &&
+          new Set(tr.deliveryMethods).size === methods.length,
+        'Переведите каждый способ доставки в исходном порядке',
+      );
   const theme = text(d.theme) || 'minimal';
   requireThat(['minimal', 'fashion', 'home', 'beauty'].includes(theme), 'Неизвестный шаблон');
   const accent = text(d.accentColor, 7) || '#354f46';
@@ -148,6 +174,8 @@ export function settings(input: unknown, storeId?: string): Settings {
   return {
     ...(d.backgrounds === undefined ? {} : { backgrounds }),
     language,
+    languages,
+    translations,
     theme: theme as Settings['theme'],
     description: text(d.description, 2000),
     accentColor: accent,
@@ -181,7 +209,7 @@ export function product(
       ? { [text(d.currency) || store.currencies[0]]: Math.round(Number(d.price) * 100) }
       : undefined);
   for (const [k, v] of Object.entries(object(rawPrices))) {
-    requireThat(currencies.includes(k), 'Неподдерживаемая валюта');
+    requireThat(currencyCode(k) === k, 'Код валюты должен быть в верхнем регистре');
     prices[k] = int(v, 0, 100000000);
   }
   requireThat(
@@ -229,6 +257,7 @@ export function product(
   );
   return {
     data: {
+      translations: productTranslations(d.translations, variants),
       name: text(d.name, 200, true),
       category: text(d.category, 100) || 'Прочее',
       description: text(d.description, 5000),
@@ -286,4 +315,76 @@ export async function limitedBytes(request: Request | Response, max: number): Pr
     offset += c.length;
   }
   return bytes;
+}
+
+function storeTranslations(
+  input: unknown,
+  languages: Language[],
+): NonNullable<Settings['translations']> {
+  const result: NonNullable<Settings['translations']> = {};
+  for (const [code, value] of Object.entries(object(input ?? {}))) {
+    requireThat(supportedLanguages.includes(code as Language), 'Неподдерживаемый язык перевода');
+    const d = object(value),
+      out: import('./types').StoreTranslation = {};
+    for (const [key, max] of [
+      ['name', 200],
+      ['description', 2000],
+      ['heroTitle', 200],
+      ['footerText', 500],
+      ['deliveryHint', 1000],
+    ] as const)
+      if (d[key] !== undefined) out[key] = text(d[key], max);
+    if (d.deliveryMethods !== undefined) out.deliveryMethods = strings(d.deliveryMethods, 6);
+    if (d.texts !== undefined) {
+      out.texts = {};
+      for (const [key, value] of Object.entries(object(d.texts))) {
+        requireThat(textKeys.includes(key), 'Неизвестный текст витрины');
+        out.texts[key] = text(value, 500);
+      }
+    }
+    result[code as Language] = out;
+  }
+  return result;
+}
+function productTranslations(
+  input: unknown,
+  variants: Variant[],
+): NonNullable<ProductData['translations']> {
+  const result: NonNullable<ProductData['translations']> = {};
+  for (const [code, value] of Object.entries(object(input ?? {}))) {
+    requireThat(supportedLanguages.includes(code as Language), 'Неподдерживаемый язык перевода');
+    const d = object(value),
+      out: NonNullable<ProductData['translations']>[Language] = {};
+    for (const [key, max] of [
+      ['name', 200],
+      ['category', 100],
+      ['description', 5000],
+      ['brand', 100],
+      ['collection', 100],
+      ['color', 100],
+    ] as const)
+      if (d[key] !== undefined) out[key] = text(d[key], max);
+    if (d.variantLabels !== undefined) {
+      out.variantLabels = {};
+      for (const [id, label] of Object.entries(object(d.variantLabels))) {
+        requireThat(
+          variants.some((v) => v.id === id),
+          'Вариант перевода не найден',
+        );
+        out.variantLabels[id] = text(label, 80, true);
+      }
+    }
+    if (d.attributes !== undefined) {
+      requireThat(
+        Array.isArray(d.attributes) && d.attributes.length <= 12,
+        'Максимум 12 характеристик',
+      );
+      out.attributes = d.attributes.map((a) => {
+        const v = object(a);
+        return { label: text(v.label, 80, true), value: text(v.value, 300, true) };
+      });
+    }
+    result[code as Language] = out;
+  }
+  return result;
 }

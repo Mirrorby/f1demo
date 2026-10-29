@@ -10,12 +10,17 @@ export const supportedLanguages = [
   'pl',
   'ja',
   'de',
+  'ro',
 ] as const;
 export type Language = (typeof supportedLanguages)[number];
 export function normalizeLanguage(value: string): Language {
   return supportedLanguages.includes(value as Language) ? (value as Language) : 'ru';
 }
 export const english: Record<string, string> = {
+  Универсальный: 'General',
+  'Одежда и аксессуары': 'Clothing & accessories',
+  'Дом и декор': 'Home & decor',
+  'Косметика и уход': 'Beauty & care',
   'Одежда и аксессуары на каждый день': 'Everyday clothing and accessories',
   'Футболки, льняные рубашки, свитшоты и сумки. Выберите модель, изучите состав и подберите размер в каталоге.':
     'T-shirts, linen shirts, sweatshirts and bags. Explore styles, check materials and choose your size in the catalog.',

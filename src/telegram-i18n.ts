@@ -1,6 +1,18 @@
 import locales from './telegram-locales.json';
 import { stmt } from './catalog';
-export const botLanguages = ['ru', 'en', 'es', 'pt', 'fr', 'it', 'tr', 'pl', 'ja', 'de'] as const;
+export const botLanguages = [
+  'ru',
+  'en',
+  'es',
+  'pt',
+  'fr',
+  'it',
+  'tr',
+  'pl',
+  'ja',
+  'de',
+  'ro',
+] as const;
 export type BotLanguage = (typeof botLanguages)[number];
 export function detectLanguage(code: unknown): BotLanguage {
   const base = typeof code === 'string' ? code.toLowerCase().split(/[-_]/)[0] : '';

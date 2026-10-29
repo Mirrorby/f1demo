@@ -1,9 +1,15 @@
+import locales from './storefront-locales.json';
 import type { Settings } from './types';
 
 // Editorial defaults describe how to choose products, never unverified merchant policies.
 export function templateContent(theme: Settings['theme'], language = 'ru'): Record<string, string> {
   const en = language !== 'ru';
-  const pick = (ru: string, english: string) => (en ? english : ru);
+  const pick = (ru: string, english: string) =>
+    language === 'ro'
+      ? (locales.ro as Record<string, string>)[english] || english
+      : en
+        ? english
+        : ru;
   const niches = {
     minimal: [
       'В каталоге собраны товары для повседневных задач и подарков. Сравните назначение, характеристики и варианты перед покупкой.',

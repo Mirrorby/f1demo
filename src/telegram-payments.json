@@ -108,5 +108,16 @@
     "unavailable": "この商品はまだお支払いできません。",
     "custom": "受注制作の商品です。完成と審査の後、販売者がTributeで成果物をお送りします。",
     "confirmed": "お支払いを確認しました"
+  },
+  "ro": {
+    "noInvoices": "Nu există facturi.",
+    "paid": "Plătit",
+    "refund": "Rambursare înregistrată",
+    "pending": "Se așteaptă plata",
+    "pay": "Plătește",
+    "order": "Comandă",
+    "unavailable": "Plata nu este disponibilă încă.",
+    "custom": "Comandă personalizată",
+    "confirmed": "Plată confirmată"
   }
 }

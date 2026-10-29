@@ -76,6 +76,7 @@ test('template creation seeds only when requested, respects selected currencies 
 test('switching theme preserves products, copy preserves styling and legacy fields stay editable', async () => {
   const created = await platform('stores', 'POST', {
     name: 'Legacy',
+      settings:{currencies:['BYN']},
     products: [
       { name: 'Old item', prices: { BYN: 1000 }, team: 'Brand', year: '2025', number: '42' },
     ],

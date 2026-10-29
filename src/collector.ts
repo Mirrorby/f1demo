@@ -17,6 +17,7 @@ export interface ImportJob {
   template_id: string;
   language: string;
   currency: string;
+  languages?: string;
   reference_id: string | null;
   store_id: string;
   sample_content: number;
@@ -115,7 +116,7 @@ export async function syncCollector(env: Env, owner: string, id: string) {
                 theme: job.template_id,
                 language: ['ru', 'en'].includes(job.language) ? job.language : 'auto',
                 currency: job.currency,
-                ...(job.auto_build ? {periodDays:job.period_days} : {products:6}),
+                ...(job.auto_build ? { periodDays: job.period_days } : { products: 6 }),
               },
           'delokay-' + id + '-' + kind + (job.auto_build ? '-month-v1-' + task.attempt : ''),
         );
@@ -175,10 +176,15 @@ export async function syncCollector(env: Env, owner: string, id: string) {
     }
   }
   if (job.auto_build && job.sample_content) await advanceAutoDemo(env, job);
-
 }
 
-export async function archivePhoto(env: Env, input: unknown, storeId: string, uploaded: string[], fileId?: string) {
+export async function archivePhoto(
+  env: Env,
+  input: unknown,
+  storeId: string,
+  uploaded: string[],
+  fileId?: string,
+) {
   const url = new URL(text(input, 3000, true));
   requireThat(
     url.protocol === 'https:' &&
@@ -191,19 +197,43 @@ export async function archivePhoto(env: Env, input: unknown, storeId: string, up
   );
   const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(15000) });
   requireThat(response.ok, 'Фото Instagram недоступно. Импорт не применён.', 502);
-  return saveArchivedPhoto(env,response,storeId,uploaded,fileId);
+  return saveArchivedPhoto(env, response, storeId, uploaded, fileId);
 }
 
-export async function importArchivedPhoto(env:Env, remoteId:string, file:string, storeId:string, fileId:string) {
-  requireThat(/^[a-f0-9]{32}$/.test(remoteId) && /^assets\/[a-f0-9]{64}\.(jpg|png|webp)$/.test(file),'Некорректный архив фотографии',502);
-  const base=new URL(env.IMPORT_API_ORIGIN!);
-  requireThat(base.protocol==='https:' && base.pathname==='/' && !base.username && !base.password,'Ошибка настройки сборщика',503);
-  const response=await fetch(new URL('/v1/jobs/'+remoteId+'/'+file,base),{headers:{Authorization:'Bearer '+env.IMPORT_API_TOKEN},redirect:'manual',signal:AbortSignal.timeout(15000)});
-  requireThat(response.ok,'Архив фотографии недоступен',502);
-  return saveArchivedPhoto(env,response,storeId,[],fileId);
+export async function importArchivedPhoto(
+  env: Env,
+  remoteId: string,
+  file: string,
+  storeId: string,
+  fileId: string,
+) {
+  requireThat(
+    /^[a-f0-9]{32}$/.test(remoteId) && /^assets\/[a-f0-9]{64}\.(jpg|png|webp)$/.test(file),
+    'Некорректный архив фотографии',
+    502,
+  );
+  const base = new URL(env.IMPORT_API_ORIGIN!);
+  requireThat(
+    base.protocol === 'https:' && base.pathname === '/' && !base.username && !base.password,
+    'Ошибка настройки сборщика',
+    503,
+  );
+  const response = await fetch(new URL('/v1/jobs/' + remoteId + '/' + file, base), {
+    headers: { Authorization: 'Bearer ' + env.IMPORT_API_TOKEN },
+    redirect: 'manual',
+    signal: AbortSignal.timeout(15000),
+  });
+  requireThat(response.ok, 'Архив фотографии недоступен', 502);
+  return saveArchivedPhoto(env, response, storeId, [], fileId);
 }
 
-async function saveArchivedPhoto(env:Env,response:Response,storeId:string,uploaded:string[],fileId?:string) {
+async function saveArchivedPhoto(
+  env: Env,
+  response: Response,
+  storeId: string,
+  uploaded: string[],
+  fileId?: string,
+) {
   const bytes = await limitedBytes(response, 3 * 1024 * 1024);
   let ext = '',
     mime = '';
@@ -275,6 +305,9 @@ export async function applyCollector(env: Env, owner: string, id: string, input:
         ...object(imported.settings),
         theme: job.template_id,
         language: job.language,
+        languages: JSON.parse(job.languages || '[]').length
+          ? JSON.parse(job.languages!)
+          : [job.language],
         currencies: [job.currency],
         texts: oldSettings.texts,
         backgrounds: oldSettings.backgrounds,
@@ -293,6 +326,15 @@ export async function applyCollector(env: Env, owner: string, id: string, input:
         ...product(
           {
             ...object(imported.products[i]),
+            ...(object(object(imported.products[i]).prices || {})[job.currency] === undefined
+              ? {
+                  prices: {
+                    ...object(object(imported.products[i]).prices || {}),
+                    [job.currency]: 0,
+                  },
+                  priceOnRequest: true,
+                }
+              : {}),
             photos: [await archivePhoto(env, images[0], store.id, uploaded)],
           },
           cfg,

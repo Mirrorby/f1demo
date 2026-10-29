@@ -1,6 +1,13 @@
-import {manualSubscription,subscriptionFor,sendSubscriptionReminders} from './subscriptions';
-import {runRetention} from './retention';
-import {SUPPORT_URL} from './support';
+import {
+  selectStoreLanguage,
+  localizedSettings,
+  localizedName,
+  localizedProduct,
+} from './multilingual';
+import type { Settings } from './types';
+import { manualSubscription, subscriptionFor, sendSubscriptionReminders } from './subscriptions';
+import { runRetention } from './retention';
+import { SUPPORT_URL } from './support';
 import { recordActivity, listLeads, leadPassport } from './leads';
 import { processAutoDemos } from './auto-demo';
 import { applyCollector, syncCollector } from './collector';
@@ -79,7 +86,15 @@ import {
   updateSettings,
 } from './catalog';
 import { placeOrder, changeStatus, orderView } from './orders';
-import { flushNotifications, inviteOwner, origin, webhook, setupTelegram, notificationToken, telegram } from './telegram';
+import {
+  flushNotifications,
+  inviteOwner,
+  origin,
+  webhook,
+  setupTelegram,
+  notificationToken,
+  telegram,
+} from './telegram';
 import {
   cleanupMedia,
   deleteDemo,
@@ -155,15 +170,26 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
-  if(path==='/api/import/tick'&&method==='POST'){
-    requireThat(env.IMPORT_API_TOKEN && env.IMPORT_API_TOKEN.length>=32,'Сборщик не настроен',503);
-    requireThat(await equalSecret(request.headers.get('authorization')||'','Bearer '+env.IMPORT_API_TOKEN),'Нет доступа',401);
+  if (path === '/api/import/tick' && method === 'POST') {
+    requireThat(
+      env.IMPORT_API_TOKEN && env.IMPORT_API_TOKEN.length >= 32,
+      'Сборщик не настроен',
+      503,
+    );
+    requireThat(
+      await equalSecret(
+        request.headers.get('authorization') || '',
+        'Bearer ' + env.IMPORT_API_TOKEN,
+      ),
+      'Нет доступа',
+      401,
+    );
     await processAutoDemos(env);
     await sendSubscriptionReminders(env);
     await flushNotifications(env);
     await runRetention(env);
     await cleanupMedia(env);
-    return json({ok:true});
+    return json({ ok: true });
   }
   if (env.DEPLOYMENT_ENV === 'staging') {
     if (path === '/api/admin/payments/config' && method === 'GET')
@@ -204,9 +230,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         method === 'HEAD'
           ? null
           : enrichStorefront(
-              storefrontMarkup(JSON.parse(s.settings).language),
-              s.name,
-              JSON.parse(s.settings),
+              storefrontMarkup(
+                selectStoreLanguage(JSON.parse(s.settings), url.searchParams.get('lang')),
+              ),
+              localizedName(
+                s.name,
+                JSON.parse(s.settings),
+                selectStoreLanguage(JSON.parse(s.settings), url.searchParams.get('lang')),
+              ),
+              localizedSettings(
+                JSON.parse(s.settings),
+                selectStoreLanguage(JSON.parse(s.settings), url.searchParams.get('lang')),
+              ),
               s.status === 'demo',
             ).replace('<body>', '<body data-store-slug="' + s.slug + '">'),
         {
@@ -287,7 +322,11 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     (method === 'GET' || method === 'HEAD')
   )
     return new Response(
-      method === 'HEAD' ? null : path.endsWith('.js') ? `window.DELOKAY_SUPPORT_URL=${JSON.stringify(SUPPORT_URL)};\n${adminScript}` : brandedPanel(adminPage),
+      method === 'HEAD'
+        ? null
+        : path.endsWith('.js')
+          ? `window.DELOKAY_SUPPORT_URL=${JSON.stringify(SUPPORT_URL)};\n${adminScript}`
+          : brandedPanel(adminPage),
       {
         headers: {
           'Content-Type': path.endsWith('.js')
@@ -328,7 +367,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     );
   }
   if (path === '/api/health' && method === 'GET') return json({ ok: true });
-  if (path === '/api/templates' && method === 'GET') return json(templateList());
+  if (path === '/api/templates' && method === 'GET')
+    return json(templateList(normalizeLanguage(url.searchParams.get('lang') || 'ru')));
   const previewApi = path.match(/^\/api\/templates\/([a-z]+)$/);
   if (previewApi && method === 'GET') {
     const t = findTemplate(previewApi[1]);
@@ -430,9 +470,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     if (path === '/api/platform/telegram/setup' && method === 'POST')
       return json(await setupTelegram(env));
     if (path === '/api/platform/bot-status' && method === 'GET') {
-      const bot=object((await telegram(env,'getMe',{})).result);
-      const username=text(bot.username,64,true);
-      return json({username, matchesConfigured:username.toLowerCase() === (env.BOT_USERNAME||'').toLowerCase()});
+      const bot = object((await telegram(env, 'getMe', {})).result);
+      const username = text(bot.username, 64, true);
+      return json({
+        username,
+        matchesConfigured: username.toLowerCase() === (env.BOT_USERNAME || '').toLowerCase(),
+      });
     }
     if (path === '/api/platform/config' && method === 'GET')
       return json({
@@ -446,12 +489,28 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         env,
         'SELECT s.*,sub.started_at AS subscription_started_at,sub.expires_at AS subscription_expires_at,sub.reminder_attempts AS subscription_reminder_attempts,sub.reminder_sent_at AS subscription_reminder_sent_at FROM stores s LEFT JOIN subscriptions sub ON sub.store_id=s.id ORDER BY s.created_at DESC,s.id LIMIT 200 OFFSET ?',
         int(Number(url.searchParams.get('offset') ?? 0), 0, 1000000),
-      ).all<StoreRow & {subscription_started_at:number|null;subscription_expires_at:number|null;subscription_reminder_attempts:number|null;subscription_reminder_sent_at:number|null}>();
+      ).all<
+        StoreRow & {
+          subscription_started_at: number | null;
+          subscription_expires_at: number | null;
+          subscription_reminder_attempts: number | null;
+          subscription_reminder_sent_at: number | null;
+        }
+      >();
       return json(
         stores.results.map((s) => ({
           ...publicStore(s, env.BOT_USERNAME),
           ownerLinked: !!s.owner_id,
-          subscription: s.subscription_expires_at ? {started_at:s.subscription_started_at,expires_at:s.subscription_expires_at,status:s.subscription_expires_at>Math.floor(Date.now()/1000)?'active':'expired',reminder_attempts:s.subscription_reminder_attempts,reminder_sent_at:s.subscription_reminder_sent_at} : null,
+          subscription: s.subscription_expires_at
+            ? {
+                started_at: s.subscription_started_at,
+                expires_at: s.subscription_expires_at,
+                status:
+                  s.subscription_expires_at > Math.floor(Date.now() / 1000) ? 'active' : 'expired',
+                reminder_attempts: s.subscription_reminder_attempts,
+                reminder_sent_at: s.subscription_reminder_sent_at,
+              }
+            : null,
         })),
       );
     }
@@ -484,10 +543,16 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       if (match[2] === 'invite' && method === 'POST')
         return json(await inviteOwner(env, s, await jsonBody(request)));
       if ((match[2] === 'activate' || match[2] === 'renew') && method === 'POST') {
-        if(match[2]==='renew')requireThat(s.status==='active','Сначала активируйте магазин',409);
-        if(match[2]==='activate')requireThat(s.status==='demo','Магазин уже активирован. Для продления используйте отдельную кнопку.',409);
-        const result=await manualSubscription(env,s,await jsonBody(request));
-        return json({...result,url:origin(env)+'/shop/'+s.slug});
+        if (match[2] === 'renew')
+          requireThat(s.status === 'active', 'Сначала активируйте магазин', 409);
+        if (match[2] === 'activate')
+          requireThat(
+            s.status === 'demo',
+            'Магазин уже активирован. Для продления используйте отдельную кнопку.',
+            409,
+          );
+        const result = await manualSubscription(env, s, await jsonBody(request));
+        return json({ ...result, url: origin(env) + '/shop/' + s.slug });
       }
       if (match[2] === 'export' && method === 'GET')
         return json({
@@ -500,19 +565,57 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   if (path.startsWith('/api/admin/') || path.startsWith('/api/platform/')) {
     const isPlatform = path.startsWith('/api/platform/');
     const owner = isPlatform ? null : await telegramAuth(request, env);
-    if(path==='/api/admin/support-contact'&&method==='POST') {
-      const language=await notificationLanguage(env,owner!);
-      await telegram(env,'sendMessage',{
-        chat_id:owner!,
-        text:language==='ru'?'Связаться с Delokay: @Mirrorby':'Contact Delokay: @Mirrorby',
-        reply_markup:{inline_keyboard:[[{text:language==='ru'?'Написать в Delokay':'Contact Delokay',url:SUPPORT_URL}]]},
+    if (path === '/api/admin/support-contact' && method === 'POST') {
+      const language = await notificationLanguage(env, owner!);
+      await telegram(env, 'sendMessage', {
+        chat_id: owner!,
+        text:
+          language === 'ru'
+            ? 'Связаться с Delokay: @Mirrorby'
+            : language === 'ro'
+              ? 'Contactați Delokay: @Mirrorby'
+              : 'Contact Delokay: @Mirrorby',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text:
+                  language === 'ru'
+                    ? 'Написать в Delokay'
+                    : language === 'ro'
+                      ? 'Contactează Delokay'
+                      : 'Contact Delokay',
+                url: SUPPORT_URL,
+              },
+            ],
+          ],
+        },
       });
-      return json({ok:true});
+      return json({ ok: true });
     }
-    if(path==='/api/admin/activity'&&method==='POST')return json(await recordActivity(env,owner!,await jsonBody(request),JSON.parse(new URLSearchParams((request.headers.get('authorization')||'').slice(4)).get('user')||'{}')));
-    if(path==='/api/platform/leads'&&method==='GET')return json(await listLeads(env));
-    const leadMatch=path.match(/^\/api\/platform\/leads\/([0-9]{1,20})$/);
-    if(leadMatch&&method==='GET')return json(await leadPassport(env,leadMatch[1],Math.max(0,Math.min(100000,Number(url.searchParams.get('offset'))||0))));
+    if (path === '/api/admin/activity' && method === 'POST')
+      return json(
+        await recordActivity(
+          env,
+          owner!,
+          await jsonBody(request),
+          JSON.parse(
+            new URLSearchParams((request.headers.get('authorization') || '').slice(4)).get(
+              'user',
+            ) || '{}',
+          ),
+        ),
+      );
+    if (path === '/api/platform/leads' && method === 'GET') return json(await listLeads(env));
+    const leadMatch = path.match(/^\/api\/platform\/leads\/([0-9]{1,20})$/);
+    if (leadMatch && method === 'GET')
+      return json(
+        await leadPassport(
+          env,
+          leadMatch[1],
+          Math.max(0, Math.min(100000, Number(url.searchParams.get('offset')) || 0)),
+        ),
+      );
     if (path === '/api/admin/demo-jobs' && method === 'GET')
       return json(await listDemoJobs(env, owner!));
     if (path === '/api/admin/demo-jobs' && method === 'POST')
@@ -600,12 +703,18 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         return json({
           ...publicStore(s, env.BOT_USERNAME),
           customUrl: await domainUrl(env, s.id),
-          subscription: await subscriptionFor(env,s.id),
+          subscription: await subscriptionFor(env, s.id),
           notificationsAvailable: !!notificationToken(env),
+          demoJob: await stmt(
+            env,
+            'SELECT id,sample_content,auto_build,status FROM demo_build_jobs WHERE store_id=?',
+            s.id,
+          ).first(),
           stats,
         });
       }
-      if (section === 'product-order' && method === 'PUT') return json(await reorderProducts(env, s, await jsonBody(request)));
+      if (section === 'product-order' && method === 'PUT')
+        return json(await reorderProducts(env, s, await jsonBody(request)));
       if (section === 'products' && !id && method === 'GET') return json(await catalog(env, s.id));
       if (section === 'products' && !id && method === 'POST')
         return json(await saveProduct(env, s, await jsonBody(request)), 201);
@@ -679,8 +788,19 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const publicMatch = path.match(/^\/api\/stores\/([a-z0-9-]{1,80})(?:\/(orders))?$/);
   if (publicMatch) {
     const s = await storeBySlug(env, publicMatch[1]);
-    if (method === 'GET' && !publicMatch[2])
-      return json({ store: publicStore(s, env.BOT_USERNAME), products: await catalog(env, s.id) });
+    if (method === 'GET' && !publicMatch[2]) {
+      const cfg = JSON.parse(s.settings) as Settings,
+        language = selectStoreLanguage(cfg, url.searchParams.get('lang'));
+      const store = {
+        ...publicStore(s, env.BOT_USERNAME),
+        name: localizedName(s.name, cfg, language),
+        settings: localizedSettings(cfg, language),
+      };
+      return json({
+        store,
+        products: (await catalog(env, s.id)).map((p) => localizedProduct(p, cfg, language)),
+      });
+    }
     if (method === 'POST' && publicMatch[2]) {
       const result = await placeOrder(
         env,
@@ -730,13 +850,15 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const storefront = path.match(/^\/(demo|shop|s)\/([a-z0-9-]{1,80})\/?$/);
   if (storefront) {
     const s = await storeBySlug(env, storefront[2]);
-    pageSettings = JSON.parse(s.settings);
-    pageName = s.name;
+    const baseSettings = JSON.parse(s.settings) as Settings;
+    const selectedLanguage = selectStoreLanguage(baseSettings, url.searchParams.get('lang'));
+    pageSettings = localizedSettings(baseSettings, selectedLanguage);
+    pageName = localizedName(s.name, baseSettings, selectedLanguage);
     pageDemo = s.status === 'demo';
-    storefrontLanguage = JSON.parse(s.settings).language || 'ru';
+    storefrontLanguage = selectedLanguage;
     const kind = s.status === 'demo' ? 'demo' : 'shop';
     if (storefront[1] !== kind && storefront[1] !== 's')
-      return Response.redirect(url.origin + '/' + kind + '/' + s.slug, 302);
+      return Response.redirect(url.origin + '/' + kind + '/' + s.slug + url.search, 302);
     assetPath = '/storefront.html';
   }
   if (assetPath === '/storefront.html')

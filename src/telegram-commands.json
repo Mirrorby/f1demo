@@ -218,5 +218,27 @@
       "command": "language",
       "description": "表示言語を選んでください："
     }
+  ],
+  "ro": [
+    {
+      "command": "start",
+      "description": "Meniul principal"
+    },
+    {
+      "command": "shop",
+      "description": "Deschide Delokay"
+    },
+    {
+      "command": "pay",
+      "description": "Plată și abonament"
+    },
+    {
+      "command": "help",
+      "description": "Ajutor"
+    },
+    {
+      "command": "language",
+      "description": "Alege limba"
+    }
   ]
 }

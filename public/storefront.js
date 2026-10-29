@@ -71,9 +71,10 @@ async function loadStore() {
   const r = await fetch(
     (templatePreview ? '/api/templates/' : '/api/stores/') +
       encodeURIComponent(slug) +
-      (templatePreview
-        ? '?lang=' + encodeURIComponent(new URLSearchParams(location.search).get('lang') || 'ru')
-        : ''),
+      '?lang=' +
+      encodeURIComponent(
+        new URLSearchParams(location.search).get('lang') || document.documentElement.lang || 'ru',
+      ),
     { cache: 'no-store' },
   );
   const data = await r.json();
@@ -737,6 +738,7 @@ async function placeOrder() {
   const storageKey = 'pending-order:' + currentStore.id;
   try {
     const payload = {
+      language,
       currency: curCode(),
       customer: deliveryData,
       items: cart.map((it) => ({

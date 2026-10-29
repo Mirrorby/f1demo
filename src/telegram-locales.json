@@ -206,5 +206,31 @@
     "complete": "完了",
     "cancel": "キャンセル",
     "openOrder": "注文を開く"
+  },
+  "ro": {
+    "welcome": "👋 Bun venit la Delokay!\n\nMai puțină rutină. Mai mult timp pentru afacere. ✨\n\nCataloage, produse și comenzi direct în Telegram.",
+    "returning": "👋 Bine ați revenit!\nMagazinele dvs.:",
+    "noStore": "\n\nDeschideți Delokay pentru a crea un magazin. Puteți importa din Instagram sau completa manual un demo de test.",
+    "telegramId": "ID-ul dvs. Telegram: ",
+    "dashboard": "🚀 Deschide Delokay",
+    "store": "🛍 Gestionează magazinul",
+    "payments": "💳 Plată",
+    "helpButton": "❓ Ajutor",
+    "language": "🌐 Limbă",
+    "chooseLanguage": "Alegeți limba:",
+    "languageSaved": "✅ Limba a fost schimbată în română.",
+    "help": "❓ Ajutor Delokay\n\n/start — meniul principal\n/shop — gestionarea magazinelor\n/pay — plată și abonament\n/language — alegerea limbii\n/help — ajutor\n\nDeschideți Delokay pentru a crea și edita magazinul.",
+    "connected": "✅ Magazinul „",
+    "connectedEnd": "” a fost conectat. Îl puteți gestiona în Delokay.",
+    "claimError": "Magazinul nu a putut fi conectat.",
+    "statusSaved": "✅ Starea comenzii a fost actualizată",
+    "orderNotFound": "Comanda nu a fost găsită",
+    "newOrder": "📦 Comandă nouă nr. ",
+    "phone": "Telefon: ",
+    "total": "Total: ",
+    "accept": "Acceptă",
+    "complete": "Finalizată",
+    "cancel": "Anulează",
+    "openOrder": "Deschide comanda"
   }
 }

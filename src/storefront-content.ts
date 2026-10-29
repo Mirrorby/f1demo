@@ -1,3 +1,4 @@
+import locales from './storefront-locales.json';
 import type { Settings } from './types';
 import { templateContent } from './template-content';
 import { backgroundStyles } from './backgrounds';
@@ -18,7 +19,12 @@ export function enrichStorefront(
     ...cfg.texts,
   };
   const en = cfg.language !== 'ru' && !!cfg.language;
-  const label = (ru: string, english: string) => (en ? english : ru);
+  const label = (ru: string, english: string) =>
+    cfg.language === 'ro'
+      ? (locales.ro as Record<string, string>)[english] || english
+      : en
+        ? english
+        : ru;
   const section = (key: string) => {
     const title = texts[key + '_title'],
       body = texts[key + '_body'];
@@ -74,8 +80,30 @@ export function enrichStorefront(
     .replace(/</g, '\\u003c')
     .replace(/>/g, '\\u003e')
     .replace(/&/g, '\\u0026');
+  const languageNames: Record<string, string> = {
+    ru: 'Русский',
+    en: 'English',
+    ro: 'Română',
+    es: 'Español',
+    pt: 'Português',
+    fr: 'Français',
+    it: 'Italiano',
+    tr: 'Türkçe',
+    pl: 'Polski',
+    ja: '日本語',
+    de: 'Deutsch',
+  };
+  const languageNav =
+    (cfg.languages?.length || 0) > 1
+      ? `<nav class="store-language-nav" aria-label="Language">${cfg.languages!.map((code) => `<a href="?lang=${code}" lang="${code}" hreflang="${code}" ${code === cfg.language ? 'aria-current="true"' : ''}>${languageNames[code]}</a>`).join(' ')}</nav>`
+      : '';
   return html
-    .replace('<title>Каталог</title>', `<title>${escapeHtml(name)}</title>`)
+    .replace(/<body([^>]*)>/, (_, attributes) => `<body${attributes}>${languageNav}`)
+    .replace(
+      '</head>',
+      `<style>.store-language-nav{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;padding:12px 16px}.store-language-nav a{color:inherit;text-decoration:none;padding:6px 10px;border:1px solid currentColor;border-radius:8px}.store-language-nav [aria-current]{font-weight:700}</style>${(cfg.languages || []).map((code) => `<link rel="alternate" hreflang="${code}" href="?lang=${code}">`).join('')}</head>`,
+    )
+    .replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(name)}</title>`)
     .replace(/<title>Catalog<\/title>/, `<title>${escapeHtml(name)}</title>`)
     .replace(
       '</head>',

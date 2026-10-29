@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const script=await readFile('public/admin.js','utf8');
 test('published admin script parses and swipe/back button share real screen history',async()=>{
   assert.doesNotThrow(()=>new Function(script));
-  const start=script.indexOf('const screenHistory='),end=script.indexOf('function renderProductOrder()',start);
+  const start=script.search(/const screenHistory\s*=/),end=script.indexOf('function renderProductOrder()',start);
   const listeners={},shown=[],back=[];
   const ctx={document:{addEventListener:(n,fn)=>{listeners[n]=fn},querySelector:()=>null},tg:{BackButton:{show:()=>back.push('show'),hide:()=>back.push('hide'),onClick:fn=>{listeners.back=fn}}},trackActivity:()=>{},confirm:()=>true,Date,JSON,Math,show:async tab=>shown.push(tab),editProduct:()=>{},showOrder:()=>{},renderProductOrder:()=>{}};
   vm.runInNewContext(script.slice(start,end)+';globalThis.testNav={rememberScreen,goBack};',ctx);

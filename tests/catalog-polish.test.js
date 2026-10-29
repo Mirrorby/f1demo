@@ -110,6 +110,7 @@ test('order images are authoritative snapshots; legacy orders use catalog photos
   const store = (
     await platform('stores', 'POST', {
       name: 'Snapshot',
+      settings:{currencies:['BYN']},
       products: [
         { name: 'Photo item', prices: { BYN: 1000 }, photos: ['/template-assets/home-cup.svg'] },
       ],
