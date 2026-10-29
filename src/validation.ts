@@ -367,12 +367,22 @@ function productTranslations(
     if (d.variantLabels !== undefined) {
       out.variantLabels = {};
       for (const [id, label] of Object.entries(object(d.variantLabels))) {
-        requireThat(
-          variants.some((v) => v.id === id),
-          'Вариант перевода не найден',
-        );
-        out.variantLabels[id] = text(label, 80, true);
+        requireThat(/^[a-f0-9-]{36}$/.test(id), 'Некорректный вариант перевода');
+        const translatedLabel = text(label, 80, true);
+        if (variants.some((v) => v.id === id)) out.variantLabels[id] = translatedLabel;
       }
+    }
+    if (d.variantLabelsByPosition !== undefined) {
+      requireThat(
+        Array.isArray(d.variantLabelsByPosition) &&
+          d.variantLabelsByPosition.length === variants.length,
+        'Неполные переводы вариантов',
+      );
+      out.variantLabels = { ...out.variantLabels };
+      d.variantLabelsByPosition.forEach((label, index) => {
+        const value = text(label, 80);
+        if (value) out.variantLabels![variants[index].id] = value;
+      });
     }
     if (d.attributes !== undefined) {
       requireThat(

@@ -106,6 +106,18 @@ export async function startCopy(env: Env, s: StoreRow, input: unknown) {
     ...p,
     id: undefined,
     version: undefined,
+    translations: Object.fromEntries(
+      Object.entries(p.translations || {}).map(([code, tr]) => [
+        code,
+        tr
+          ? {
+              ...tr,
+              variantLabels: undefined,
+              variantLabelsByPosition: p.variants.map((v) => tr.variantLabels?.[v.id] || ''),
+            }
+          : {},
+      ]),
+    ),
     photos: p.photos.map(image),
     variants: p.variants.map((v) => ({ label: v.label, stock: v.stock })),
   }));

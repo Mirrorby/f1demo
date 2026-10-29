@@ -166,3 +166,17 @@ test('manual creation shares the three-demo quota and Romanian preference persis
   assert.equal((await admin(701, 'preferences', 'PUT', { language: 'ro' })).status, 200);
   assert.equal((await admin(701, 'preferences')).body.language, 'ro');
 });
+
+test('copying a multilingual catalog remaps translated variants to independent IDs', async () => {
+  const copied = await platform('stores/' + manual.store_id + '/copy', 'POST', {
+    name: 'Copy',
+    slug: 'localized-copy',
+  });
+  assert.equal(copied.status, 202, JSON.stringify(copied));
+  await platform('copies/' + copied.body.id + '/continue', 'POST', {});
+  const result = await req('/api/stores/localized-copy?lang=ru');
+  assert.equal(result.status, 200, JSON.stringify(result));
+  assert.equal(result.body.products[0].variants[0].label, 'Русский вариант');
+  const original = (await req('/api/stores/' + manual.slug + '?lang=ru')).body;
+  assert.notEqual(result.body.products[0].variants[0].id, original.products[0].variants[0].id);
+});
