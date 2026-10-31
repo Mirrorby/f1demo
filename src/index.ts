@@ -11,7 +11,7 @@ import { SUPPORT_URL } from './support';
 import { recordActivity, listLeads, leadPassport } from './leads';
 import { processAutoDemos } from './auto-demo';
 import { applyCollector, syncCollector } from './collector';
-import { createDemo, listDemoJobs } from './onboarding';
+import { createDemo, listDemoJobs, createOperatorDemo, listOperatorDemoJobs } from './onboarding';
 import { enrichStorefront } from './storefront-content';
 import { botLanguages, setLanguage, notificationLanguage } from './telegram-i18n';
 import { WorkerEntrypoint } from 'cloudflare:workers';
@@ -514,6 +514,10 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         })),
       );
     }
+    if (path === '/api/platform/demo-jobs' && method === 'GET')
+      return json(await listOperatorDemoJobs(env));
+    if (path === '/api/platform/demo-jobs' && method === 'POST')
+      return json(await createOperatorDemo(env, await jsonBody(request), origin(env)), 201);
     if (path === '/api/platform/stores' && method === 'POST')
       return json(await createStore(env, await jsonBody(request), origin(env)), 201);
     if (path === '/api/platform/copies' && method === 'GET') return json(await listCopies(env));

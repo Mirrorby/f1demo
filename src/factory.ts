@@ -44,8 +44,25 @@ export async function deleteDemo(env: Env, s: StoreRow, input: unknown) {
       ),
       stmt(env, 'INSERT OR IGNORE INTO media_cleanup(store_id) VALUES(?)', s.id),
       stmt(env, 'DELETE FROM owner_invites WHERE store_id=?', s.id),
+      stmt(
+        env,
+        `INSERT OR IGNORE INTO demo_statistics(job_id,owner_id,template_id,reference_id,period_days,outcome,products,created_at)
+        SELECT j.id,j.owner_id,j.template_id,j.reference_id,j.period_days,'deleted_'||j.status,(SELECT COUNT(*) FROM products WHERE store_id=j.store_id AND deleted_at IS NULL),j.created_at FROM demo_build_jobs j WHERE j.store_id=?`,
+        s.id,
+      ),
       stmt(env, 'DELETE FROM variants WHERE store_id=?', s.id),
       stmt(env, 'DELETE FROM products WHERE store_id=?', s.id),
+      stmt(
+        env,
+        'DELETE FROM collector_tasks WHERE job_id IN (SELECT id FROM demo_build_jobs WHERE store_id=?)',
+        s.id,
+      ),
+      stmt(
+        env,
+        'DELETE FROM demo_retention WHERE job_id IN (SELECT id FROM demo_build_jobs WHERE store_id=?)',
+        s.id,
+      ),
+      stmt(env, 'DELETE FROM demo_build_jobs WHERE store_id=?', s.id),
       stmt(env, 'DELETE FROM stores WHERE id=?', s.id),
       stmt(env, 'DELETE FROM mutation_guards'),
     ]);

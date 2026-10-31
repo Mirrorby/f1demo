@@ -221,14 +221,84 @@ function domainPanel(store, index) {
     <p>Товары и заказы останутся в этом магазине. Стандартная ссылка продолжит работать.</p></details>`;
 }
 
+const operatorLanguages = {
+  ru: 'Русский',
+  en: 'English',
+  ro: 'Română',
+  es: 'Español',
+  pt: 'Português',
+  fr: 'Français',
+  it: 'Italiano',
+  tr: 'Türkçe',
+  pl: 'Polski',
+  ja: '日本語',
+  de: 'Deutsch',
+};
+let instagramTimer = null,
+  operatorDemoJobs = [],
+  instagramSyncOffset = 0;
+function instagramCreatePanel() {
+  return `<section class="card"><h2>Создать демо из Instagram</h2><p>Соберём данные аккаунта и фотопубликации за выбранный период, до 8 фотографий из карусели. Магазин появится после завершения сборки. Владельца можно будет подключить приглашением.</p><form id="instagram-create-form"><label for="ig-account">Instagram аккаунт</label><input id="ig-account" required maxlength="500" placeholder="@shop или https://instagram.com/shop/"><label for="ig-template">Шаблон</label><select id="ig-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><label for="ig-period">Период публикаций</label><select id="ig-period"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select><label for="ig-language">Основной язык сайта</label><select id="ig-language">${Object.entries(
+    operatorLanguages,
+  )
+    .map(([code, name]) => `<option value="${code}">${name}</option>`)
+    .join(
+      '',
+    )}</select><fieldset class="language-choices" id="ig-languages"><legend>Дополнительные языки</legend>${Object.entries(
+    operatorLanguages,
+  )
+    .map(([code, name]) => `<label><input type="checkbox" value="${code}"> ${name}</label>`)
+    .join(
+      '',
+    )}</fieldset><label for="ig-currency">Валюта</label><input id="ig-currency" value="USD" required maxlength="3" pattern="[A-Za-z]{3}"><label for="ig-reference">Сайт-референс (необязательно)</label><input id="ig-reference" type="url" placeholder="https://example.com"><button type="submit" class="primary">Собрать демо из Instagram</button></form><button type="button" data-action="instagram-refresh">Обновить статусы сборки</button><div id="instagram-jobs" role="status"></div></section>`;
+}
+async function updateInstagramJobs(sync = false) {
+  clearTimeout(instagramTimer);
+  if (!document.getElementById('instagram-jobs') || !apiKey) return;
+  if (sync) {
+    const pending = operatorDemoJobs.filter((j) =>
+      ['preparing', 'running', 'awaiting_import'].includes(j.status),
+    );
+    for (let i = 0; i < Math.min(2, pending.length); i++) {
+      const job = pending[(instagramSyncOffset + i) % pending.length];
+      await request('demo-jobs/' + job.id + '/sync', 'POST', {});
+    }
+    if (pending.length) instagramSyncOffset = (instagramSyncOffset + 2) % pending.length;
+  }
+  operatorDemoJobs = await request('demo-jobs');
+  const box = document.getElementById('instagram-jobs');
+  if (!box) return;
+  const statuses = {
+    preparing: 'Подключаем Instagram',
+    running: 'Собираем данные',
+    awaiting_import: 'Ожидаем данные',
+    ready: 'Демо готово',
+    failed: 'Не удалось собрать демо',
+  };
+  box.innerHTML =
+    '<h3>Сборка демо</h3>' +
+    (operatorDemoJobs
+      .map(
+        (j) =>
+          `<section class="card"><strong>@${escapeText(j.instagram)}</strong><p>${statuses[j.status] || escapeText(j.status)}${j.progress ? ' · ' + Number(j.progress) + '%' : ''}</p>${j.import_error ? `<p>${escapeText(j.import_error)}</p>` : ''}${j.status === 'ready' && j.slug ? `<a href="/s/${escapeText(j.slug)}" target="_blank" rel="noopener">Открыть сайт ↗</a> <button data-action="instagram-edit" data-store="${j.store_id}">Редактировать магазин</button>` : ''}${j.status === 'failed' ? `<button data-action="instagram-retry" data-job="${j.id}">Повторить сборку</button>` : ''}</section>`,
+      )
+      .join('') || '<p>Задания пока не созданы.</p>');
+  if (operatorDemoJobs.some((j) => ['preparing', 'running', 'awaiting_import'].includes(j.status)))
+    instagramTimer = setTimeout(
+      () => updateInstagramJobs(true).catch((e) => notice(e.message)),
+      6000,
+    );
+}
 function render() {
+  clearTimeout(instagramTimer);
   document.getElementById('logout').hidden = false;
   templateEditor = null;
   main.innerHTML = `<section class="card"><h2>Паспорта лидов</h2><p>Действия клиентов, выбранные шаблоны и история подготовки демо.</p><button data-action="leads">Открыть лидов</button></section><section class="card"><h2>Референсы пользователей</h2><p>Сайты, добавленные при самостоятельном создании демо.</p><button data-action="references">Открыть базу референсов</button></section>${domainSetupPanel()}<div class="card"><h2>1. Подключить Telegram</h2><p>Бот: @${escapeText(config.botUsername)}<br>Адрес: ${escapeText(config.publicOrigin)}</p><p>Кнопка устанавливает webhook, команды и меню вашего бота. Для новой фабрики используйте отдельного бота.</p><button class="primary" data-action="telegram">Настроить Telegram-бота</button></div>
- <form id="create-form" class="card"><h2>2. Создать магазин</h2><label for="new-template">Шаблон витрины</label><select id="new-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><p id="template-description"></p><a id="template-preview" href="/templates/minimal" target="_blank" rel="noopener">Открыть предпросмотр шаблона ↗</a><label class="seed-choice"><input id="seed-products" type="checkbox" checked> Добавить примерные товары</label><p>Примерные цены, остатки и иллюстрации замените перед активацией магазина.</p><label for="new-name">Название</label><input id="new-name" required maxlength="200" placeholder="Мой магазин"><label for="new-slug">Slug для ссылки</label><input id="new-slug" required maxlength="80" pattern="[a-z0-9][a-z0-9-]*" placeholder="my-store"><label for="new-description">Описание</label><textarea id="new-description" maxlength="2000"></textarea><label for="new-language">Язык сайта</label><select id="new-language"><option value="ru">Русский</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="fr">Français</option><option value="it">Italiano</option><option value="tr">Türkçe</option><option value="pl">Polski</option><option value="ja">日本語</option><option value="de">Deutsch</option><option value="ro">Română</option></select><label for="new-currency">Основная валюта</label><input id="new-currency" value="USD" maxlength="3" pattern="[A-Za-z]{3}" required><label for="new-accent">Основной цвет</label><input id="new-accent" type="color" value="#354f46"><button class="primary" type="submit" style="margin-top:16px">Создать демо</button><details><summary>Создать из готового JSON</summary><p>Если поле заполнено, используется JSON вместо полей выше. Формат соответствует API фабрики.</p><textarea id="new-json" aria-label="JSON магазина" placeholder="Вставьте JSON магазина"></textarea></details></form>
+ ${instagramCreatePanel()}<form id="create-form" class="card"><h2>2. Создать магазин</h2><label for="new-template">Шаблон витрины</label><select id="new-template">${templates.map((t) => `<option value="${t.id}">${escapeText(t.title)}</option>`).join('')}</select><p id="template-description"></p><a id="template-preview" href="/templates/minimal" target="_blank" rel="noopener">Открыть предпросмотр шаблона ↗</a><label class="seed-choice"><input id="seed-products" type="checkbox" checked> Добавить примерные товары</label><p>Примерные цены, остатки и иллюстрации замените перед активацией магазина.</p><label for="new-name">Название</label><input id="new-name" required maxlength="200" placeholder="Мой магазин"><label for="new-slug">Slug для ссылки</label><input id="new-slug" required maxlength="80" pattern="[a-z0-9][a-z0-9-]*" placeholder="my-store"><label for="new-description">Описание</label><textarea id="new-description" maxlength="2000"></textarea><label for="new-language">Язык сайта</label><select id="new-language"><option value="ru">Русский</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option><option value="fr">Français</option><option value="it">Italiano</option><option value="tr">Türkçe</option><option value="pl">Polski</option><option value="ja">日本語</option><option value="de">Deutsch</option><option value="ro">Română</option></select><label for="new-currency">Основная валюта</label><input id="new-currency" value="USD" maxlength="3" pattern="[A-Za-z]{3}" required><label for="new-accent">Основной цвет</label><input id="new-accent" type="color" value="#354f46"><button class="primary" type="submit" style="margin-top:16px">Создать демо</button><details><summary>Создать из готового JSON</summary><p>Если поле заполнено, используется JSON вместо полей выше. Формат соответствует API фабрики.</p><textarea id="new-json" aria-label="JSON магазина" placeholder="Вставьте JSON магазина"></textarea></details></form>
  <section class="card"><h2>Фото примеров в шаблонах</h2><p>Загрузите главное фото или вставьте ссылку для каждого примерного товара. Оно появится в предпросмотре и в новых магазинах; существующие магазины сохранят свои фото.</p><div class="actions">${templates.map((t) => `<button data-template-edit="${t.id}">${escapeText(t.title)}</button>`).join('')}</div></section>
  <div id="copy-status" role="status"></div>${config.notificationsAvailable ? '' : '<section class="card"><strong>Напоминания и уведомления о заказах пока не подключены.</strong><p>Подключите бота, чтобы отправлять сообщения клиентам.</p></section>'}<h2>3. Магазины</h2><label for="store-search">Поиск по аккаунту или названию магазина</label><input id="store-search" type="search" placeholder="@аккаунт, название или адрес демо" value="${escapeText(storeQuery)}"><p id="store-count" role="status"></p><p id="store-empty" hidden>Магазины не найдены.</p><div id="store-list">${stores.map((s, i) => `<section class="card" data-store-id="${s.id}"><h3>${escapeText(s.name)}</h3>${s.settings?.instagram ? `<p>@${escapeText(s.settings.instagram)}</p>` : ''}<p>${s.status === 'demo' ? 'Демонстрация' : s.acceptingOrders ? 'Активный магазин' : 'Приём заказов приостановлен'} · ${s.ownerLinked ? 'Владелец подключён' : 'Владелец не подключён'}</p><p><a href="/${s.status === 'demo' ? 'demo' : 'shop'}/${escapeText(s.slug)}" target="_blank" rel="noopener">Открыть сайт</a></p>${s.shareUrl ? `<p>Ссылка для клиента:<br><a class="share-link" href="${escapeText(s.shareUrl)}" target="_blank" rel="noopener">${escapeText(s.shareUrl)}</a></p>` : ''}${s.subscription ? `<p>Подписка: ${s.subscription.status === 'expired' ? 'срок истёк' : 'действует'} до ${new Date(s.subscription.expires_at * 1000).toLocaleDateString()}</p>${s.subscription.reminder_attempts && !s.subscription.reminder_sent_at ? '<p>Не удалось отправить напоминание: повторяем автоматически.</p>' : ''}` : '<p>Подписка не оформлена</p>'}<label for="subscription-months-${i}">Период подписки</label><select id="subscription-months-${i}"><option value="1">1 месяц</option><option value="3">3 месяца</option><option value="6">6 месяцев</option><option value="12">12 месяцев</option></select><label for="owner-${i}">${s.ownerLinked ? 'Telegram ID нового владельца' : 'Числовой Telegram ID владельца'}</label><input id="owner-${i}" inputmode="numeric" placeholder="ID, который показал бот после /start"><button data-invite="${i}" style="margin-top:12px">${s.ownerLinked ? 'Передать магазин' : 'Создать приглашение'}</button><div id="invite-${i}"></div><div class="actions" style="margin-top:16px"><button class="primary" data-edit="${i}">Редактировать магазин</button><button data-copy="${i}">Копировать магазин</button>${s.status === 'demo' ? `<button class="primary" data-activate="${i}" ${s.ownerLinked ? '' : 'disabled'}>Активировать магазин</button>` : ''}${s.status === 'active' ? `<button data-renew="${i}">Продлить подписку</button><button data-intake="${i}">${s.acceptingOrders ? 'Приостановить заказы' : 'Возобновить заказы'}</button>` : `<button class="danger" data-delete-demo="${i}">Удалить демо</button>`}<button data-export="${i}">Экспорт JSON</button></div>${domainPanel(s, i)}</section>`).join('') || '<p>Создайте первый магазин.</p>'}</div><button data-action="refresh">Обновить список</button>`;
   filterStores();
+  void updateInstagramJobs().catch((e) => notice(e.message));
   document.getElementById('new-template').dispatchEvent(new Event('change', { bubbles: true }));
 }
 document.getElementById('logout').addEventListener('click', () => {
@@ -250,6 +320,28 @@ document.addEventListener('submit', async (event) => {
       templates = await templateResponse.json();
       document.getElementById('platform-key').value = '';
       await refresh();
+    } else if (form.id === 'instagram-create-form') {
+      const language = document.getElementById('ig-language').value;
+      const result = await request('demo-jobs', 'POST', {
+        instagram: document.getElementById('ig-account').value.trim(),
+        templateId: document.getElementById('ig-template').value,
+        periodDays: Number(document.getElementById('ig-period').value),
+        language,
+        languages: [
+          ...new Set([
+            language,
+            ...[...document.querySelectorAll('#ig-languages input:checked')].map((el) => el.value),
+          ]),
+        ],
+        currency: document.getElementById('ig-currency').value.trim().toUpperCase(),
+        referenceUrl: document.getElementById('ig-reference').value.trim(),
+      });
+      await updateInstagramJobs();
+      notice(
+        result.job?.status === 'ready'
+          ? 'Демо уже готово. Откройте его в списке сборки.'
+          : 'Сборка запущена. Статус появится ниже.',
+      );
     } else if (form.id === 'domain-config-form') {
       await request('domains/config', 'PUT', {
         version: domainSettings.version,
@@ -349,6 +441,33 @@ document.addEventListener('click', async (event) => {
   button.disabled = true;
   notice('');
   try {
+    if (button.dataset.action === 'instagram-refresh') {
+      await updateInstagramJobs(true);
+      return;
+    }
+    if (button.dataset.action === 'instagram-edit') {
+      const id = button.dataset.store;
+      await refresh();
+      const index = stores.findIndex((s) => s.id === id);
+      if (index < 0) throw new Error('Магазин не найден');
+      document.querySelector('[data-edit="' + index + '"]').click();
+      return;
+    }
+    if (button.dataset.action === 'instagram-retry') {
+      const job = operatorDemoJobs.find((j) => j.id === button.dataset.job);
+      if (!job) throw new Error('Обновите список сборки');
+      await request('demo-jobs', 'POST', {
+        instagram: job.instagram,
+        templateId: job.template_id,
+        periodDays: job.period_days,
+        language: job.language,
+        languages: JSON.parse(job.languages || '[]'),
+        currency: job.currency,
+        referenceUrl: job.reference_url || '',
+      });
+      await updateInstagramJobs();
+      return;
+    }
     if (button.dataset.action === 'leads') {
       const leads = await request('leads');
       main.innerHTML =

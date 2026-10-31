@@ -289,3 +289,17 @@ async function createManualDemo(
   }
   return { job: (await listDemoJobs(env, owner)).find((j) => j.id === id) };
 }
+
+export async function createOperatorDemo(env: Env, input: unknown, origin: string) {
+  const data = object(input),
+    instagram = instagramUsername(data.instagram);
+  return createDemo(env, 'platform:' + instagram, { ...data, instagram }, origin);
+}
+export async function listOperatorDemoJobs(env: Env) {
+  return (
+    await stmt(
+      env,
+      `SELECT j.id,j.instagram,j.template_id,j.language,j.languages,j.currency,j.period_days,j.store_id,j.status,j.progress,j.import_error,j.created_at,s.slug,r.url reference_url FROM demo_build_jobs j LEFT JOIN stores s ON s.id=j.store_id LEFT JOIN site_references r ON r.id=j.reference_id WHERE j.owner_id LIKE 'platform:%' ORDER BY j.created_at DESC LIMIT 200`,
+    ).all()
+  ).results;
+}

@@ -180,7 +180,7 @@ export async function advanceAutoDemo(env: Env, job: ImportJob) {
         stmt(
           env,
           'UPDATE stores SET owner_id=?,orders_enabled=0 WHERE id=?',
-          job.owner_id,
+          job.owner_id.startsWith('platform:') ? null : job.owner_id,
           job.store_id,
         ),
         stmt(
