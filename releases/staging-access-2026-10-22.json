@@ -1,0 +1,15 @@
+{
+  "label": "staging-access-2026-10-22",
+  "accountId": "6cba2ecdc192570aba36e3a6d2765924",
+  "worker": "catalog-factory",
+  "url": "https://catalog-factory.nikita-karpof.workers.dev",
+  "versionId": "d0c4ef50-91a6-4ed3-bb5a-7974353da60d",
+  "deploymentId": "39dafdf7-d921-49b8-b3c8-e7e53973dd94",
+  "deployedAt": "2026-10-22T15:15:37.380285Z",
+  "databaseId": "990ae296-fa45-4392-b80e-c086a233f2c5",
+  "databaseName": "catalog-factory",
+  "bucket": "catalog-factory-images",
+  "stagingVersionId": "7c796707-e05f-4444-8c9b-f51c2ca8ce6c",
+  "stagingSourceCommit": "deb6a7ffd811457b71a88542586da62487dc6558",
+  "note": "Pinned production bundle with scripts/admin-preview-router.js applied before exports. Only /admin entry redirects to isolated staging. /admin?version=stable keeps the old panel. Production webhook, APIs, D1, secrets and assets are preserved."
+}
