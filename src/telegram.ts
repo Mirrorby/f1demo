@@ -21,7 +21,7 @@ export function notificationToken(env: Env) {
 }
 export async function telegram(env: Env, method: string, payload: unknown) {
   requireThat(
-    env.DEPLOYMENT_ENV !== 'staging' || ['sendMessage', 'getMe'].includes(method),
+    env.DEPLOYMENT_ENV !== 'staging' || ['sendMessage', 'sendDocument', 'getMe'].includes(method),
     'Настройка бота отключена в тестовой среде',
     403,
   );
@@ -29,8 +29,8 @@ export async function telegram(env: Env, method: string, payload: unknown) {
   requireThat(token, 'Telegram не настроен', 503);
   const result = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    headers: payload instanceof FormData ? undefined : { 'Content-Type': 'application/json' },
+    body: payload instanceof FormData ? payload : JSON.stringify(payload),
     signal: AbortSignal.timeout(8000),
   });
   const data = (await result.json()) as { ok: boolean; result?: unknown };

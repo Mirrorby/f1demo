@@ -486,6 +486,13 @@
     'Скачайте шаблон, заполните своими товарами и загрузите CSV для проверки перед импортом.':
       'Download the template, fill it with your products and upload the CSV to validate it before import.',
   });
+  Object.assign(en, {
+    'Получить файл в чате бота': 'Get the file in the bot chat',
+    'Скачивание отменено. Можно получить файл в чате бота.':
+      'Download cancelled. You can get the file in the bot chat.',
+    'CSV-файл отправлен в чат бота Delokay. Откройте чат и сохраните документ.':
+      'The CSV file was sent to the Delokay bot chat. Open the chat and save the document.',
+  });
   const reverse = Object.fromEntries(
     Object.entries(en)
       .reverse()

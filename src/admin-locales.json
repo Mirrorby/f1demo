@@ -2114,6 +2114,9 @@
     "Save the file as CSV UTF-8 without changing the headers. Use numeric prices such as 24.99. Separate up to 8 direct HTTPS photo links with |. Write variants as S:5|M:10; a blank stock value means no limit.": "Salvează fișierul ca CSV UTF-8 fără a schimba antetele. Prețurile sunt numere, de exemplu 24.99. Separă până la 8 linkuri HTTPS directe către fotografii prin |. Scrie variantele ca S:5|M:10; un stoc gol înseamnă fără limită.",
     "Paying during your trial preserves its remaining days. Renewing an active subscription adds the paid month to its expiry date; after expiry, the month starts when you apply the payment.": "Plata în timpul perioadei de probă păstrează zilele rămase. Prelungirea unui abonament activ adaugă luna plătită la data expirării; după expirare, luna începe când aplici plata.",
     "Your short link stays assigned to the catalog and does not change when you edit products. After the redirect, the browser shows the original Cloudflare URL; this is expected with a third-party shortener.": "Linkul scurt rămâne asociat catalogului și nu se schimbă când editezi produsele. După redirecționare, browserul afișează adresa originală Cloudflare; acest lucru este normal pentru un serviciu extern de scurtare.",
-    "Download the template, fill it with your products and upload the CSV to validate it before import.": "Descarcă șablonul, completează produsele tale și încarcă CSV-ul pentru verificare înainte de import."
+    "Download the template, fill it with your products and upload the CSV to validate it before import.": "Descarcă șablonul, completează produsele tale și încarcă CSV-ul pentru verificare înainte de import.",
+    "Get the file in the bot chat": "Primește fișierul în chatul botului",
+    "Download cancelled. You can get the file in the bot chat.": "Descărcare anulată. Poți primi fișierul în chatul botului.",
+    "The CSV file was sent to the Delokay bot chat. Open the chat and save the document.": "Fișierul CSV a fost trimis în chatul botului Delokay. Deschide chatul și salvează documentul."
   }
 }

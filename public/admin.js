@@ -1642,7 +1642,7 @@ function customOffer() {
   return `<section class="card"><h3>Нужен другой шаблон или новая функция?</h3><p>Напишите нам в личные сообщения. Индивидуальные доработки оплачиваются отдельно; стоимость согласуем до начала работы.</p>${supportButton('Обсудить доработку')}</section>`;
 }
 function importPanel() {
-  return `<section class="card"><h3>Все товары одним файлом${guideButton('import')}</h3><p>Скачайте шаблон, заполните своими товарами и загрузите CSV для проверки перед импортом.</p><p>Импорт добавляет товары к существующим. Максимум 500 товаров в каталоге. Примерную строку замените своими данными.</p><button type="button" data-csv-template>Скачать шаблон CSV</button><label for="catalog-csv">Загрузить заполненный CSV</label><input type="file" id="catalog-csv" accept=".csv,text/csv"><div id="csv-preview" role="status"></div><button type="button" data-csv-import hidden>Подтвердить импорт</button></section>`;
+  return `<section class="card"><h3>Все товары одним файлом${guideButton('import')}</h3><p>Скачайте шаблон, заполните своими товарами и загрузите CSV для проверки перед импортом.</p><p>Импорт добавляет товары к существующим. Максимум 500 товаров в каталоге. Примерную строку замените своими данными.</p><button type="button" data-csv-template>Скачать шаблон CSV</button>${!platformMode ? '<button type="button" data-csv-chat>Получить файл в чате бота</button>' : ''}<label for="catalog-csv">Загрузить заполненный CSV</label><input type="file" id="catalog-csv" accept=".csv,text/csv"><div id="csv-preview" role="status"></div><button type="button" data-csv-import hidden>Подтвердить импорт</button></section>`;
 }
 let importCandidate = null;
 document.addEventListener('click', async (e) => {
@@ -1650,37 +1650,28 @@ document.addEventListener('click', async (e) => {
   if (!button) return;
   try {
     if (button.hasAttribute('data-csv-template')) {
-      const columns = [
-        'Название',
-        'Категория',
-        'Описание',
-        'Артикул',
-        'Фото',
-        'Варианты',
-        'Наличие',
-        ...store.settings.currencies.map((c) => 'Цена ' + c),
-      ];
-      const example = [
-        'Замените своим товаром',
-        'Категория',
-        'Описание',
-        'SKU-001',
-        '',
-        'Стандарт:10',
-        'available',
-        ...store.settings.currencies.map(() => '24.99'),
-      ];
-      const encode = (row) => row.map((v) => '"' + String(v).replaceAll('"', '""') + '"').join(';');
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(
-        new Blob(['\uFEFF' + [columns, example].map(encode).join('\r\n')], {
-          type: 'text/csv;charset=utf-8',
-        }),
-      );
-      a.download = 'delokay-products.csv';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      const url = new URL('/downloads/products-template.csv', location.origin);
+      url.searchParams.set('currencies', store.settings.currencies.join(','));
+      if (!platformMode && tg?.initData) {
+        if (typeof tg.downloadFile === 'function' && tg.isVersionAtLeast?.('8.0')) {
+          try {
+            tg.downloadFile({ url: url.href, file_name: 'delokay-products.csv' }, (accepted) => {
+              if (!accepted) notice('Скачивание отменено. Можно получить файл в чате бота.');
+            });
+          } catch {
+            await sendCSVToChat();
+          }
+        } else await sendCSVToChat();
+      } else {
+        const a = document.createElement('a');
+        a.href = url.href;
+        a.download = 'delokay-products.csv';
+        document.body.append(a);
+        a.click();
+        a.remove();
+      }
     }
+    if (button.hasAttribute('data-csv-chat')) await sendCSVToChat();
     if (button.hasAttribute('data-csv-import') && importCandidate?.storeId === store.id) {
       button.disabled = true;
       const result = await api(base() + '/products-import', 'POST', {
@@ -1800,3 +1791,8 @@ document.addEventListener('click', async (e) => {
     button.disabled = false;
   }
 });
+
+async function sendCSVToChat() {
+  await api(base() + '/product-template', 'POST', {});
+  notice('CSV-файл отправлен в чат бота Delokay. Откройте чат и сохраните документ.');
+}

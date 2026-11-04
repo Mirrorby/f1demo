@@ -1,3 +1,4 @@
+import { templateDownload, sendProductTemplate } from './product-template';
 export { LegacyDeveloperServices } from './legacy-services';
 import { trialStatus, activateTrial } from './trial';
 import { catalogPlanConfig, applyCatalogPurchase, configureCatalogPlan } from './catalog-plan';
@@ -62,8 +63,15 @@ const storefrontMarkup = (language: string = 'ru') => {
     )
     .replace(/src="\/s\/app\.js(?:\?[^"]*)?"/, `src="/s/app.js?v=${storefrontAssetVersion}"`);
 };
+const panelAssetVersion = (() => {
+  let hash = 2166136261;
+  for (const char of adminScript + adminI18nScript + platformScript)
+    hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+  return (hash >>> 0).toString(16);
+})();
 const brandedPanel = (html: string) =>
   html
+    .replace(/src="\/admin\/app\.js(?:\?[^"]*)?"/, `src="/admin/app.js?v=${panelAssetVersion}"`)
     .replace(/<script defer src="\/admin-i18n\.js[^"]*"><\/script>/, '')
     .replace(/<script defer src="\/admin-locales\.js[^"]*"><\/script>/, '')
     .replace('</head>', `<style id="delokay-theme-inline">${adminStyle}</style></head>`)
@@ -189,6 +197,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
   const url = new URL(request.url),
     path = url.pathname,
     method = request.method;
+  if (path === '/downloads/products-template.csv') return templateDownload(request);
   if (/^\/c\/[a-z0-9][a-z0-9-]{0,79}$/.test(path) && ['GET', 'HEAD'].includes(method)) {
     const slug = path.slice(3);
     requireThat(
@@ -396,7 +405,12 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
         ? null
         : editor
           ? brandedPanel(platformEditorPage)
-          : platformPage.replace('</head>', `<style>${adminStyle}</style></head>`),
+          : platformPage
+              .replace('</head>', `<style>${adminStyle}</style></head>`)
+              .replace(
+                /src="\/platform\/app\.js(?:\?[^"]*)?"/,
+                `src="/platform/app.js?v=${panelAssetVersion}"`,
+              ),
       {
         headers: {
           'Content-Type': 'text/html; charset=utf-8',
@@ -735,7 +749,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
       return json(stores.results.map((s) => publicStore(s, env.BOT_USERNAME)));
     }
     const match = path.match(
-      /^\/api\/(?:admin|platform)\/stores\/([a-f0-9-]{36})(?:\/(products|products-import|short-link|activate-purchase|trial|product-order|orders|settings|images)(?:\/([a-f0-9-]{36}))?)?$/,
+      /^\/api\/(?:admin|platform)\/stores\/([a-f0-9-]{36})(?:\/(products|products-import|product-template|short-link|activate-purchase|trial|product-order|orders|settings|images)(?:\/([a-f0-9-]{36}))?)?$/,
     );
     if (match) {
       const s = isPlatform
@@ -771,6 +785,8 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           stats,
         });
       }
+      if (!isPlatform && section === 'product-template' && method === 'POST')
+        return json(await sendProductTemplate(env, s));
       if (!isPlatform && section === 'trial' && method === 'POST') {
         const result = await activateTrial(env, s);
         ctx.waitUntil(sendSubscriptionReminders(env));

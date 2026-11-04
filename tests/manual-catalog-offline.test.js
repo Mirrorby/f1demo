@@ -61,7 +61,7 @@ before(async () => {
   };
   const built = await build({
     stdin: {
-      contents: `export {createDemo} from './src/onboarding'; export {activateTrial,trialStatus} from './src/trial'; export {manualSubscription,sendSubscriptionReminders} from './src/subscriptions'; export {notificationCopy} from './src/subscription-notifications'; export {parseCSV,importProducts} from './src/product-import'; export {shortLink} from './src/short-links'; export {applyCatalogPurchase,catalogPlanConfig} from './src/catalog-plan'; export {templates,templateProducts,templateSettings} from './src/templates';`,
+      contents: `export {productTemplateCSV,templateDownload,sendProductTemplate} from './src/product-template'; export {createDemo} from './src/onboarding'; export {activateTrial,trialStatus} from './src/trial'; export {manualSubscription,sendSubscriptionReminders} from './src/subscriptions'; export {notificationCopy} from './src/subscription-notifications'; export {parseCSV,importProducts} from './src/product-import'; export {shortLink} from './src/short-links'; export {applyCatalogPurchase,catalogPlanConfig} from './src/catalog-plan'; export {templates,templateProducts,templateSettings} from './src/templates';`,
       resolveDir: process.cwd(),
     },
     bundle: true,
@@ -437,4 +437,55 @@ test('Romanian and English notices distinguish trial expiry from paid renewal', 
     app.notificationCopy('renewed', 'paid', 'en', 'Test', 1900000000).text,
     /extended until/,
   );
+});
+
+test('CSV HTTPS download has Excel-compatible encoding, headers and matching columns', async () => {
+  const csv = app.productTemplateCSV(['USD', 'EUR']);
+  assert.equal(csv.charCodeAt(0), 0xfeff);
+  assert.ok(csv.includes('\r\n'));
+  const rows = app.parseCSV(csv);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].length, 9);
+  assert.equal(rows[1].length, 9);
+  const response = app.templateDownload(
+    new Request('https://store.example/downloads/products-template.csv?currencies=USD,EUR'),
+  );
+  assert.equal(
+    response.headers.get('content-disposition'),
+    'attachment; filename="delokay-products.csv"',
+  );
+  assert.equal(response.headers.get('access-control-allow-origin'), 'https://web.telegram.org');
+  assert.deepEqual([...new Uint8Array(await response.arrayBuffer()).slice(0, 3)], [239, 187, 191]);
+  assert.equal(
+    await app
+      .templateDownload(
+        new Request('https://store.example/downloads/products-template.csv', { method: 'HEAD' }),
+      )
+      .text(),
+    '',
+  );
+  assert.throws(() => app.productTemplateCSV(['USD', 'USD']));
+  assert.throws(() => app.productTemplateCSV(['USD', 'EUR', 'GBP']));
+});
+test('CSV chat fallback uploads an actual document only to the store owner', async () => {
+  const demo = await fresh('99887766');
+  env.TELEGRAM_BOT_TOKEN = 'test';
+  let sent = 0;
+  globalThis.fetch = async (url, options) => {
+    assert.ok(String(url).endsWith('/sendDocument'));
+    assert.ok(options.body instanceof FormData);
+    assert.equal(options.body.get('chat_id'), '99887766');
+    const file = options.body.get('document');
+    assert.equal(file.name, 'delokay-products.csv');
+    assert.ok((await file.text()).includes('Цена USD'));
+    sent++;
+    return Response.json({ ok: true, result: { message_id: 123 } });
+  };
+  try {
+    await app.sendProductTemplate(env, row(demo.job.store_id));
+    await assert.rejects(() => app.sendProductTemplate(env, row(demo.job.store_id)));
+    assert.equal(sent, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
