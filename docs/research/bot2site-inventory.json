@@ -1,0 +1,321 @@
+{
+  "reviewedAt": "2026-10-22",
+  "catalogUrl": "https://bot2site.com/ru/templates/",
+  "advertisedCount": "50+",
+  "publicDemoLinksFound": 39,
+  "notes": "Catalog links inventoried. Eight demo structures readable; other demos could not be retrieved by the research tool. Proposed niches are Delokay hypotheses, not Bot2Site features. No third-party code, photos or copy imported.",
+  "entries": [
+    {
+      "id": "barbershop",
+      "sourceTitle": "Барбершоп",
+      "sourceUrl": "https://barbershop-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Мужская косметика и аксессуары",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "hairsalon",
+      "sourceTitle": "Парикмахерская",
+      "sourceUrl": "https://hairsalon-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Средства для волос",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "nailsalon",
+      "sourceTitle": "Маникюр",
+      "sourceUrl": "https://nailsalon-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Материалы для маникюра",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "beautysalon",
+      "sourceTitle": "Салон красоты",
+      "sourceUrl": "https://beautysalon-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Косметика и уход",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "tattoo",
+      "sourceTitle": "Тату-студия",
+      "sourceUrl": "https://tattoo-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Украшения и авторский мерч",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "massage",
+      "sourceTitle": "Массаж",
+      "sourceUrl": "https://massage-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Массажёры и товары для отдыха",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "pmu",
+      "sourceTitle": "Перманентный макияж",
+      "sourceUrl": "https://pmu-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Профессиональная косметика",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "brows",
+      "sourceTitle": "Брови и ресницы",
+      "sourceUrl": "https://brows-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Косметика для глаз",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "waxing",
+      "sourceTitle": "Депиляция",
+      "sourceUrl": "https://waxing-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Средства для ухода за телом",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "cafe",
+      "sourceTitle": "Кафе",
+      "sourceUrl": "https://cafe-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Кофе и чай",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "bar",
+      "sourceTitle": "Бар",
+      "sourceUrl": "https://bar-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Барные аксессуары",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "donner",
+      "sourceTitle": "Донер",
+      "sourceUrl": "https://donner-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Готовая еда",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "bakery",
+      "sourceTitle": "Пекарня",
+      "sourceUrl": "https://bakery-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Выпечка и десерты",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "catering",
+      "sourceTitle": "Кейтеринг",
+      "sourceUrl": "https://catering-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Подарочные гастронаборы",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "foodtrack",
+      "sourceTitle": "Фудтрак",
+      "sourceUrl": "https://foodtrack-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Еда навынос",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "nightclub",
+      "sourceTitle": "Ночной клуб",
+      "sourceUrl": "https://nightclub-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Одежда и аксессуары для вечеринок",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "restaurant",
+      "sourceTitle": "Ресторан",
+      "sourceUrl": "https://restaurant-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Гастрономия и деликатесы",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "event",
+      "sourceTitle": "Event-агентство",
+      "sourceUrl": "https://event-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Праздничный декор",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "psyhologist",
+      "sourceTitle": "Психолог",
+      "sourceUrl": "https://psyhologist-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Дневники и товары для саморазвития",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "physio",
+      "sourceTitle": "Физиотерапевт",
+      "sourceUrl": "https://physio-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Товары для спорта и восстановления",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "family-doctor",
+      "sourceTitle": "Семейный врач",
+      "sourceUrl": "https://family-doctor-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Товары для домашнего ухода",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "vet",
+      "sourceTitle": "Ветклиника",
+      "sourceUrl": "https://vet-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Зоотовары",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "grooming",
+      "sourceTitle": "Груминг",
+      "sourceUrl": "https://grooming-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Уход за питомцами",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "lawyer",
+      "sourceTitle": "Юрист",
+      "sourceUrl": "https://lawyer-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Канцелярия и деловые аксессуары",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "lifecoach",
+      "sourceTitle": "Лайф-коуч",
+      "sourceUrl": "https://lifecoach-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Планеры и книги",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "photographer",
+      "sourceTitle": "Фотограф",
+      "sourceUrl": "https://photographer-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Авторские принты и постеры",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "business",
+      "sourceTitle": "Бизнес-консультант",
+      "sourceUrl": "https://business-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Офисные товары и корпоративные наборы",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "realestate",
+      "sourceTitle": "Риелтор",
+      "sourceUrl": "https://realestate-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Мебель и интерьер",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "electric",
+      "sourceTitle": "Электрик",
+      "sourceUrl": "https://electric-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Освещение и электротовары",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "plumber",
+      "sourceTitle": "Сантехник",
+      "sourceUrl": "https://plumber-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Сантехника",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "renovation",
+      "sourceTitle": "Ремонт",
+      "sourceUrl": "https://renovation-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Материалы для ремонта",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "cleaning",
+      "sourceTitle": "Клининг",
+      "sourceUrl": "https://cleaning-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Бытовая химия",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "garden",
+      "sourceTitle": "Ландшафт и сад",
+      "sourceUrl": "https://garden-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Растения и садовые товары",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "doors",
+      "sourceTitle": "Окна и двери",
+      "sourceUrl": "https://doors-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Окна и двери",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "roof",
+      "sourceTitle": "Кровельщик",
+      "sourceUrl": "https://roof-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Кровельные материалы",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "painter",
+      "sourceTitle": "Маляр",
+      "sourceUrl": "https://painter-ru.bot2site.com/",
+      "reviewStatus": "structure_reviewed",
+      "proposedProductNiche": "Краски и декоративные покрытия",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "carpenter",
+      "sourceTitle": "Столяр",
+      "sourceUrl": "https://carpenter-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Мебель ручной работы",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "dentist",
+      "sourceTitle": "Стоматология",
+      "sourceUrl": "https://dentist-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Товары для гигиены полости рта",
+      "adaptationStatus": "concept_only"
+    },
+    {
+      "id": "fitnessclub",
+      "sourceTitle": "Фитнес-клуб",
+      "sourceUrl": "https://fitnessclub-ru.bot2site.com/",
+      "reviewStatus": "demo_unavailable_via_research_tool",
+      "proposedProductNiche": "Спортивная одежда и инвентарь",
+      "adaptationStatus": "concept_only"
+    }
+  ]
+}

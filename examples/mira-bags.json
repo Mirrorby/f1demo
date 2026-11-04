@@ -1,0 +1,26 @@
+{
+  "name": "Mira Bags",
+  "slug": "mira-bags",
+  "description": "Сумки и аксессуары на каждый день",
+  "accentColor": "#A67C68",
+  "status": "demo",
+  "settings": {
+    "currencies": ["BYN", "RUB"],
+    "deliveryMethods": ["Доставка по Беларуси", "Самовывоз"],
+    "deliveryHint": "Стоимость и время доставки согласуем при подтверждении заказа."
+  },
+  "products": [
+    {
+      "name": "Classic Bag", "category": "Сумки",
+      "description": "Лаконичная сумка для повседневных вещей.",
+      "prices": {"BYN": 8500, "RUB": 240000},
+      "discountPercent": 10,
+      "variants": [{"label": "Бежевый", "stock": 3}, {"label": "Чёрный", "stock": 5}]
+    },
+    {
+      "name": "Ключница", "category": "Аксессуары",
+      "prices": {"BYN": 1500, "RUB": 42000},
+      "variants": [{"label": "Без вариантов", "stock": null}]
+    }
+  ]
+}
