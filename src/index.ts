@@ -41,6 +41,13 @@ import {
   supportedLanguages,
   storefrontDictionaries,
 } from './language';
+// Couple the layout script and CSS to the same published bundle, including cached WebViews.
+const storefrontAssetVersion = (() => {
+  let hash = 2166136261;
+  for (const char of storefrontStyle + storefrontScript)
+    hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+  return (hash >>> 0).toString(16);
+})();
 const storefrontMarkup = (language: string = 'ru') => {
   const selected = normalizeLanguage(language);
   return storefrontPage
@@ -48,7 +55,12 @@ const storefrontMarkup = (language: string = 'ru') => {
     .replace(/>([^<>]+)</g, (all, value: string) => {
       const text = value.trim();
       return english[text] ? '>' + value.replace(text, translate(text, selected)) + '<' : all;
-    });
+    })
+    .replace(
+      '<link rel="stylesheet" href="/storefront.css" />',
+      `<style id="delokay-storefront-style" data-version="${storefrontAssetVersion}">${storefrontStyle}</style>`,
+    )
+    .replace('src="/s/app.js"', `src="/s/app.js?v=${storefrontAssetVersion}"`);
 };
 const brandedPanel = (html: string) =>
   html
