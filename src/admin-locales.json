@@ -2109,6 +2109,11 @@
     "Activate one site free for 14 days, once per account, with no card or automatic charges.": "Activează un site gratuit pentru 14 zile, o singură dată per cont, fără card și fără debitări automate.",
     "Open Payments to renew.": "Deschide secțiunea Plată pentru prelungire.",
     "Go to payments": "Mergi la plată",
-    "You can activate a free trial or pay for a month in Payments.": "Poți activa perioada de probă gratuită sau plăti o lună în secțiunea Plată."
+    "You can activate a free trial or pay for a month in Payments.": "Poți activa perioada de probă gratuită sau plăti o lună în secțiunea Plată.",
+    "You can change the name, description, contacts and design after creating your catalog. Switching templates keeps your products.": "Poți modifica numele, descrierea, contactele și designul după crearea catalogului. Schimbarea șablonului păstrează produsele.",
+    "Save the file as CSV UTF-8 without changing the headers. Use numeric prices such as 24.99. Separate up to 8 direct HTTPS photo links with |. Write variants as S:5|M:10; a blank stock value means no limit.": "Salvează fișierul ca CSV UTF-8 fără a schimba antetele. Prețurile sunt numere, de exemplu 24.99. Separă până la 8 linkuri HTTPS directe către fotografii prin |. Scrie variantele ca S:5|M:10; un stoc gol înseamnă fără limită.",
+    "Paying during your trial preserves its remaining days. Renewing an active subscription adds the paid month to its expiry date; after expiry, the month starts when you apply the payment.": "Plata în timpul perioadei de probă păstrează zilele rămase. Prelungirea unui abonament activ adaugă luna plătită la data expirării; după expirare, luna începe când aplici plata.",
+    "Your short link stays assigned to the catalog and does not change when you edit products. After the redirect, the browser shows the original Cloudflare URL; this is expected with a third-party shortener.": "Linkul scurt rămâne asociat catalogului și nu se schimbă când editezi produsele. După redirecționare, browserul afișează adresa originală Cloudflare; acest lucru este normal pentru un serviciu extern de scurtare.",
+    "Download the template, fill it with your products and upload the CSV to validate it before import.": "Descarcă șablonul, completează produsele tale și încarcă CSV-ul pentru verificare înainte de import."
   }
 }

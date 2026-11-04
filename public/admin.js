@@ -288,7 +288,7 @@ async function showCreate(seq) {
   if (!response.ok) throw new Error('Не удалось загрузить шаблоны');
   const templates = await response.json();
   if (seq !== generation) return;
-  main.innerHTML = `<h2>Создать магазин</h2><ol class="demo-steps"><li>Данные магазина</li><li>Оформление</li><li>Товары и запуск</li></ol>
+  main.innerHTML = `<h2>Создать магазин${guideButton('create')}</h2><ol class="demo-steps"><li>Данные магазина</li><li>Оформление</li><li>Товары и запуск</li></ol>
 <section class="card"><p>До трёх бесплатных демо на аккаунт. Без активации демо живёт 7 дней и затем удаляется.</p><p>24,99 USD в месяц за один активный сайт. Каждый дополнительный сайт оплачивается отдельно.</p><p>Один сайт можно активировать бесплатно на 14 дней — один раз на аккаунт, без карты и автоматического списания.</p></section>
 <form id="demo-form"><section class="card"><h3>Данные магазина</h3><label for="demo-name">Название магазина</label><input id="demo-name" maxlength="200" required><label for="demo-description">Описание магазина</label><textarea id="demo-description" maxlength="2000"></textarea><label for="demo-logo">Ссылка на логотип</label><input id="demo-logo" type="url" placeholder="https://example.com/logo.png"><label for="demo-telegram">Telegram username без @</label><input id="demo-telegram" maxlength="64"><label for="demo-whatsapp">WhatsApp: номер с кодом страны, только цифры</label><input id="demo-whatsapp" maxlength="20">
 <label for="demo-language">Основной язык сайта</label><select id="demo-language">${languageOptions()}</select>${languagesField([], 'demo-languages')}
@@ -334,7 +334,7 @@ async function showPayments(seq) {
     review: 'Нужна сверка',
     creating: 'Создаётся',
   };
-  main.innerHTML = `<div class="row between page-heading"><div><h2>Оплата услуг</h2><p class="section-caption">Оплачивайте услуги и следите за статусом покупок в одном месте.</p></div></div><div class="card payment-intro"><h3>Один активный сайт · 24,99 USD в месяц</h3>${trialOffer()}<p>Каждый сайт оплачивается отдельно. После подтверждения оплаты выберите покупку ниже и активируйте текущий сайт на один месяц. Автоматическое списание не включено.</p>
+  main.innerHTML = `<div class="row between page-heading"><div><h2>Оплата услуг</h2><p class="section-caption">Оплачивайте услуги и следите за статусом покупок в одном месте.</p></div></div><div class="card payment-intro"><h3>Один активный сайт · 24,99 USD в месяц${guideButton('activation')}</h3>${trialOffer()}<p>Каждый сайт оплачивается отдельно. После подтверждения оплаты выберите покупку ниже и активируйте текущий сайт на один месяц. Автоматическое списание не включено.</p>
     </div>${
       config.mode === 'digital'
         ? `<div class="card payment-offer"><h3>${esc(config.name || 'Создание сайта')}</h3>${config.configured ? `<p>${(config.amountMinor / 100).toFixed(2)} ${esc(String(config.currency).toUpperCase())}</p>` : ''}
@@ -630,7 +630,7 @@ async function show(next = tab) {
       else renderOrdersList();
     } else if (tab === 'settings') await renderSettings(seq);
     else if (tab === 'site')
-      main.innerHTML = `<div class="row between page-heading"><div><h2>Мой сайт</h2><p class="section-caption">Ссылка на витрину</p></div></div>
+      main.innerHTML = `<div class="row between page-heading"><div><h2>Мой сайт${guideButton('link')}</h2><p class="section-caption">Ссылка на витрину</p></div></div>
         <div class="card site-overview"><div class="row between"><h3 data-no-i18n>${esc(store.name)}</h3><span class="badge">${storeState()}</span></div>
         <p class="section-caption">${store.status === 'demo' ? 'Заказы отключены в демонстрационном режиме.' : 'Магазин готов делиться с клиентами.'}</p>
         <div class="site-link" data-no-i18n>${esc(shareUrl() || 'Нажмите «Получить короткую ссылку»')}</div>
@@ -1642,7 +1642,7 @@ function customOffer() {
   return `<section class="card"><h3>Нужен другой шаблон или новая функция?</h3><p>Напишите нам в личные сообщения. Индивидуальные доработки оплачиваются отдельно; стоимость согласуем до начала работы.</p>${supportButton('Обсудить доработку')}</section>`;
 }
 function importPanel() {
-  return `<section class="card"><h3>Все товары одним файлом</h3><p>Скачайте CSV, заполните его в Excel или Google Таблицах и сохраните как CSV UTF-8. Цена — число, например 24.99. Фото — до 8 прямых HTTPS-ссылок через |. Варианты — S:5|M:10; пустой остаток означает отсутствие ограничения.</p><p>Импорт добавляет товары к существующим. Максимум 500 товаров в каталоге. Примерную строку замените своими данными.</p><button type="button" data-csv-template>Скачать шаблон CSV</button><label for="catalog-csv">Загрузить заполненный CSV</label><input type="file" id="catalog-csv" accept=".csv,text/csv"><div id="csv-preview" role="status"></div><button type="button" data-csv-import hidden>Подтвердить импорт</button></section>`;
+  return `<section class="card"><h3>Все товары одним файлом${guideButton('import')}</h3><p>Скачайте шаблон, заполните своими товарами и загрузите CSV для проверки перед импортом.</p><p>Импорт добавляет товары к существующим. Максимум 500 товаров в каталоге. Примерную строку замените своими данными.</p><button type="button" data-csv-template>Скачать шаблон CSV</button><label for="catalog-csv">Загрузить заполненный CSV</label><input type="file" id="catalog-csv" accept=".csv,text/csv"><div id="csv-preview" role="status"></div><button type="button" data-csv-import hidden>Подтвердить импорт</button></section>`;
 }
 let importCandidate = null;
 document.addEventListener('click', async (e) => {
@@ -1726,41 +1726,20 @@ document.addEventListener('change', async (e) => {
   }
 });
 const guideCopy = {
-  home: 'Начните с товаров и настроек. Проверьте каталог, получите короткую ссылку и откройте оплату для активации. До 3 демо на аккаунт; срок демо без активации — 7 дней.',
   create:
-    'Укажите название, описание и контакты. Выберите основной язык, дополнительные языки, валюту и оформление. Затем добавьте товары вручную или импортируйте CSV.',
-  products:
-    'Добавляйте товары вручную или одним CSV. В файле сохраняйте заголовки. Фото разделяйте знаком |, варианты записывайте как S:5|M:10. Проверьте предварительный просмотр и подтвердите импорт.',
-  settings:
-    'После изменения языка, валюты, контактов или оформления сохраните настройки. Для каждой включённой валюты нужны цены всех товаров. Собственные переводы названий и описаний заполняйте в полях переводов.',
-  orders:
-    'Заказы доступны после активации сайта. Откройте заказ, проверьте товары и контакты покупателя, свяжитесь с ним и меняйте статус по мере выполнения.',
-  payments:
-    '24,99 USD — один месяц работы одного сайта. Дополнительные сайты оплачиваются отдельно. Демо без активации удаляется через 7 дней. Индивидуальный дизайн и новые функции оплачиваются отдельно.',
+    'Название, описание, контакты и оформление можно изменить после создания каталога. При смене шаблона ваши товары сохранятся.',
+  import:
+    'Сохраните файл как CSV UTF-8 и не меняйте заголовки. Цена — число, например 24.99. До 8 прямых HTTPS-ссылок на фото разделяйте знаком |. Варианты записывайте как S:5|M:10; пустой остаток означает отсутствие ограничения.',
+  activation:
+    'Если оплатить во время триала, оставшиеся дни сохранятся. При продлении действующей подписки оплаченный месяц добавляется к её дате окончания; после истечения — отсчитывается от момента активации оплаты.',
+  link: 'Короткая ссылка сохраняется за каталогом и не меняется при редактировании товаров. После перехода браузер покажет исходный адрес Cloudflare — это ожидаемо для стороннего сокращателя.',
 };
-function guideButton(message) {
-  return `<button type="button" class="help-trigger" data-guide="${esc(message)}" aria-label="Подсказка">?</button>`;
+function guideButton(key) {
+  const message = guideCopy[key];
+  return message
+    ? `<button type="button" class="help-trigger" data-guide-key="${key}" data-guide="${esc(message)}" aria-label="Подсказка">?</button>`
+    : '';
 }
-const guideObserver = new MutationObserver(() => {
-  for (const heading of main.querySelectorAll('h2,h3')) {
-    if (heading.querySelector('[data-guide]')) continue;
-    heading.insertAdjacentHTML('beforeend', guideButton(guideCopy[tab] || guideCopy.settings));
-  }
-  for (const label of main.querySelectorAll('label[for]')) {
-    const input = document.getElementById(label.htmlFor);
-    if (!input || label.nextElementSibling?.hasAttribute('data-guide-field')) continue;
-    if (input.type === 'radio' || input.type === 'checkbox') continue;
-    const b = document.createElement('span');
-    b.dataset.guideField = '';
-    b.innerHTML = guideButton(
-      input.id.includes('photo') || input.id.includes('logo')
-        ? 'Используйте прямую HTTPS-ссылку на изображение или загрузите файл там, где доступна загрузка.'
-        : guideCopy[tab] || guideCopy.settings,
-    );
-    label.after(b);
-  }
-});
-guideObserver.observe(main, { childList: true, subtree: true });
 document.addEventListener('click', (e) => {
   const button = e.target.closest('[data-guide]');
   if (!button) return;

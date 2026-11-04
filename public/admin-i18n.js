@@ -474,6 +474,18 @@
     'Вы можете активировать бесплатный триал или оплатить месяц в разделе оплаты.':
       'You can activate a free trial or pay for a month in Payments.',
   });
+  Object.assign(en, {
+    'Название, описание, контакты и оформление можно изменить после создания каталога. При смене шаблона ваши товары сохранятся.':
+      'You can change the name, description, contacts and design after creating your catalog. Switching templates keeps your products.',
+    'Сохраните файл как CSV UTF-8 и не меняйте заголовки. Цена — число, например 24.99. До 8 прямых HTTPS-ссылок на фото разделяйте знаком |. Варианты записывайте как S:5|M:10; пустой остаток означает отсутствие ограничения.':
+      'Save the file as CSV UTF-8 without changing the headers. Use numeric prices such as 24.99. Separate up to 8 direct HTTPS photo links with |. Write variants as S:5|M:10; a blank stock value means no limit.',
+    'Если оплатить во время триала, оставшиеся дни сохранятся. При продлении действующей подписки оплаченный месяц добавляется к её дате окончания; после истечения — отсчитывается от момента активации оплаты.':
+      'Paying during your trial preserves its remaining days. Renewing an active subscription adds the paid month to its expiry date; after expiry, the month starts when you apply the payment.',
+    'Короткая ссылка сохраняется за каталогом и не меняется при редактировании товаров. После перехода браузер покажет исходный адрес Cloudflare — это ожидаемо для стороннего сокращателя.':
+      'Your short link stays assigned to the catalog and does not change when you edit products. After the redirect, the browser shows the original Cloudflare URL; this is expected with a third-party shortener.',
+    'Скачайте шаблон, заполните своими товарами и загрузите CSV для проверки перед импортом.':
+      'Download the template, fill it with your products and upload the CSV to validate it before import.',
+  });
   const reverse = Object.fromEntries(
     Object.entries(en)
       .reverse()
