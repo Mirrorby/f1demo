@@ -2406,7 +2406,13 @@ button {
 }
 /* Food: menu rows and an illustrated cover. */
 [data-theme='food'] {
-  --bg: #fff8ec;
+  --page: #fff8ec;
+  --surface: #fffdf7;
+  --surface2: #f5e8d5;
+  --surface3: #efdfc7;
+  --border: #dfccb2;
+  --muted: #755b47;
+  --dim: #806753;
   --text: #3c2418;
   --accent: #a94726;
 }
@@ -2462,7 +2468,13 @@ button {
 }
 /* Flowers: asymmetric editorial images, soft arches and staggered cards. */
 [data-theme='flowers'] {
-  --bg: #fbf3f5;
+  --page: #fbf3f5;
+  --surface: #fffafd;
+  --surface2: #f0e0e6;
+  --surface3: #ead5df;
+  --border: #dcc4d0;
+  --muted: #785c6b;
+  --dim: #866d79;
   --text: #4a2c3a;
   --accent: #81485e;
 }
@@ -2526,7 +2538,13 @@ button {
 }
 /* Tech: dark specification panels and a compact four-column grid. */
 [data-theme='tech'] {
-  --bg: #101720;
+  --page: #101720;
+  --surface: #1b2836;
+  --surface2: #243548;
+  --surface3: #2d4258;
+  --border: #3d5268;
+  --muted: #bccbd9;
+  --dim: #a6bacd;
   --text: #eef6ff;
   --accent: #73e7b5;
   background: #101720;
@@ -2635,4 +2653,20 @@ button {
   [data-theme='tech'] .hero-visual img {
     height: 200px;
   }
+}
+
+[data-theme='tech'] .hero-inner,
+[data-theme='flowers'] .hero-inner {
+  text-align: left;
+}
+[data-theme='tech'] .hero-subtitle,
+[data-theme='flowers'] .hero-subtitle {
+  margin-left: 0;
+}
+[data-theme='tech'] .hero-badge,
+[data-theme='tech'] .add-btn,
+[data-theme='tech'] .pm-add,
+[data-theme='tech'] .size-btn.active,
+[data-theme='tech'] .fbtn.active {
+  color: #10251b;
 }

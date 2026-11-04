@@ -60,7 +60,7 @@ const storefrontMarkup = (language: string = 'ru') => {
       '<link rel="stylesheet" href="/storefront.css" />',
       `<style id="delokay-storefront-style" data-version="${storefrontAssetVersion}">${storefrontStyle}</style>`,
     )
-    .replace('src="/s/app.js"', `src="/s/app.js?v=${storefrontAssetVersion}"`);
+    .replace(/src="\/s\/app\.js(?:\?[^"]*)?"/, `src="/s/app.js?v=${storefrontAssetVersion}"`);
 };
 const brandedPanel = (html: string) =>
   html
