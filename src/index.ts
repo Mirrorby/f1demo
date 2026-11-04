@@ -215,10 +215,6 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
     }
     requireThat(verified, 'Нет доступа', 401);
     await processAutoDemos(env);
-    await stmt(
-      env,
-      'UPDATE stores SET orders_enabled=0,version=version+1 WHERE orders_enabled=1 AND id IN (SELECT store_id FROM subscriptions WHERE expires_at<=unixepoch())',
-    ).run();
     await sendSubscriptionReminders(env);
     await flushNotifications(env);
     await runRetention(env);
@@ -594,6 +590,7 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
             409,
           );
         const result = await manualSubscription(env, s, await jsonBody(request));
+        ctx.waitUntil(sendSubscriptionReminders(env));
         return json({ ...result, url: origin(env) + '/shop/' + s.slug });
       }
       if (match[2] === 'export' && method === 'GET')
@@ -762,10 +759,16 @@ async function route(request: Request, env: Env, ctx: ExecutionContext): Promise
           stats,
         });
       }
-      if (!isPlatform && section === 'trial' && method === 'POST')
-        return json(await activateTrial(env, s));
-      if (!isPlatform && section === 'activate-purchase' && method === 'POST')
-        return json(await applyCatalogPurchase(env, s, await jsonBody(request)));
+      if (!isPlatform && section === 'trial' && method === 'POST') {
+        const result = await activateTrial(env, s);
+        ctx.waitUntil(sendSubscriptionReminders(env));
+        return json(result);
+      }
+      if (!isPlatform && section === 'activate-purchase' && method === 'POST') {
+        const result = await applyCatalogPurchase(env, s, await jsonBody(request));
+        ctx.waitUntil(sendSubscriptionReminders(env));
+        return json(result);
+      }
       if (section === 'short-link' && method === 'POST') return json(await shortLink(env, s));
       if (section === 'products-import' && method === 'POST')
         return json(await importProducts(env, s, await jsonBody(request, 1024000)));
@@ -958,7 +961,9 @@ export default {
       if (canonical) {
         const url = new URL(request.url);
         if (url.pathname === '/api/import/tick' && env.AUTH_VERIFIER)
-          return (env.AUTH_VERIFIER as Fetcher).fetch(new Request(new URL(url.pathname, canonical), request));
+          return (env.AUTH_VERIFIER as Fetcher).fetch(
+            new Request(new URL(url.pathname, canonical), request),
+          );
         return Response.redirect(
           new URL(url.pathname + url.search, canonical).href,
           ['GET', 'HEAD'].includes(request.method) ? 302 : 307,
@@ -997,10 +1002,6 @@ export default {
     );
     ctx.waitUntil(flushNotifications(env));
     ctx.waitUntil(flushPaymentNotifications(env));
-    await stmt(
-      env,
-      'UPDATE stores SET orders_enabled=0,version=version+1 WHERE orders_enabled=1 AND id IN (SELECT store_id FROM subscriptions WHERE expires_at<=unixepoch())',
-    ).run();
     await sendSubscriptionReminders(env);
     await processCopy(env, origin(env), undefined, 2);
     await runRetention(env);

@@ -586,10 +586,9 @@ async function show(next = tab) {
             esc(new Date(sub.expires_at * 1000).toLocaleDateString()) +
             '</p><p>' +
             (store.notificationsAvailable ? 'Напомним о продлении за три дня.</p><p>' : '') +
-            'Чтобы продлить подписку, свяжитесь с Delokay.</p>' +
-            supportButton('Обсудить продление')
+            'Для продления откройте раздел оплаты.</p><button class="primary" data-tab="payments">Перейти к оплате</button>'
           : (store.status === 'demo'
-              ? '<p>Подписка ещё не активирована. После оплаты Delokay активирует ваш сайт вручную.</p>'
+              ? '<p>Вы можете активировать бесплатный триал или оплатить месяц в разделе оплаты.</p>'
               : '<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>') +
             supportButton(store.status === 'demo' ? 'Обсудить запуск' : 'Написать в Delokay')) +
         '</section>' +
@@ -604,7 +603,7 @@ async function show(next = tab) {
       main.innerHTML = `<section class="card hero-card">
       <span class="home-eyebrow">DELOKAY · КАТАЛОГИ</span>
       <h2>Всё под рукой</h2>${store.demoJob?.sample_content ? '<p>Тестовое демо: товары и цены примерные. Отредактируйте их перед запуском.</p>' : ''}${!platformMode ? '<button data-tab="create">Создать ещё магазин</button>' : ''}
-      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>${store.subscription ? `<p>Подписка ${store.subscription.status === 'expired' ? 'закончилась' : 'действует'} до ${new Date(store.subscription.expires_at * 1000).toLocaleDateString()}. Для продления свяжитесь с Delokay.</p>` : store.status === 'demo' ? '<p>Пробная активация на 14 дней — один раз на аккаунт. Затем 24,99 USD в месяц за один активный сайт. Демо без активации хранится 7 дней.</p>' : '<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>'}
+      <p>Товары, заказы и ваш сайт в одном удобном месте. Изменения появляются на витрине сразу после сохранения.</p>${store.subscription ? `<p>Подписка ${store.subscription.status === 'expired' ? 'закончилась' : 'действует'} до ${new Date(store.subscription.expires_at * 1000).toLocaleDateString()}. Для продления откройте раздел оплаты.</p>` : store.status === 'demo' ? '<p>Пробная активация на 14 дней — один раз на аккаунт. Затем 24,99 USD в месяц за один активный сайт. Демо без активации хранится 7 дней.</p>' : '<p>Данные подписки пока не указаны. Свяжитесь с нами, чтобы уточнить условия.</p>'}
       <div class="actions"><button class="primary" data-action="add">Добавить товар</button></div>
     </section>
     ${store.status === 'demo' && !platformMode ? launchOffer() : ''}
@@ -1345,7 +1344,8 @@ document.addEventListener('submit', async (event) => {
   try {
     stores = await api('stores');
     const params = new URLSearchParams(location.search);
-    if (!platformMode && params.get('tab') === 'payments') tab = 'subscription';
+    if (!platformMode && ['payments', 'subscription'].includes(params.get('tab')))
+      tab = params.get('tab');
     if (!stores.length) {
       document.getElementById('store-name').textContent = 'Мой кабинет';
       document.querySelectorAll('#nav [data-tab]').forEach((button) => {

@@ -22,3 +22,8 @@ Validation: TypeScript check, syntax checks, domain tests against SQLite, and a 
 
 ## Trial activation — 2026-11-04
 One free activation per Telegram account for one chosen demo site, for exactly 14 days with orders enabled. A permanent owner-level claim prevents reuse through deleting/recreating catalogs. No card and no automatic charge. Expiry pauses new orders; catalog data is retained. Paying before the trial ends adds one calendar month after the remaining trial period. Trial and payment mutations are atomic and version guarded.
+
+## Subscription notifications
+Trial and paid subscriptions have distinct reminders within the last three days, an expiry notice, and activation/renewal confirmations. Buttons open the appropriate site in the Mini App: payments for renewal/activation, subscription details after success. Dates include time and UTC. Notices use RU/EN/RO copy with English fallback.
+
+Subscription writes atomically enqueue confirmations through database triggers. Outbox rows use unique site/owner/expiry/event keys and a delivery lease. Temporary Telegram errors are retried with backoff; stale expiry or previous-owner messages are cancelled before sending. Cron runs every ten minutes and user activation/renewal also requests a background flush. Historical expiries from before the rollout do not send retrospective messages. Expiry pauses orders; renewing an expired subscription restores intake. A manually paused, unexpired subscription stays paused on renewal.

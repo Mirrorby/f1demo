@@ -468,6 +468,12 @@
     'Один сайт можно активировать бесплатно на 14 дней — один раз на аккаунт, без карты и автоматического списания.':
       'Activate one site free for 14 days, once per account, with no card or automatic charges.',
   });
+  Object.assign(en, {
+    'Для продления откройте раздел оплаты.': 'Open Payments to renew.',
+    'Перейти к оплате': 'Go to payments',
+    'Вы можете активировать бесплатный триал или оплатить месяц в разделе оплаты.':
+      'You can activate a free trial or pay for a month in Payments.',
+  });
   const reverse = Object.fromEntries(
     Object.entries(en)
       .reverse()

@@ -61,7 +61,7 @@ before(async () => {
   };
   const built = await build({
     stdin: {
-      contents: `export {createDemo} from './src/onboarding'; export {activateTrial,trialStatus} from './src/trial'; export {parseCSV,importProducts} from './src/product-import'; export {shortLink} from './src/short-links'; export {applyCatalogPurchase,catalogPlanConfig} from './src/catalog-plan'; export {templates,templateProducts,templateSettings} from './src/templates';`,
+      contents: `export {createDemo} from './src/onboarding'; export {activateTrial,trialStatus} from './src/trial'; export {manualSubscription,sendSubscriptionReminders} from './src/subscriptions'; export {notificationCopy} from './src/subscription-notifications'; export {parseCSV,importProducts} from './src/product-import'; export {shortLink} from './src/short-links'; export {applyCatalogPurchase,catalogPlanConfig} from './src/catalog-plan'; export {templates,templateProducts,templateSettings} from './src/templates';`,
       resolveDir: process.cwd(),
     },
     bundle: true,
@@ -263,4 +263,178 @@ test('expired trial cannot be restarted, even on another new site', async () => 
   assert.equal(row(id).orders_enabled, 0);
   const other = await fresh('10007');
   await assert.rejects(app.activateTrial(env, row(other.job.store_id)), /уже использован/);
+});
+
+function notificationSetup() {
+  sql.exec('DELETE FROM subscription_notifications;DELETE FROM subscriptions;');
+  sql
+    .prepare("UPDATE maintenance_state SET value='0' WHERE key='subscription_notifications_since'")
+    .run();
+  env.TELEGRAM_BOT_TOKEN = 'test-notifications-token';
+  env.BOT_USERNAME = 'test_bot';
+  const messages = [];
+  let fail = false;
+  globalThis.fetch = async (url, options) => {
+    assert.ok(String(url).startsWith('https://api.telegram.org/'));
+    messages.push(JSON.parse(options.body));
+    return Response.json(
+      fail
+        ? { ok: false, description: 'Temporary failure' }
+        : { ok: true, result: { message_id: messages.length } },
+      { status: fail ? 500 : 200 },
+    );
+  };
+  return {
+    messages,
+    setFailure(value) {
+      fail = value;
+    },
+  };
+}
+test('trial reminder names the trial, opens the correct payment screen and is not repeated', async () => {
+  const { messages } = notificationSetup();
+  const created = await fresh('20001'),
+    id = created.job.store_id;
+  await app.activateTrial(env, row(id));
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 1);
+  assert.match(messages[0].text, /Пробный период.*активирован/);
+  const until = Math.floor(Date.now() / 1000) + 2 * 86400;
+  sql.prepare('UPDATE trial_activations SET expires_at=? WHERE store_id=?').run(until, id);
+  sql
+    .prepare('UPDATE subscriptions SET expires_at=?,reminder_sent_at=NULL WHERE store_id=?')
+    .run(until, id);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 2);
+  assert.match(messages[1].text, /Пробный период.*заканчивается/);
+  const button = messages[1].reply_markup.inline_keyboard[0][0];
+  assert.equal(button.text, 'Активировать подписку');
+  const url = new URL(button.web_app.url);
+  assert.equal(url.origin, env.PUBLIC_ORIGIN);
+  assert.equal(url.pathname, '/admin');
+  assert.equal(url.searchParams.get('store'), id);
+  assert.equal(url.searchParams.get('tab'), 'payments');
+  await Promise.all([app.sendSubscriptionReminders(env), app.sendSubscriptionReminders(env)]);
+  assert.equal(messages.length, 2);
+});
+test('paid reminder and expiry are distinct; expiry pauses orders and sends once', async () => {
+  const { messages } = notificationSetup();
+  const created = await fresh('20002'),
+    id = created.job.store_id;
+  await app.manualSubscription(env, row(id), {});
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 1);
+  assert.match(messages[0].text, /Подписка.*активирована/);
+  sql
+    .prepare(
+      'UPDATE subscriptions SET expires_at=unixepoch()+172800,reminder_sent_at=NULL WHERE store_id=?',
+    )
+    .run(id);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 2);
+  assert.match(messages[1].text, /Подписка.*заканчивается/);
+  assert.doesNotMatch(messages[1].text, /Пробный/);
+  assert.equal(messages[1].reply_markup.inline_keyboard[0][0].text, 'Продлить подписку');
+  sql.prepare('UPDATE subscriptions SET expires_at=unixepoch()-1 WHERE store_id=?').run(id);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 3);
+  assert.match(messages[2].text, /Срок подписки.*истёк/);
+  assert.equal(row(id).orders_enabled, 0);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 3);
+});
+test('expired trial tells the owner that saved products remain and offers paid activation', async () => {
+  const { messages } = notificationSetup();
+  const created = await fresh('20003'),
+    id = created.job.store_id;
+  await app.activateTrial(env, row(id));
+  await app.sendSubscriptionReminders(env);
+  const expiry = Math.floor(Date.now() / 1000) - 1;
+  sql.prepare('UPDATE trial_activations SET expires_at=? WHERE store_id=?').run(expiry, id);
+  sql.prepare('UPDATE subscriptions SET expires_at=? WHERE store_id=?').run(expiry, id);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 2);
+  assert.match(messages[1].text, /Пробный период.*завершился/);
+  assert.match(messages[1].text, /товары сохранены/);
+  assert.equal(row(id).orders_enabled, 0);
+});
+test('manual renewal resumes an expired store and queues a confirmation with the new expiry', async () => {
+  const { messages } = notificationSetup();
+  const created = await fresh('20004'),
+    id = created.job.store_id;
+  await app.manualSubscription(env, row(id), {});
+  await app.sendSubscriptionReminders(env);
+  sql.prepare('UPDATE subscriptions SET expires_at=unixepoch()-1 WHERE store_id=?').run(id);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(row(id).orders_enabled, 0);
+  const renewed = await app.manualSubscription(env, row(id), { months: 1 });
+  assert.equal(row(id).orders_enabled, 1);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 3);
+  assert.match(messages[2].text, /Подписка.*продлена до/);
+  assert.ok(renewed.subscription.expires_at > Date.now() / 1000);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 3);
+});
+test('notification failure retries from the outbox without extending the subscription again', async () => {
+  const test = notificationSetup(),
+    created = await fresh('20005'),
+    id = created.job.store_id;
+  await app.manualSubscription(env, row(id), {});
+  const expiry = sql
+    .prepare('SELECT expires_at FROM subscriptions WHERE store_id=?')
+    .get(id).expires_at;
+  test.setFailure(true);
+  await app.sendSubscriptionReminders(env);
+  let notice = sql.prepare('SELECT * FROM subscription_notifications WHERE store_id=?').get(id);
+  assert.equal(notice.sent_at, null);
+  assert.equal(notice.attempts, 1);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(test.messages.length, 1);
+  sql.prepare('UPDATE subscription_notifications SET next_attempt=0 WHERE store_id=?').run(id);
+  test.setFailure(false);
+  await app.sendSubscriptionReminders(env);
+  notice = sql.prepare('SELECT * FROM subscription_notifications WHERE store_id=?').get(id);
+  assert.ok(notice.sent_at);
+  assert.equal(test.messages.length, 2);
+  assert.equal(
+    sql.prepare('SELECT expires_at FROM subscriptions WHERE store_id=?').get(id).expires_at,
+    expiry,
+  );
+});
+test('superseded expiry and old-owner notices are cancelled before delivery', async () => {
+  const { messages } = notificationSetup(),
+    created = await fresh('20006'),
+    id = created.job.store_id;
+  await app.manualSubscription(env, row(id), {});
+  const old = sql
+    .prepare('SELECT expires_at FROM subscriptions WHERE store_id=?')
+    .get(id).expires_at;
+  sql
+    .prepare(
+      "INSERT INTO subscription_notifications(id,store_id,owner_id,kind,plan_type,expires_at) VALUES('stale-expiry',?,'20006','expired','paid',?)",
+    )
+    .run(id, old - 1);
+  await app.manualSubscription(env, row(id), {});
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 1);
+  assert.match(messages[0].text, /продлена/);
+  assert.ok(
+    sql.prepare("SELECT cancelled_at FROM subscription_notifications WHERE id='stale-expiry'").get()
+      .cancelled_at,
+  );
+  await app.manualSubscription(env, row(id), {});
+  sql.prepare("UPDATE stores SET owner_id='20007' WHERE id=?").run(id);
+  await app.sendSubscriptionReminders(env);
+  assert.equal(messages.length, 1);
+});
+test('Romanian and English notices distinguish trial expiry from paid renewal', () => {
+  assert.match(
+    app.notificationCopy('expired', 'trial', 'ro', 'Test', 1900000000).text,
+    /Perioada de probă/,
+  );
+  assert.match(
+    app.notificationCopy('renewed', 'paid', 'en', 'Test', 1900000000).text,
+    /extended until/,
+  );
 });
